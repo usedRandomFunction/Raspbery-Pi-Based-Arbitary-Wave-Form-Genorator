@@ -4,15 +4,17 @@ BINDIR := bin
 OBJDIR := $(BINDIR)/obj
 
 # Compiler and linker options
-CC := aarch64-elf-gcc
-CXX := aarch64-elf-g++
-LD := aarch64-elf-ld
+COMPILERPREFIX = aarch64-linux-gnu-
+CC := $(COMPILERPREFIX)gcc
+CXX := $(COMPILERPREFIX)g++
+LD := $(COMPILERPREFIX)ld
 C_DEFINITIONS := -DAARCH64
 
 OPATMANISER_SETTING = -O2
 
-CFLAGS := -ffreestanding -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Werror $(C_DEFINITIONS) -include inc/kconfig.h
-CXXFLAGS := -ffreestanding -std=c++17 -c -Iinc $(OPATMANISER_SETTING) -Werror -fno-exceptions -fno-rtti $(C_DEFINITIONS) -include inc/kconfig.h
+ASMFLAGS := -Iinc
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Werror $(C_DEFINITIONS) -include inc/kconfig.h
+CXXFLAGS := -ffreestanding -nostartfiles  -std=c++17 -c -Iinc $(OPATMANISER_SETTING) -Werror -fno-exceptions -fno-rtti $(C_DEFINITIONS) -include inc/kconfig.h
 LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib
 
 # Source files
@@ -47,14 +49,14 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 $(OBJDIR)/%.o: $(SRCDIR)/%.s
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(ASMFLAGS) -c -o $@ $<
 
 image:
 	@echo !==== Image Genoration ====!
 	aarch64-elf-objcopy $(BINDIR)/kernal.elf -O binary $(BINDIR)/kernel.img
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET)
+	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernal.elf
 
 .PHONY: all clean
 
