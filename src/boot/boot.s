@@ -42,6 +42,10 @@ el3_entry:
     eret
 
 el2_entry:
+    // Set up exception handlers
+    ldr     x2, =_vectors
+    msr     vbar_el1, x2
+
     // Initialize the SCTLR_EL1 register before entering EL1.
     msr SCTLR_EL1, XZR
     // Determine the EL1 Execution state.
@@ -78,3 +82,88 @@ halt:
     wfe
 halt_loop:
     b halt_loop
+
+_vectors:
+    // Current EL with SP0
+    // synchronous
+    .align  7
+    mov     x0, #0
+    b       arm_exception_handler
+
+    // IRQ
+    .align  7
+    mov     x0, #1
+    b       arm_exception_handler
+
+    // FIQ
+    .align  7
+    mov     x0, #2
+    b       arm_exception_handler
+
+    // SError
+    .align  7
+    mov     x0, #3
+    b       arm_exception_handler
+
+    // Current EL with SPx
+    // synchronous
+    .align  7
+    mov     x0, #0
+    b       arm_exception_handler
+
+    // IRQ
+    .align  7
+    mov     x0, #1
+    b       arm_exception_handler
+
+    // FIQ
+    .align  7
+    mov     x0, #2
+    b       arm_exception_handler
+
+    // SError
+    .align  7
+    mov     x0, #3
+    b       arm_exception_handler
+
+    // Lower EL using AArch64
+    // synchronous
+    .align  7
+    mov     x0, #0
+    b       arm_exception_handler
+
+    // IRQ
+    .align  7
+    mov     x0, #1
+    b       arm_exception_handler
+
+    // FIQ
+    .align  7
+    mov     x0, #2
+    b       arm_exception_handler
+
+    // SError
+    .align  7
+    mov     x0, #3
+    b       arm_exception_handler
+
+    // Lower EL using AArch32
+    // synchronous
+    .align  7
+    mov     x0, #0
+    b       arm_exception_handler
+
+    // IRQ
+    .align  7
+    mov     x0, #1
+    b       arm_exception_handler
+
+    // FIQ
+    .align  7
+    mov     x0, #2
+    b       arm_exception_handler
+
+    // SError
+    .align  7
+    mov     x0, #3
+    b       arm_exception_handler

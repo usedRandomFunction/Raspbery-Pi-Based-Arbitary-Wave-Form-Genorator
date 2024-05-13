@@ -46,6 +46,8 @@ uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate, MALLOC_ALIGNED_PTR _ma
     return rate;
 }
 
+#pragma GCC push_options // For some reason gcc -O2 does not like this function
+#pragma GCC optimize ("O1")
 static uint32_t s_get_clock_rate_of_type(uint32_t clock_id, uint32_t type, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     property_tag_get_clock_rate get_clock_rate_tag;
@@ -64,4 +66,4 @@ static uint32_t s_get_clock_rate_of_type(uint32_t clock_id, uint32_t type, MALLO
 
     return rate;
 }
-
+#pragma GCC pop_options

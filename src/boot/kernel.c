@@ -43,6 +43,12 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 
 	uart_puts("Started system, board type: ");
 	uart_puts(get_board_name(boardType));
+
+	uart_puts("\nException level: ");
+    unsigned int reg = 0;
+    asm volatile ("mrs %x0, CurrentEL" : "=r" (reg));
+    uart_putui(reg >> 2);
+
 	uart_puts("\nStarting main function!\n");
 	int result = main();
 
@@ -52,5 +58,3 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	while (1)
 		uart_putc(uart_getc());
 }
-
-// qemu-system-arm -M raspi0 -serial stdio -kernel bin/kernal.elf
