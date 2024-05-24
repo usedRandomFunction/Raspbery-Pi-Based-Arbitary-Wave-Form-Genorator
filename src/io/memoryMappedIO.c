@@ -1,6 +1,6 @@
 #include "io/memoryMappedIO.h"
 
-size_t MMIO_Base_Address = 0;
+size_t volatile  MMIO_Base_Address = 0;
 
 void set_mmio_base(int boardType)
 {

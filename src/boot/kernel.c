@@ -2,8 +2,6 @@
 #include "io/memoryMappedIO.h"
 #include "io/uart.h"
 
-#include "io/gpio.h" // UNDONE ONLY FOR TESTING
-
 #include <stdint.h>
 
 #if defined(__cplusplus)

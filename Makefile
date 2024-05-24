@@ -4,7 +4,8 @@ BINDIR := bin
 OBJDIR := $(BINDIR)/obj
 
 # Compiler and linker options
-COMPILERPREFIX = aarch64-linux-gnu-
+# COMPILERPREFIX = aarch64-linux-gnu-
+COMPILERPREFIX = aarch64-elf-
 CC := $(COMPILERPREFIX)gcc
 CXX := $(COMPILERPREFIX)g++
 LD := $(COMPILERPREFIX)ld
@@ -12,10 +13,12 @@ C_DEFINITIONS := -DAARCH64
 
 OPATMANISER_SETTING = -O2
 
-ASMFLAGS := -Iinc
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Werror $(C_DEFINITIONS) -include inc/kconfig.h
-CXXFLAGS := -ffreestanding -nostartfiles  -std=c++17 -c -Iinc $(OPATMANISER_SETTING) -Werror -fno-exceptions -fno-rtti $(C_DEFINITIONS) -include inc/kconfig.h
-LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib
+DEBUGFLAGS := #-g
+
+ASMFLAGS := -Iinc $(DEBUGFLAGS)
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Werror $(C_DEFINITIONS) -include inc/kconfig.h -g
+CXXFLAGS := -ffreestanding -nostartfiles  -std=c++17 -c -Iinc $(OPATMANISER_SETTING) -Werror -fno-exceptions -fno-rtti $(C_DEFINITIONS) -include inc/kconfig.h $(DEBUGFLAGS)
+LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS)
 
 # Source files
 C_SOURCES := $(shell find $(SRCDIR) -name '*.c')
@@ -28,9 +31,9 @@ CPP_OBJECTS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(CPP_SOURCES))
 ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.o,$(ASM_SOURCES))
 
 # Targets
-TARGET := $(BINDIR)/kernal.elf
+TARGET := $(BINDIR)/kernel.elf
 
-all: $(TARGET)
+all: $(TARGET) image
 
 $(TARGET): $(C_OBJECTS) $(CPP_OBJECTS) $(ASM_OBJECTS)
 	@echo !==== linking ====!
@@ -53,15 +56,17 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.s
 
 image:
 	@echo !==== Image Genoration ====!
-	aarch64-elf-objcopy $(BINDIR)/kernal.elf -O binary $(BINDIR)/kernel.img
+	aarch64-elf-objcopy $(BINDIR)/kernel.elf -O binary $(BINDIR)/kernel.img
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernal.elf
+	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel.elf
+
+run_halt:
+	@echo !==== Running ====!
+	qemu-system-aarch64 -M raspi3 -device loader,file=bin/kernel.img,addr=0x00000,cpu-num=0 -display none -serial stdio -s -S
+
+run:
+	@echo !==== Running ====!
+	qemu-system-aarch64 -M raspi3 -device loader,file=bin/kernel.img,addr=0x00000,cpu-num=0 -display none -serial stdio
 
 .PHONY: all clean
-
-runPiZero: 
-	qemu-system-arm -M raspi0 -serial stdio -kernel bin/kernal.elf
-
-runPi3b:
-	qemu-system-aarch64 -M raspi3b -serial stdio -kernel bin/kernal.elf

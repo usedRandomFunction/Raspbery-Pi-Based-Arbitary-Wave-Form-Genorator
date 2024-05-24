@@ -22,7 +22,7 @@ central_block_memory_allocator_header memoryAllocator;
 extern "C" /* Use C linkage for main. */
 #endif
 int main()
-{	
+{
     prepareMemoryManager();
 
     PrintSystemSpecs();
@@ -84,7 +84,7 @@ int main()
 
 #define managedMemoryRegionSizeKib 256
 
-static void prepareMemoryManager()
+static void prepareMemoryManager() // UNDONE!!! this will over write the code of the program given enough time
 {
 	// size_t end_address = PROGRAM_END_ADDRESS_SIZE_T;
     // size_t mannagedSpace = managedMemoryRegionSizeKib * 1024 - end_address;

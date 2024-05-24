@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-extern size_t MMIO_Base_Address;
+extern volatile size_t MMIO_Base_Address;
 
 
 

@@ -12,13 +12,14 @@
 volatile unsigned int  __attribute__((aligned(16))) mbox[9] = {
     9*4, 0, 0x38002, 12, 8, 2, UART_BASE_FREQENECY_MHZ * 1000000, 0 ,0
 };
- 
+
 void uart_init(int baudrate)
 {
 	// Disable UART0.
 	mmio_write(UART0_CR, 0x00000000);
+
 	// Setup the GPIO pin 14 && 15.
-	
+
 	// Set Function register
 	gpio_function_select(14, GPFSEL_Alternate0);
 	gpio_function_select(15, GPFSEL_Alternate0);
@@ -56,7 +57,7 @@ void uart_init(int baudrate)
 	// Enable UART0, receive & transfer part of UART.
 	mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9));
 }
- 
+
 void uart_putc(unsigned char c)
 {
 	// Wait for UART to become ready to transmit.
