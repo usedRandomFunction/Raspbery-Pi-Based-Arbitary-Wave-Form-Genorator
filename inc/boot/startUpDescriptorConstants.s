@@ -15,11 +15,6 @@
 .equ SECTION_SIZE,			    (1 << SECTION_SHIFT)	
 
 .equ LOW_MEMORY,              	(2 * SECTION_SIZE)
-// TODO make this detect device base address
-.equ HIGH_MEMORY,             	0x3F000000
-
-.equ PAGING_MEMORY, 			(HIGH_MEMORY - LOW_MEMORY)
-.equ PAGING_PAGES, 			    (PAGING_MEMORY/PAGE_SIZE)
 
 .equ PTRS_PER_TABLE,			(1 << TABLE_SHIFT)
 

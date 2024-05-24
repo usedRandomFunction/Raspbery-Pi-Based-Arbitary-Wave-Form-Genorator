@@ -60,8 +60,7 @@ el2_entry:
     msr     elr_el2, x0 // EL1 code.
     eret
 
-el1_entry: // TODO swithc to memset / memclr
-    // clear bss
+el1_entry:
     adrp	x0, __bss_start
     add     x0, x0, :lo12:__bss_start
 	ldr	    x1, =__bss_size
@@ -77,24 +76,24 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
 
     .macro	create_table_entry, tbl, virt, shift, tmp1, tmp2
     lsr	\tmp1, \virt, #\shift
-    and	\tmp1, \tmp1, #PTRS_PER_TABLE - 1			// table index
+    and	\tmp1, \tmp1, #PTRS_PER_TABLE - 1			            // table index
     add	\tmp2, \tbl, #PAGE_SIZE
     orr	\tmp2, \tmp2, #MM_TYPE_PAGE_TABLE	
     str	\tmp2, [\tbl, \tmp1, lsl #3]
-    add	\tbl, \tbl, #PAGE_SIZE					// next level table page
+    add	\tbl, \tbl, #PAGE_SIZE					                // next level table page
     .endm
 
     .macro	create_block_map, tbl, phys, start, end, flags, tmp1
     lsr	\start, \start, #SECTION_SHIFT
-    and	\start, \start, #PTRS_PER_TABLE - 1			// table index
+    and	\start, \start, #PTRS_PER_TABLE - 1			            // table index
     lsr	\end, \end, #SECTION_SHIFT
-    and	\end, \end, #PTRS_PER_TABLE - 1				// table end index
+    and	\end, \end, #PTRS_PER_TABLE - 1				            // table end index
     lsr	\phys, \phys, #SECTION_SHIFT
     mov	\tmp1, #\flags
-    orr	\phys, \tmp1, \phys, lsl #SECTION_SHIFT			// table entry
-9999:	str	\phys, [\tbl, \start, lsl #3]				// store the entry
-    add	\start, \start, #1					// next entry
-    add	\phys, \phys, #SECTION_SIZE				// next block
+    orr	\phys, \tmp1, \phys, lsl #SECTION_SHIFT			        // table entry
+9999:	str	\phys, [\tbl, \start, lsl #3]				        // store the entry
+    add	\start, \start, #1					                    // next entry
+    add	\phys, \phys, #SECTION_SIZE				                // next block
     cmp	\start, \end
     b.ls	9999b
     .endm
@@ -104,20 +103,27 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
     mov     x2, 0
 	bl 	    memset
 
+    /* Get MMIO Base address and put it into x5 */
+    bl get_board_type
+    bl get_mmio_base_address
+    mov x5, x0
+
 	adrp	x0, pg_dir
 	mov	    x1, #VA_START 
 	create_pgd_entry x0, x1, x2, x3
 
 	/* Mapping kernel and init stack*/
-	mov 	x1, xzr							// start mapping from physical offset 0
-	mov 	x2, #VA_START						// first virtual address
-	ldr	    x3, =(VA_START + 0x3F000000 - SECTION_SIZE)		// last virtual address
+	mov 	x1, xzr							                    // start mapping from physical offset 0
+	mov 	x2, #VA_START						                // first virtual address
+	ldr	    x3, =(VA_START - SECTION_SIZE)		                // last virtual address
+    add     x3, x3, x5
 	create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
 
 	/* Mapping device memory*/
-    // TODO make this detect device base address
-	mov 	x1, #0x3F000000					// start mapping from device base address 
-	ldr 	x2, =(VA_START + 0x3F000000)				// first virtual address
+    // TODO make this detect device base address	                    
+    mov     x1, x5                                              // start mapping from device base address 
+	mov 	x2, #VA_START						                // first virtual address
+    add     x2, x2, x5
 	ldr	    x3, =(VA_START + PHYS_MEMORY_SIZE - SECTION_SIZE)	// last virtual address
 	create_block_map x0, x1, x2, x3, MMU_DEVICE_FLAGS, x4 
 

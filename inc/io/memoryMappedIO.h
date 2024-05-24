@@ -62,6 +62,8 @@ inline volatile uint32_t* get_mmio_pointer(size_t reg)
     return (volatile uint32_t*)(MMIO_Base_Address + reg);
 }
 
+
+size_t get_mmio_base_address(int boardType);
 void set_mmio_base(int boardType);
 
 enum
