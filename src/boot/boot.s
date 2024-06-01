@@ -98,7 +98,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
     b.ls	9999b
     .endm
 
-    adrp	x0, pg_dir
+    adrp	x0, boot_pg_dir
 	mov	    x1, #PG_DIR_SIZE
     mov     x2, 0
 	bl 	    memset
@@ -108,7 +108,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
     bl get_mmio_base_address
     mov x5, x0
 
-	adrp	x0, pg_dir
+	adrp	x0, boot_pg_dir
 	mov	    x1, #VA_START 
 	create_pgd_entry x0, x1, x2, x3
 
@@ -131,7 +131,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
     ldr     x1, =_stack_top
     mov     sp, x1
 
-    adrp	x0, pg_dir	
+    adrp	x0, boot_pg_dir	
 	msr	    ttbr1_el1, x0
 	msr	    ttbr0_el1, x0 // Basicly this needs to be added as i keept getting a prefetch abort just before jumping to the new addresses
 
@@ -146,7 +146,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
 	msr	    sctlr_el1, x0
     // jump to C code, should not return
 start_kernel:  
-    br      x2
+    blr      x2
     // for failsafe, halt this core too
     b       halt
 

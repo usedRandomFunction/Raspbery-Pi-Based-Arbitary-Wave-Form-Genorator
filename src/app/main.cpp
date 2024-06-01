@@ -25,7 +25,7 @@ int main()
 {
     prepareMemoryManager();
 
-    PrintSystemSpecs();
+    //PrintSystemSpecs();
     SetupSystemClocks(1.2f);
 
     gpio_function_select(17, GPFSEL_Output); // Clock

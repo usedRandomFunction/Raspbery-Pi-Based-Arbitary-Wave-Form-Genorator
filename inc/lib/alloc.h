@@ -8,7 +8,7 @@ extern "C" {
 #ifdef __GNUC__
 #define alloca(x) __builtin_alloca((x))
 #else
-#error failed to wind alloca
+#error failed to find alloca
 #endif
 
 void* aligned_alloc(size_t alignment, size_t size);

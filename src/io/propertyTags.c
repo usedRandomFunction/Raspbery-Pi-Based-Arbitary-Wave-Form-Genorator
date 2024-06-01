@@ -17,7 +17,7 @@ static void* prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_s
 
 void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
-    property_tag_buffer_header* ptr = prepare_property_tag_buffer(buffer, buffer_size + 0xFF, _malloc, _free); // Alloc more then needed incase
+    property_tag_buffer_header* ptr = prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
 
     uint32_t address = *((uint32_t*)&ptr);
     

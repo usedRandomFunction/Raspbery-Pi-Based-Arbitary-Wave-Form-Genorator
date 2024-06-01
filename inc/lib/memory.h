@@ -33,8 +33,6 @@ void* memset(void* dst, size_t size, uint8_t value);
 
 inline void* void_ptr_offset_bytes(void* ptr, int offset);
 
-
-
 inline void* void_ptr_offset_bytes(void* ptr, int offset)
 {
     return ((uint8_t*)ptr) + offset;

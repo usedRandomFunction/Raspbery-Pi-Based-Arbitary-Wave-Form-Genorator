@@ -8,8 +8,9 @@ SECTIONS
         KEEP(*(.text.boot))
     }
 
+    . = ALIGN(4096);
     .stack (NOLOAD) : {
-        . = ALIGN(16);
+        boot_pg_dir = .; /* the boot_pg_dir is over written shortly after booting so it can be loaded into the bottom of the stack. */
         . = . + 32K;
     }
     _stack_top = .;
@@ -27,8 +28,6 @@ SECTIONS
     }
     _end = .;
 
-    . = ALIGN(4096); /* Is after end as this is only needed in the boot process and can be overwritten latter */
-	pg_dir = .;
 
     /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }

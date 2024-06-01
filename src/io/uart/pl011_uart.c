@@ -1,17 +1,12 @@
 #if USE_MINI_UART == 0 || !defined(USE_MINI_UART)
 
 #include "io/memoryMappedIO.h"
+#include "lib/preset_alloc.h"
+#include "io/propertyTags.h"
+#include "lib/clocks.h"
 #include "lib/timing.h"
-#include "io/mailbox.h"
 #include "io/gpio.h"
 #include "io/uart.h"
-
-#define UART_BASE_FREQENECY_MHZ 3
-
-// A Mailbox message with set clock rate of PL011 to 3MHz tag
-volatile unsigned int  __attribute__((aligned(16))) mbox[9] = {
-    9*4, 0, 0x38002, 12, 8, 2, UART_BASE_FREQENECY_MHZ * 1000000, 0 ,0
-};
 
 void uart_init(int baudrate)
 {
@@ -38,14 +33,7 @@ void uart_init(int baudrate)
 	// Clear pending interrupts.
 	mmio_write(UART0_ICR, 0x7FF);
 
-	// Set UART base clock
-	mailbox_write_read_alligedAddress((void*)&mbox, 8);
-
-
-	float divider = UART_BASE_FREQENECY_MHZ * 1000000.0f / (16.0f * baudrate);
-	int ibrd = (int)divider;
-	mmio_write(UART0_IBRD, ibrd);
-	mmio_write(UART0_FBRD, (int)((divider - ibrd) * 64.0f + 0.5f));
+	uart_set_base_freqency(UART_BASE_CLOCK_FREQUENCY, baudrate);
  
 	// Enable FIFO & 8 bit data transmission (1 stop bit, no parity).
 	mmio_write(UART0_LCRH, (1 << 4) | (1 << 5) | (1 << 6));
@@ -56,6 +44,21 @@ void uart_init(int baudrate)
  
 	// Enable UART0, receive & transfer part of UART.
 	mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9));
+}
+
+void uart_set_base_freqency(int freqenecy, int baudrate)
+{
+
+	unsigned int  __attribute__((aligned(16))) mbox_buffer[9];
+	preset_alloc_set_buffers(&mbox_buffer, sizeof(mbox_buffer), &mbox_buffer, 28);
+
+	// Set UART base clock
+	set_clock_rate(PROPERTY_TAG_CLOCK_ID_UART, freqenecy, preset_alloc_aligned_alloc, preset_alloc_free);
+
+	float divider = freqenecy / (16.0f * baudrate);
+	int ibrd = (int)divider;
+	mmio_write(UART0_IBRD, ibrd);
+	mmio_write(UART0_FBRD, (int)((divider - ibrd) * 64.0f + 0.5f));
 }
 
 void uart_putc(unsigned char c)

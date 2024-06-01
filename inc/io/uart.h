@@ -8,8 +8,11 @@
 extern "C" {
 #endif
 
-// Inintallizeds a UART on pin 14, 15 with baudrate as a varible
+// Inintallizes a UART on pin 14, 15 with baudrate as a varible
 void uart_init(int baudrate);
+
+// Sets the base freqency of the UART, and reconfigures the UART baudrate
+void uart_set_base_freqency(int freqenecy, int baudrate);
 
 // Writes a single charecter to the UART
 void uart_putc(unsigned char c);

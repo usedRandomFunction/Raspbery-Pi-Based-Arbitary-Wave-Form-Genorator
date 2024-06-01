@@ -13,9 +13,6 @@
 
 #endif
 
-
-// #include <malloc.h>
-
 void uart_puti(int integer)
 {
 	if (integer < 0)
