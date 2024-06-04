@@ -16,7 +16,8 @@ static void printSystemInfoAndSetMaximumclockSpeed();
 static void prepareMemoryManager();
 
 
-central_block_memory_allocator_header memoryAllocator;
+central_block_memory_allocator_header kernal_heap_allocator;
+
 
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for main. */
@@ -82,25 +83,29 @@ int main()
 }
 
 
-#define managedMemoryRegionSizeKib 256
-
-static void prepareMemoryManager() // UNDONE!!! this will over write the code of the program given enough time
+static void prepareMemoryManager()
 {
-	// size_t end_address = PROGRAM_END_ADDRESS_SIZE_T;
-    // size_t mannagedSpace = managedMemoryRegionSizeKib * 1024 - end_address;
+    size_t allocator_space = PROGRAM_END_ADDRESS_SIZE_T;
+    size_t mannagedSpace = 2 * 1024 * 1024; // As this is the smallest page size we will use all of it
 
-    size_t mannagedSpace = managedMemoryRegionSizeKib * 1024;
-    initialize_central_block_memory_allocator(nullptr, mannagedSpace, 5, &memoryAllocator);
+    if (allocator_space & 0x1FFFFF != 0) // If the address is not 2 Mib alligned
+    {
+        allocator_space >>= 21;
+        allocator_space++;
+        allocator_space <<= 21;         // Bitwise round up
+    }
+
+    initialize_central_block_memory_allocator(*(void**)&allocator_space, mannagedSpace, 5, &kernal_heap_allocator);
 }
 
 void free(void* p)
 {
-    central_block_memory_allocator_free(p, &memoryAllocator);
+    central_block_memory_allocator_free(p, &kernal_heap_allocator);
 }
 
 void* malloc(size_t size)
 {
-    return central_block_memory_allocator_alloc(size, &memoryAllocator);
+    return central_block_memory_allocator_alloc(size, &kernal_heap_allocator);
 }
 
 void* aligned_alloc(size_t alignment, size_t size)
@@ -124,5 +129,5 @@ void* aligned_alloc(size_t alignment, size_t size)
             alignment >>= 1;
         }
     }
-    return central_block_memory_allocator_alloc_alligned(size, alignment, &memoryAllocator);
+    return central_block_memory_allocator_alloc_alligned(size, alignment, &kernal_heap_allocator);
 }
