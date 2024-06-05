@@ -133,6 +133,9 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
 
 void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignment_as_power_of_two, central_block_memory_allocator_header* header)
 {
+    size_t allignment_check_offset = 0;
+    size_t alligment_check_value = 0;
+
     if (allignment_as_power_of_two == 0 || allignment_as_power_of_two <= header->block_size_as_power_of_two)
     {
         // m < n, m ∈ ℤ, n ∈ ℤ
@@ -142,7 +145,22 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
         // then all blocks will be alligned
         allignment_as_power_of_two = 0;
     }
-    const size_t alligment_check_value = (1 << allignment_as_power_of_two) - 1;
+    else
+    {
+        size_t allocation_region_start = *(size_t*)&(header->allocation_region_start);
+        if (allocation_region_start % (1 << allignment_as_power_of_two) != 0)
+        {
+            size_t offset = allocation_region_start % (1 << allignment_as_power_of_two);
+            allignment_check_offset = (1 << allignment_as_power_of_two) - offset;
+        }
+
+        allignment_check_offset >>= header->block_size_as_power_of_two;
+
+
+        allignment_as_power_of_two -= header->block_size_as_power_of_two; // allignment is now relitive to blocks
+        alligment_check_value = (1 << allignment_as_power_of_two) - 1;
+    }
+
     size_t required_blocks = size >> header->block_size_as_power_of_two;
     if (size & ((1 << header->block_size_as_power_of_two) - 1))
         required_blocks += 1;
@@ -151,11 +169,24 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     size_t start_block = 0;
     size_t nblocks = 0;
 
-    for (size_t block = 0; block < header->number_of_total_blocks; block++)
+    for (size_t block = allignment_check_offset; block < header->number_of_total_blocks; block++)
     {
-        if (!(!(block & alligment_check_value) && 
-            (get_nth_block_controll(header->controll_region_start, block) == CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_FREE)))
+        if (allignment_as_power_of_two != 0 && (block - allignment_check_offset) & alligment_check_value !=0)
+        {
+
+            block -= allignment_check_offset;
+            size_t new_block = block >> allignment_as_power_of_two;
+
+            if (block % allignment_as_power_of_two != 0) // Round up
+                new_block++;
+
+            new_block <<= allignment_as_power_of_two;
+            block = new_block + allignment_check_offset;
+        }
+
+        if (get_nth_block_controll(header->controll_region_start, block) != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_FREE)
             continue;
+
         start_block = block;
         nblocks = 1;
         block++;
