@@ -11,10 +11,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void printSystemInfoAndSetMaximumclockSpeed();
-
 static void prepareMemoryManager();
 
+#include "lib/mmu.h" // TODO move this functionality to a diffrent file
 
 central_block_memory_allocator_header kernal_heap_allocator;
 
@@ -26,8 +25,35 @@ int main()
 {
     prepareMemoryManager();
 
-    //PrintSystemSpecs();
     SetupSystemClocks(1.2f);
+
+    uint64_t* mmu_pgd = (uint64_t*)aligned_alloc(4096, 8 + 8);
+    uint64_t* mmu_pud = (uint64_t*)aligned_alloc(4096, 8 + 8);
+    uint64_t* mmu_pmd = (uint64_t*)aligned_alloc(4096, 8 * 2 + 8);
+
+    constexpr size_t mmu_ptr_mask = 0x1FFFFF;
+
+
+    write_page_descriptor(mmu_pgd, void_ptr_bitwise_and(mmu_pud, mmu_ptr_mask), 0x0, 0x0, true);
+    mmu_pgd[1] = 0; // Setting this to zero so the mmu knows its not an entry
+    write_page_descriptor(mmu_pud, void_ptr_bitwise_and(mmu_pmd, mmu_ptr_mask), 0x0, 0x0, true);
+    mmu_pud[1] = 0;
+    
+    void* mapping_ptr = void_ptr_bitwise_and(PROGRAM_START_ADDRESS_POINTER, mmu_ptr_mask);
+
+    write_page_descriptor(mmu_pmd, mapping_ptr, 0x0, 0b1 << 8 | 0b1, false);
+    write_page_descriptor(mmu_pmd + 1, void_ptr_offset_bytes(mapping_ptr, 2097152), // 2 MiB Offset
+        0x0, 0b1 << 8 | 0b1, false); // Flags to be re written latter
+    mmu_pmd[3] = 0;
+
+    size_t ttbr_value = *((size_t*)&mmu_pgd) & mmu_ptr_mask;
+
+    asm volatile ("msr ttbr1_el1, x0"
+	:
+	: "r" (ttbr_value)
+	: "x0");
+
+    uart_puts("MMU is controlled by c!");
 
     gpio_function_select(17, GPFSEL_Output); // Clock
     gpio_function_select(18, GPFSEL_Output); // Data
