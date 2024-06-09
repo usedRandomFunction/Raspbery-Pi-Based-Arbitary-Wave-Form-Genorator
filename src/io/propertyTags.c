@@ -18,17 +18,14 @@ static void* prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_s
 void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     property_tag_buffer_header* ptr = prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
-
-    uint32_t address = *((uint32_t*)&ptr);
+    void* physical_address = get_physical_address(ptr);
     
-    // data_sync_barrier();
-    uint32_t returnValue = mailbox_write_read_alligedAddress(ptr, 8);
-    // data_mem_barrier();
+    uint32_t returnValue = mailbox_write_read_physcial_alliged_address(physical_address, 8);
 
-    if (address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
+    if (*(uint32_t*)&physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
     {  
         uart_puts("\nFailed to write proptery tag: ");
-        if (address != returnValue)
+        if (*(uint32_t*)&physical_address != returnValue)
         {
             uart_puts("address != returnValue\n return address: ");
             uart_put_number_as_hex(returnValue); uart_putc('\n');
@@ -38,6 +35,8 @@ void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIG
             uart_puts("reponce code: ");
             uart_put_number_as_hex(ptr->request_response_code); uart_putc('\n');
         }
+
+        return;
     }
 
     _free(ptr);
@@ -46,16 +45,14 @@ void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIG
 property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     property_tag_buffer_header* ptr = prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
-    uint32_t address = *((uint32_t*)&ptr);
+    void* physical_address = get_physical_address(ptr);
     
-    // data_sync_barrier();
-    uint32_t returnValue = mailbox_write_read_alligedAddress(ptr, 8);
-    // data_mem_barrier();
+    uint32_t returnValue = mailbox_write_read_physcial_alliged_address(physical_address, 8);
 
-    if (address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
+    if (*(uint32_t*)&physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
     {  
         uart_puts("\nFailed to write proptery tag: ");
-        if (address != returnValue)
+        if (*(uint32_t*)&physical_address != returnValue)
         {
             uart_puts("address != returnValue\n return address: ");
             uart_put_number_as_hex(returnValue); uart_putc('\n');

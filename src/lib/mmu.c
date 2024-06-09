@@ -25,3 +25,25 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
 
     *descriptor_address = descriptor;
 }
+
+void set_ttbr1_el1(void* ptr)
+{
+    asm volatile ("msr ttbr1_el1, x0\n\t"
+    "tlbi vmalle1is\n\t"
+    "DSB ISH\n\t"
+    "isb"
+	:
+	: "r" (ptr)
+	: "x0");
+}
+
+void set_ttbr0_el1(void* ptr)
+{   
+    asm volatile ("msr ttbr0_el1, x0\n\t"
+    "tlbi vmalle1is\n\t"
+    "DSB ISH\n\t"
+    "isb"
+	:
+	: "r" (ptr)
+	: "x0");;
+}   

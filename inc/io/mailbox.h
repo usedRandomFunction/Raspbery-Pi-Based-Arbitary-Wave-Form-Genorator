@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "uart.h"
+#include "lib/memory.h"
+#include "io/uart.h"
 
 
 #ifdef __cplusplus
@@ -16,10 +17,28 @@ uint32_t mailbox_read(uint8_t channel);
 void mailbox_write(uint32_t data, uint8_t channel);
 uint32_t mailbox_write_read(uint32_t data, uint8_t channel);
 
-inline void mailbox_write_alligedAddress(void* ptr, uint8_t channel)
+inline void mailbox_write_alliged_address(void* ptr, uint8_t channel);
+inline uint32_t mailbox_write_read_alliged_address(void* ptr, uint8_t channel);
+
+inline void mailbox_write_alliged_physcial_address(void* ptr, uint8_t channel);
+inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t channel);
+
+
+
+inline void mailbox_write_alliged_address(void* ptr, uint8_t channel)
+{
+    mailbox_write_alliged_physcial_address(get_physical_address(ptr), channel);
+}
+
+inline uint32_t mailbox_write_read_alliged_address(void* ptr, uint8_t channel)
+{
+    return mailbox_write_read_physcial_alliged_address(get_physical_address(ptr), channel);
+}
+
+inline void mailbox_write_alliged_physcial_address(void* ptr, uint8_t channel)
 {
     #ifdef AARCH64
-    if (*(uint64_t*)&ptr & 0xFFFFFFFF0000000F != 0)
+    if (*(uint64_t*)&ptr & 0x0000FFFF0000000F != 0)
     #else
     if (*(uint32_t*)&ptr & 0x0000000F != 0)
     #endif
@@ -31,10 +50,10 @@ inline void mailbox_write_alligedAddress(void* ptr, uint8_t channel)
     mailbox_write(*(uint32_t*)&ptr, channel);
 }
 
-inline uint32_t mailbox_write_read_alligedAddress(void* ptr, uint8_t channel)
+inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t channel)
 {
     #ifdef AARCH64
-    if (*(uint64_t*)&ptr & 0xFFFFFFFF0000000F != 0)
+    if (*(uint64_t*)&ptr & 0x0000FFFF0000000F != 0)
     #else
     if (*(uint32_t*)&ptr & 0x0000000F != 0)
     #endif

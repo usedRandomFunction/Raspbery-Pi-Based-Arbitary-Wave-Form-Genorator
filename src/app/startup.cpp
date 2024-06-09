@@ -1,6 +1,5 @@
 #include "app/startup.h"
 
-#include "lib/basicMallocFunctions.h"
 #include "io/propertyTags.h"
 #include "lib/clocks.h"
 #include "lib/alloc.h"

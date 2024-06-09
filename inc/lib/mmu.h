@@ -10,6 +10,9 @@ extern "C" {
 
 void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint16_t upper_attributes, uint16_t lower_attributes, bool block_table_bit);
 
+void set_ttbr1_el1(void* ptr);
+void set_ttbr0_el1(void* ptr);
+
 #ifdef __cplusplus
 }
 #endif

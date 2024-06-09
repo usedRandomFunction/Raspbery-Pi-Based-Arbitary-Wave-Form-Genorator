@@ -29,6 +29,8 @@ inline void* void_ptr_offset_bytes(void* ptr, int offset);
 
 inline void* void_ptr_bitwise_and(void* ptr, size_t mask);
 
+inline void* get_physical_address(void* virtual_ptr);
+
 inline void* void_ptr_offset_bytes(void* ptr, int offset)
 {
     return ((uint8_t*)ptr) + offset;
@@ -40,6 +42,25 @@ inline void* void_ptr_bitwise_and(void* ptr, size_t mask)
     return  *((void**)&new_ptr);
 }
 
+inline void* get_physical_address(void* virtual_ptr)
+{
+    unsigned long par_el1;
+    asm volatile (
+        "at S1E1R, %1\n"
+        "mrs %0, par_el1\n"
+        : "=r" (par_el1)
+        : "r" (virtual_ptr)
+        : "memory");
+    
+    // Check for translation faults in PAR_EL1
+    if (par_el1 & 0x1) {
+        // If there was a translation fault, return NULL or handle the fault
+        return NULL;
+    }
+
+    // Extract the physical address from PAR_EL1
+    return (void*)((par_el1 & 0xFFFFFFFFF000) + ((*(size_t*)&virtual_ptr) & 0xFFF));
+}
 #ifdef __cplusplus
 }
 #endif
