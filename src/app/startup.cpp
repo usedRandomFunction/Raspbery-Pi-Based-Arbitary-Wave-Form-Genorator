@@ -8,7 +8,7 @@
 
 static void s_PrintMaxiumClockSpeedAndSet(uint32_t clock_id, const char* name, float targetSpeed)
 {
-    uint32_t maximum_rate = get_maximum_clock_rate(clock_id, aligned_alloc, free);
+    uint32_t maximum_rate = get_maximum_clock_rate(clock_id);
 
     if (maximum_rate == 0)
     {
@@ -20,13 +20,13 @@ static void s_PrintMaxiumClockSpeedAndSet(uint32_t clock_id, const char* name, f
     uart_putui(maximum_rate / 1000000);
     uart_puts(" MHz\n");
 
-    uint32_t returnedRate = set_clock_rate(clock_id, (uint32_t)(maximum_rate * targetSpeed), aligned_alloc, free);
+    uint32_t returnedRate = set_clock_rate(clock_id, (uint32_t)(maximum_rate * targetSpeed));
 
     uart_puts("Set ");uart_puts(name); uart_puts(" clock speed to ");
     uart_putui(returnedRate / 1000000);
     uart_puts(" MHz\n");
 
-    returnedRate = get_clock_rate_messured(clock_id, aligned_alloc, free);
+    returnedRate = get_clock_rate_messured(clock_id);
 
     uart_puts("Messured ");uart_puts(name); uart_puts(" clock speed to ");
     uart_putui(returnedRate / 1000000);
