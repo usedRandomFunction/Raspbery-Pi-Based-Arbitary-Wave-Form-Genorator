@@ -9,13 +9,30 @@ extern "C" {
 
 #include <stdint.h>
 
+// Gets messure the frequency of a given clock
+// @param clock_id the clock id for the clock to get the rate
+// @return The frequency in hertz, or zero if failed
 uint32_t get_clock_rate_messured(uint32_t clock_id);
+
+// Gets the maxium clock rate setting of a given clock
+// @param clock_id the clock id for the clock to get the rate
+// @return The frequency in hertz, or zero if failed
 uint32_t get_maximum_clock_rate(uint32_t clock_id);
+
+// Gets the minimum clock rate setting of a given clock
+// @param clock_id the clock id for the clock to get the rate
+// @return The frequency in hertz, or zero if failed
 uint32_t get_minimum_clock_rate(uint32_t clock_id);
+
+// Gets the current clock rate setting of a given clock
+// @param clock_id the clock id for the clock to get the rate
+// @return The frequency in hertz, or zero if failed
 uint32_t get_clock_rate(uint32_t clock_id);
 
 // Sets the given clock to the given rate
-// Returns the value return for the rate set or zero if failer
+// @param clock_id the clock id that to be set
+// @param rate the frequency in hertz to set the clock to
+// @return The frequency in hertz that it was set to, or zero if failed
 uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate);
 
 #ifdef __cplusplus

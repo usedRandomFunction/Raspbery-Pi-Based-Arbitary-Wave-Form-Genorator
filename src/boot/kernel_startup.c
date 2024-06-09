@@ -121,6 +121,9 @@ static void initialize_virtual_address_translation()
     temporary_pgd += offset;
 
     uart_puts("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
+
+
+    
 }
 
 void free(void* p)

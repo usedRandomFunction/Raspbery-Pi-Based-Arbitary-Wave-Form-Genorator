@@ -12,17 +12,46 @@
 extern "C" {
 #endif
 
+// Emptys the mailbox
 void mailbox_flush();
+
+// Reads from the given mailbox channel
+// @param channel The chanel to read from
+// @return The value form the channel
 uint32_t mailbox_read(uint8_t channel);
+
+// Writes to the given mailbox channel
+// @param data The value to write to the channel
+// @param channel The chanel to write to
 void mailbox_write(uint32_t data, uint8_t channel);
+
+// Writes then reads from the given mailbox channel
+// @param data The value to write to the channel
+// @param channel The chanel to write and read from
+// @return The value form the channel
 uint32_t mailbox_write_read(uint32_t data, uint8_t channel);
 
+// Writes to the given mailbox channel
+// @param ptr The virutal address to write to the mailbox
+// @param channel The chanel to write to
 inline void mailbox_write_alliged_address(void* ptr, uint8_t channel);
+
+// Writes then reads to the given mailbox channel
+// @param ptr The virutal address to write to the mailbox
+// @param channel The chanel to write and read from
+// @return The value form the channel
 inline uint32_t mailbox_write_read_alliged_address(void* ptr, uint8_t channel);
 
+// Writes to the given mailbox channel
+// @param ptr The physcial address to write to the mailbox
+// @param channel The chanel to write to
 inline void mailbox_write_alliged_physcial_address(void* ptr, uint8_t channel);
-inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t channel);
 
+// Writes then reads to the given mailbox channel
+// @param ptr The physcial address to write to the mailbox
+// @param channel The chanel to write and read from
+// @return The value form the channel
+inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t channel);
 
 
 inline void mailbox_write_alliged_address(void* ptr, uint8_t channel)

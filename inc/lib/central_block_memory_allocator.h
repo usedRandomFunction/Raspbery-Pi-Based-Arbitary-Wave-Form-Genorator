@@ -48,23 +48,34 @@ typedef struct  central_block_memory_allocator_header central_block_memory_alloc
 
 // Creates a 'central block memory allocator' [see central_block_memory_allocator] 
 // If the header is to 'live' inside its block, just add the size of the header to mem_start
-// and remove it from region_size, note that the controll blocks will 'live' in side
+// and remove it from region_size, note that the controll blocks will 'live' inside
 // the memory region previded
+// @param mem_start The address that the allocato will use
+// @param region_size The size in bytes of the region of memory it controll
+// @param block_size_as_power_of_two The size of the blocks as a power of two
+// @param header The allocator header
 void initialize_central_block_memory_allocator(void* mem_start, size_t region_size, size_t block_size_as_power_of_two, central_block_memory_allocator_header* header);
 
 // notes a allocaton as 'free' not much more to say
+// @param ptr The pointer to free
+// @param header The allocator header
 void central_block_memory_allocator_free(void* ptr, central_block_memory_allocator_header* header);
 
 // Finds a block of memory with in the allocator that is free and returns its address,
 // and subsecently marks it as allocated
-// returns NULL if failed
 // (Identical to central_block_memory_allocator_alloc_alligned(size, 0, header);)
+// @param size the size of the allocation
+// @param header The allocator header
+// @return The pointer to the allocation or NULL if failed
 inline void* central_block_memory_allocator_alloc(size_t size, central_block_memory_allocator_header* header);
 
 // Finds a block of memory with in the allocator that is free and returns its address,
 // and subsecently marks it as allocated
-// returns NULL if failed
 // if allignment == 0 then it will return an address with no defined allignment, and will likly will default to block_size
+// @param size the size of the allocation
+// @param allignment_as_power_of_two The required allignment as a power of two
+// @param header The allocator header
+// @return The pointer to the allocation or NULL if failed
 void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignment_as_power_of_two, central_block_memory_allocator_header* header);
 
 enum

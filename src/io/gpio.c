@@ -1,6 +1,6 @@
 #include "io/gpio.h"
 
-void gpio_function_select(uint_fast8_t pin, uint_fast32_t functionSelect)
+void gpio_function_select(uint_fast8_t pin, uint_fast32_t function)
 {
     size_t registerAddress;
     uint_fast8_t offset;
@@ -71,5 +71,5 @@ void gpio_function_select(uint_fast8_t pin, uint_fast32_t functionSelect)
         return;
     }
 
-    mmio_write_offset_of_size(registerAddress, functionSelect, offset, 3);
+    mmio_write_offset_of_size(registerAddress, function, offset, 3);
 }

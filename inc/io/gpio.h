@@ -10,7 +10,10 @@
 extern "C" {
 #endif
 
-void gpio_function_select(uint_fast8_t pin, uint_fast32_t functionSelect);
+// Selects the functionallity of the given GPIO pin
+// @param pin The pin to set
+// @param function the function of the pin
+void gpio_function_select(uint_fast8_t pin, uint_fast32_t function);
 
 #pragma GCC diagnostic ignored "-Wshift-count-negative"
 #define gpio_set(pin) if (pin < 32) { mmio_write(GPSET0, 1 << pin); } else { mmio_write(GPSET1, 1 << (pin - 32)); }

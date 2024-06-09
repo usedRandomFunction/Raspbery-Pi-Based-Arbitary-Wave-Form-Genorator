@@ -110,20 +110,34 @@ typedef struct property_tag_get_arm_memory_responce property_tag_get_arm_memory_
 
 // Writes the given tag and waits for return
 // (Identical to write_property_tags(tag, tag->buffersize + sizeof(property_tag), _malloc, _free))
+// @param tag A pointer to the tag to write
+// @param _malloc A function pointer to alligned alloc
+// @param _free A function pointer to free
 inline void write_property_tag(property_tag* tag, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
 // Writes the given tag and returns the return values, returns NULL if failer
-// Returns proprty tag
-// Note the returned ptr is not the given ptr
 // (Identical to get_property_tags(tag, tag->buffersize + sizeof(property_tag), _malloc, _free))
+// @param tag A pointer to the tag to write
+// @param _malloc A function pointer to alligned alloc
+// @param _free A function pointer to free
+// @return The returned tag from the VC
+// @note the returned ptr is not the given ptr and need to be freed
 inline property_tag* get_property_tag(property_tag* tag, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
 // Writes the given tag buffer, note that the buffer does not include the extra info added to the buffer
+// @param buffer The buffer with the tags
+// @param buffer_size The size in bytes of the tag buffer
+// @param _malloc A function pointer to alligned alloc
+// @param _free A function pointer to free
 void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
 // Writes the given tag buffer, note that the buffer does not include the extra info added to the buffer
-// retusn list of property tages
-// Note the returned ptr is not the given ptr
+// @param buffer The buffer with the tags
+// @param buffer_size The size in bytes of the tag buffer
+// @param _malloc A function pointer to alligned alloc
+// @param _free A function pointer to free
+// @return The returned list of property tages from the VC
+// @note the returned ptr is not the given ptr and needs to be freed
 property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
 

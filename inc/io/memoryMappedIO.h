@@ -11,37 +11,82 @@ extern "C" {
 extern volatile size_t MMIO_Base_Address;
 
 
+// Sets the mmio base address to the address that the given board type has
+// @param boardType The boardType number of the current system
+void set_mmio_base(int boardType);
 
-// Memory-Mapped I/O input
+// Gets the mmio base address to the address that the given board type has
+// @param boardType The boardType number of the current system
+// @return the base address as number not a pointer
+size_t get_mmio_base_address(int boardType);
+
+// Reads the value of the given memory mapped register
+// @param reg The address of the register as a offset from the base address
+// @return The value of the register
+inline uint32_t mmio_read(size_t reg);
+
+// Writes to a given memory mapped register
+// @param reg The address of the register as a offset from the base address
+// @param data The value to be written to the register
+inline void mmio_write(size_t reg, uint32_t data);
+
+// Performs a bitwise or on a given memory mapped register
+// @param reg The address of the register as a offset from the base address
+// @param rhs The right hand size of the bitwise operator
+inline void mmio_write_bitwise_or(size_t reg, uint32_t rhs);
+
+// Performs a bitwise and on a given memory mapped register
+// @param reg The address of the register as a offset from the base address
+// @param rhs The right hand size of the bitwise operator
+inline void mmio_write_bitwise_and(size_t reg, uint32_t rhs);
+
+// Performs a bitwise xor on a given memory mapped register
+// @param reg The address of the register as a offset from the base address
+// @param rhs The right hand size of the bitwise operator
+
+inline void mmio_write_bitwise_xor(size_t reg, uint32_t rhs);
+
+// Performs a bitwise not on a given memory mapped register
+// @param reg The address of the register as a offset from the base address
+inline void mmio_write_bitwise_not(size_t reg);
+
+// Writes n bits to a memory mapped register at a offset
+// @param reg The address of the register as a offset from the base address
+// @param data The value to be written to the register
+// @param offset The lelft bit shift to be preformed on the data
+// @param size The number of bits to write
+inline void mmio_write_offset_of_size(size_t reg, uint32_t data, uint_fast8_t offset, uint_fast8_t size);
+
+// Calcuates the pointer to a memory mapped register
+// @param reg The address of the register as a offset from the base address
+// @return A pointer to the register
+inline volatile uint32_t* get_mmio_pointer(size_t reg);
+
 inline uint32_t mmio_read(size_t reg)
 {
 	return *(volatile uint32_t*)(MMIO_Base_Address + reg);
 }
-// Memory-Mapped I/O output
+
 inline void mmio_write(size_t reg, uint32_t data)
 {
 	*(volatile uint32_t*)(MMIO_Base_Address + reg) = data;
 }
  
-// Memory-Mapped I/O output
-inline void mmio_write_bitwise_or(size_t reg, uint32_t data)
+inline void mmio_write_bitwise_or(size_t reg, uint32_t rhs)
 {
-    *(volatile uint32_t*)(MMIO_Base_Address + reg) |= data;
+    *(volatile uint32_t*)(MMIO_Base_Address + reg) |= rhs;
 }
 
-// Memory-Mapped I/O output
-inline void mmio_write_bitwise_and(size_t reg, uint32_t data)
+inline void mmio_write_bitwise_and(size_t reg, uint32_t rhs)
 {
-    *(volatile uint32_t*)(MMIO_Base_Address + reg) &= data;
+    *(volatile uint32_t*)(MMIO_Base_Address + reg) &= rhs;
 }
 
-// Memory-Mapped I/O output
-inline void mmio_write_bitwise_xor(size_t reg, uint32_t data)
+inline void mmio_write_bitwise_xor(size_t reg, uint32_t rhs)
 {
-    *(volatile uint32_t*)(MMIO_Base_Address + reg) ^= data;
+    *(volatile uint32_t*)(MMIO_Base_Address + reg) ^= rhs;
 }
 
-// Memory-Mapped I/O output
 inline void mmio_write_bitwise_not(size_t reg)
 {
     *(volatile uint32_t*)(MMIO_Base_Address + reg) = ~*(volatile uint32_t*)(MMIO_Base_Address + reg);
@@ -62,9 +107,6 @@ inline volatile uint32_t* get_mmio_pointer(size_t reg)
     return (volatile uint32_t*)(MMIO_Base_Address + reg);
 }
 
-
-size_t get_mmio_base_address(int boardType);
-void set_mmio_base(int boardType);
 
 enum
 {

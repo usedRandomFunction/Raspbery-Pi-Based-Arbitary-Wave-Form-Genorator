@@ -10,28 +10,35 @@
 extern "C" {
 #endif
 
-// Returns the size of a null terminated string
+// Calcuates size of a null terminated string
+// @param str The string to calcalate the size of
+// @return The size of the string
 size_t strlen(const char* str);
 
 // Copys the the src string untill '\0' is reached
+// @param src The string to copy
+// @param dst The destination to copy to
 void strcpy(const char* src, char* dst);
 
-// Copys src to dst after the first occuaence of '\0;
+// Appends src to dst
+// @param src The string to copy
+// @param dst the string that gets appened to
 void strcat(char* dst, const char* src);
 
-// Retuns a single hexdighit [0, F]
+// @param digit the digit to convert
+// @return A single hexdigiet [0, F]
 char hex_digiet(uint8_t digit);
 
 // Writes a hex string with out leading "0x"
-// max_digits is the maxium number of digits that will be writen, up to sizeof(size_t) * 2
-// modifys str, and the charecter after the ends is set to '\0'
-// returns the number of digits written
+// @param max_digits The maxium number of digits that will be writen, up to sizeof(size_t) * 2
+// @param str A pointer to a empty string to write to (will be null termenated)
+// @return the number of digits written
 uint8_t hex_size_t(size_t number, char* str, uint8_t max_digits);
 
 // Writes a hex string with out leading "0x" or leading zeros
-// max_digits is the maxium number of digits that will be writen, up to sizeof(size_t) * 2
-// modifys str, and the charecter after the ends is set to '\0'
-// returns the number of digits written
+// @param max_digits The maxium number of digits that will be writen, up to sizeof(size_t) * 2
+// @param str A pointer to a empty string to write to (will be null termenated)
+// @return the number of digits written
 uint8_t hex_size_t_with_out_leading_zeros(size_t number, char* str, uint8_t max_digits);
 
 #ifdef __cplusplus
