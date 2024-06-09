@@ -13,6 +13,8 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
 void set_ttbr1_el1(void* ptr);
 void set_ttbr0_el1(void* ptr);
 
+void invalidate_tlb();
+
 #ifdef __cplusplus
 }
 #endif

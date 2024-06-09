@@ -28,22 +28,25 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
 
 void set_ttbr1_el1(void* ptr)
 {
-    asm volatile ("msr ttbr1_el1, x0\n\t"
-    "tlbi vmalle1is\n\t"
-    "DSB ISH\n\t"
-    "isb"
+    asm volatile ("msr ttbr1_el1, x0"
 	:
 	: "r" (ptr)
 	: "x0");
+    invalidate_tlb();
 }
 
 void set_ttbr0_el1(void* ptr)
 {   
-    asm volatile ("msr ttbr0_el1, x0\n\t"
-    "tlbi vmalle1is\n\t"
-    "DSB ISH\n\t"
-    "isb"
+    asm volatile ("msr ttbr0_el1, x0"
 	:
 	: "r" (ptr)
-	: "x0");;
+	: "x0");
+    invalidate_tlb();
 }   
+
+void invalidate_tlb()
+{
+    asm volatile ("tlbi vmalle1is\n\t"
+    "DSB ISH\n\t"
+    "isb");
+}
