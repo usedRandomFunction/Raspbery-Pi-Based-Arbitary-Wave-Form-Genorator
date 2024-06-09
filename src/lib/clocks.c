@@ -42,7 +42,7 @@ uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate)
 
     rate = set_clock_rate_tag_responce->rate;
 
-    _free(set_clock_rate_tag_responce);
+    free(set_clock_rate_tag_responce);
 
     return rate;
 }
@@ -63,7 +63,7 @@ static uint32_t s_get_clock_rate_of_type(uint32_t clock_id, uint32_t type)
 
     uint32_t rate = get_clock_rate_tag_responce->rate;
 
-    _free(get_clock_rate_tag_responce);
+    free(get_clock_rate_tag_responce);
 
     return rate;
 }
