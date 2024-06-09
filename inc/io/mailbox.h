@@ -53,7 +53,7 @@ inline void mailbox_write_alliged_physcial_address(void* ptr, uint8_t channel)
 inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t channel)
 {
     #ifdef AARCH64
-    if (*(uint64_t*)&ptr & 0x0000FFFF0000000F != 0)
+    if (*(uint64_t*)&ptr & 0xFFFFFFFF0000000F != 0)
     #else
     if (*(uint32_t*)&ptr & 0x0000000F != 0)
     #endif
