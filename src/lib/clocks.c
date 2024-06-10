@@ -27,6 +27,11 @@ uint32_t get_clock_rate(uint32_t clock_id)
 
 uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate)
 {
+    return set_clock_rate_given_alloc_functions(clock_id, rate, aligned_alloc, free);
+}
+
+uint32_t set_clock_rate_given_alloc_functions(uint32_t clock_id, uint32_t rate, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
+{
     property_tag_set_clock_rate set_clock_rate_tag;
     set_clock_rate_tag.header.tagID = PROPERTY_TAG_ID_SET_CLOCK_RATE;
     set_clock_rate_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
@@ -35,14 +40,14 @@ uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate)
     set_clock_rate_tag.skip_setting_turbo = 0;
     set_clock_rate_tag.clock_id = clock_id;
 
-    property_tag_set_clock_rate_responce* set_clock_rate_tag_responce = (property_tag_set_clock_rate_responce*)get_property_tag((property_tag*)&set_clock_rate_tag, aligned_alloc, free);
+    property_tag_set_clock_rate_responce* set_clock_rate_tag_responce = (property_tag_set_clock_rate_responce*)get_property_tag((property_tag*)&set_clock_rate_tag, _malloc, _free);
 
     if (set_clock_rate_tag_responce == NULL)
         return 0;
 
     rate = set_clock_rate_tag_responce->rate;
 
-    free(set_clock_rate_tag_responce);
+    _free(set_clock_rate_tag_responce);
 
     return rate;
 }

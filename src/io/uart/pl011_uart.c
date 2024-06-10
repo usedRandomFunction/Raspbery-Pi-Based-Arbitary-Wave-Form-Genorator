@@ -53,7 +53,7 @@ void uart_set_base_freqency(int freqenecy, int baudrate)
 	preset_alloc_set_buffers(&mbox_buffer, sizeof(mbox_buffer), &mbox_buffer, 28);
 
 	// Set UART base clock
-	set_clock_rate(PROPERTY_TAG_CLOCK_ID_UART, freqenecy);
+	set_clock_rate_given_alloc_functions(PROPERTY_TAG_CLOCK_ID_UART, freqenecy, preset_alloc_aligned_alloc, preset_alloc_free);
 
 	float divider = freqenecy / (16.0f * baudrate);
 	int ibrd = (int)divider;
