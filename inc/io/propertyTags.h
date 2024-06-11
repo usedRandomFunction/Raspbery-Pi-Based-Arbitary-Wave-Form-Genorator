@@ -120,8 +120,8 @@ inline void write_property_tag(property_tag* tag, MALLOC_ALIGNED_PTR _malloc, FR
 // @param tag A pointer to the tag to write
 // @param _malloc A function pointer to alligned alloc
 // @param _free A function pointer to free
-// @return The returned tag from the VC
-// @note the returned ptr is not the given ptr and need to be freed
+// @return The returned tag from the VC, or NULL if failed
+// @note the returned ptr is not the given ptr and needs to be freed
 inline property_tag* get_property_tag(property_tag* tag, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
 // Writes the given tag buffer, note that the buffer does not include the extra info added to the buffer
@@ -136,7 +136,7 @@ void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIG
 // @param buffer_size The size in bytes of the tag buffer
 // @param _malloc A function pointer to alligned alloc
 // @param _free A function pointer to free
-// @return The returned list of property tages from the VC
+// @return The returned list of property tages from the VC, or NULL if failed
 // @note the returned ptr is not the given ptr and needs to be freed
 property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 

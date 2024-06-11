@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 // Prints debug message and halts the program
+// @note Calling this function halts execution
 void kernel_panic();
 
 // By the code to handle arm exceptions,
