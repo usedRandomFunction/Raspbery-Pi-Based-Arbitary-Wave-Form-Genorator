@@ -64,8 +64,7 @@ el1_entry:
     adrp	x0, __bss_start
     add     x0, x0, :lo12:__bss_start
 	ldr	    x1, =__bss_size
-    mov     x2, 0
-	bl 	    memset
+	bl 	    memclr
 
 init_mmu: // TODO when i have a better understanding of arm asm and the mmu remake this code myself
     // The mmu code is taken from https://github.com/s-matyukevich/raspberry-pi-os/blob/master/docs/lesson06/rpi-os.md
@@ -100,8 +99,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
 
     adrp	x0, boot_pg_dir
 	mov	    x1, #PG_DIR_SIZE
-    mov     x2, 0
-	bl 	    memset
+	bl 	    memclr
 
     /* Get MMIO Base address and put it into x5 */
     bl get_board_type

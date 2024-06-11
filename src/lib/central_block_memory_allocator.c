@@ -64,7 +64,7 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
     header->allocation_region_start = alloc_region_start;
 
     // Now all the values are set zero the controll region to get every thing ready
-    memset(header->controll_region_start, controll_region_size_bytes, 0);
+    memclr(header->controll_region_start, controll_region_size_bytes);
     
     const int prefix_message_size = 34;
     char prefix[prefix_message_size + 8 + 3]; 

@@ -35,6 +35,13 @@ void* memcpy(void* dst, const void* src, size_t n);
 // @return a pointer to the destination buffer
 void* memset(void* dst, size_t size, uint8_t value);
 
+
+// Sets n bytes of dst to 0
+// @param dst The destination buffer
+// @param size The number of bytes to set
+// @return a pointer to the destination buffer
+void* memclr(void* dst, size_t size);
+
 // Adds a offest to the ptr as if it were uint8_t*
 // @param ptr The pointer to offset
 // @param offset The number of bytes to add (can be negitive)

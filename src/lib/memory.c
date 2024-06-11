@@ -20,3 +20,13 @@ void* memset(void* dst, size_t size, uint8_t value)
 
     return dst;
 }
+
+void* memclr(void* dst, size_t size)
+{
+    uint8_t* true_dst = dst;
+
+    for (int i = 0; i < size; i++)
+        true_dst[i] = 0;
+
+    return dst;
+}
