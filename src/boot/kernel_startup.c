@@ -1,5 +1,7 @@
 #include "lib/central_block_memory_allocator.h"
 #include "boot/boardDectetion.h"
+#include "lib/arm_exceptions.h"
+#include "lib/page_allocator.h"
 #include "io/memoryMappedIO.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
@@ -122,8 +124,20 @@ static void initialize_virtual_address_translation()
 
     uart_puts("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
 
-
+    if (!initialize_page_allocator())
+        kernel_panic();
     
+    page_allocation_info* kernel_code_page_allocation = create_new_page_allocation_at_continuous_physical_address(mapping_ptr, kernel_code_size);
+
+    if (kernel_code_page_allocation == NULL)
+        kernel_panic();
+
+    page_allocation_info* kernel_heap_page_allocation = create_new_page_allocation_at_continuous_physical_address(void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 1 << 21);
+
+    if (kernel_heap_page_allocation == NULL)
+        kernel_panic();
+
+    uart_puts("Create kernel code and kernel heap, page allocations\n");
 }
 
 void free(void* p)
