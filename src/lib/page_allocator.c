@@ -144,6 +144,7 @@ page_allocation_info* create_new_page_allocation(size_t size)
         return NULL;
     }
 
+    s_total_allocated_pages += required_pages;
 
     return root;
 }
@@ -238,6 +239,8 @@ void destroy_page_allocation(page_allocation_info* allocation)
         {
             s_set_page_availability(allocation->first_page + i, false);
         }
+
+        s_total_allocated_pages -= allocation->size;
 
         free(allocation);
         allocation = next;
@@ -355,7 +358,8 @@ static bool s_shrink_page_allocation(page_allocation_info* allocation, size_t ne
     }
 
     uint32_t first_page_to_free = to_shink->first_page + to_shink->size - pages_to_free;
-
+    s_total_allocated_pages -= pages_to_free;
+    
     for (uint32_t i = 0; i < pages_to_free; i++)
     {
         s_set_page_availability(first_page_to_free + i, true);
