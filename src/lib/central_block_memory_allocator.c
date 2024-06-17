@@ -173,11 +173,10 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     {
         if (allignment_as_power_of_two != 0 && (block - allignment_check_offset) & alligment_check_value !=0)
         {
-
             block -= allignment_check_offset;
             size_t new_block = block >> allignment_as_power_of_two;
 
-            if (block % allignment_as_power_of_two != 0) // Round up
+            if (block & ((1 << allignment_as_power_of_two) - 1) != 0) // Round up
                 new_block++;
 
             new_block <<= allignment_as_power_of_two;
