@@ -13,11 +13,11 @@ struct property_tag_buffer_header
 
 typedef struct property_tag_buffer_header property_tag_buffer_header;
 
-static void* prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
+static void* s_prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
 void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
-    property_tag_buffer_header* ptr = prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
+    property_tag_buffer_header* ptr = s_prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
     void* physical_address = get_physical_address(ptr);
     
     uint32_t returnValue = mailbox_write_read_physcial_alliged_address(physical_address, 8);
@@ -44,7 +44,7 @@ void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIG
 
 property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
-    property_tag_buffer_header* ptr = prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
+    property_tag_buffer_header* ptr = s_prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
     void* physical_address = get_physical_address(ptr);
     
     uint32_t returnValue = mailbox_write_read_physcial_alliged_address(physical_address, 8);
@@ -74,7 +74,7 @@ property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALL
 }
 
 
-static void* prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
+static void* s_prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     size_t true_buffer_size = buffer_size + sizeof(property_tag_buffer_header);
     size_t buffer_end_tag_offset = true_buffer_size;
