@@ -27,6 +27,13 @@ void set_ttbr0_el1(void* ptr);
 // Invalidates the translation lookaside buffer
 void invalidate_tlb();
 
+enum
+{
+    MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1,
+    MMU_LOWER_ATTRIBUTES_nGnRnE = 0b0 << 8,
+    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 0b1 << 8,
+};
+
 #ifdef __cplusplus
 }
 #endif

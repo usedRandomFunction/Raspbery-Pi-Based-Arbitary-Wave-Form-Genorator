@@ -15,6 +15,7 @@ extern "C" {
 struct page_allocation_info
 {
     // The offset in pages from page zero
+    // Multiply by page size to get pointer
     uint32_t first_page;
 
     // The size in pages

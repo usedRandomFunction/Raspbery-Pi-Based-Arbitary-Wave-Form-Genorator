@@ -1,4 +1,5 @@
 #include "lib/central_block_memory_allocator.h"
+#include "lib/translation_table.h"
 #include "boot/boardDectetion.h"
 #include "lib/arm_exceptions.h"
 #include "lib/page_allocator.h"
@@ -12,6 +13,7 @@
 #include <stdint.h>
 
 central_block_memory_allocator_header kernel_heap_allocator;
+translation_table_info kernel_translation_table;
 
 static void initialize_virtual_address_translation();
 static void prepare_memory_manager();
@@ -84,30 +86,27 @@ static void initialize_virtual_address_translation()
 {
     // Since the memory allocator is suposted to live at 0xFFFF000040000000 and the tables live in the heap we need to 
     // tempoaryly set up that address in the mmu
-    uint64_t* temporary_pgd = (uint64_t*)aligned_alloc(4096, 8 + 8); // TODO it may be possible to just have one pgd and overwrite
-    uint64_t* temporary_pud = (uint64_t*)aligned_alloc(4096, 8 * 2 + 8);
+    uint64_t* temporary_pgd = (uint64_t*)aligned_alloc(4096, 8);
+    uint64_t* temporary_pud = (uint64_t*)aligned_alloc(4096, 8 * 2);
 
     size_t kernel_code_size = PROGRAM_END_ADDRESS_SIZE_T - PROGRAM_START_ADDRESS_SIZE_T;
     size_t kernel_minium_sections = (kernel_code_size >> 21) + ((kernel_code_size & ((1 << 21) - 1)) ? 1 : 0);
 
-    uint64_t* temporary_kernel_code_pmd = (uint64_t*)aligned_alloc(4096, 8 * kernel_minium_sections + 8);
-    uint64_t* temporary_kernel_heap_pmd = (uint64_t*)aligned_alloc(4096, 8 + 8);
+    uint64_t* temporary_kernel_code_pmd = (uint64_t*)aligned_alloc(4096, 8 * kernel_minium_sections);
+    uint64_t* temporary_kernel_heap_pmd = (uint64_t*)aligned_alloc(4096, 8 );
     
     void* mapping_ptr = get_physical_address(PROGRAM_START_ADDRESS_POINTER);
     write_page_descriptor(temporary_pgd, get_physical_address(temporary_pud), 0x0, 0x0, true);
-    temporary_pgd[1] = 0; // Setting this to zero so the mmu knows its not an entry
     write_page_descriptor(temporary_pud, get_physical_address(temporary_kernel_code_pmd), 0x0, 0x0, true);
     write_page_descriptor(temporary_pud + 1, get_physical_address(temporary_kernel_heap_pmd), 0x0, 0x0, true);
-    temporary_pud[2] = 0;
 
     // Both of these are being (temporay set) as non-cache able memory
     for (int i = 0; i < (int)kernel_minium_sections; i++)
-        write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 0x0, 0b1 << 8 | 0b1, false);
-    temporary_kernel_code_pmd[kernel_minium_sections] = 0;
+        write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 0x0, 
+        MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
 
-    write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21),
-        0x0, 0b1 << 8 | 0b1, false);
-    temporary_kernel_heap_pmd[1] = 0;
+    write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 0x0, 
+    MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
 
     set_ttbr1_el1(get_physical_address(temporary_pgd));
 
@@ -117,10 +116,10 @@ static void initialize_virtual_address_translation()
     ptrdiff_t offset = new_allocator_base_address - kernel_heap_allocator.controll_region_start;
     kernel_heap_allocator.controll_region_start = new_allocator_base_address;
     kernel_heap_allocator.allocation_region_start += offset;
-    temporary_kernel_heap_pmd += offset;
-    temporary_kernel_code_pmd += offset;
-    temporary_pud += offset;
-    temporary_pgd += offset;
+    temporary_kernel_heap_pmd = (uint64_t*)void_ptr_offset_bytes(temporary_kernel_heap_pmd, offset);
+    temporary_kernel_code_pmd = (uint64_t*)void_ptr_offset_bytes(temporary_kernel_code_pmd, offset);
+    temporary_pud = (uint64_t*)void_ptr_offset_bytes(temporary_pud, offset);
+    temporary_pgd = (uint64_t*)void_ptr_offset_bytes(temporary_pgd, offset);
 
     uart_puts("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
 
@@ -138,10 +137,41 @@ static void initialize_virtual_address_translation()
         kernel_panic();
 
     uart_puts("Create kernel code and kernel heap, page allocations\n");
+
+    translation_table_section_info table_sections[2];
+    memclr(table_sections, sizeof(table_sections));
+
+    table_sections[0].allocation = kernel_code_page_allocation;
+    table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[0].section_start = (void*)0x000000000000; // We dont include the FFFF prefix here
+    table_sections[1].allocation = kernel_heap_page_allocation;
+    table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
+
+    if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
+        kernel_panic();
+
+    set_ttbr1_el1(get_physical_address(kernel_translation_table.page_global_directory));
+
+    uart_puts("Switched to permante translation_table.\n");
+    free(temporary_kernel_code_pmd);
+    free(temporary_kernel_heap_pmd);
+    free(temporary_pud);
+    free(temporary_pgd);
+
+
+    
+    
 }
 
 void free(void* p)
 {
+    if (p == NULL)
+    {
+        uart_puts("kernel attempted to free NULL pointer");
+        kernel_panic();
+    }
+
     central_block_memory_allocator_free(p, &kernel_heap_allocator);
 }
 
@@ -171,5 +201,7 @@ void* aligned_alloc(size_t alignment, size_t size)
             alignment >>= 1;
         }
     }
+    // uart_putui(size); uart_putc('\n');
+    // uart_putui(alignment); uart_putc('\n');
     return central_block_memory_allocator_alloc_alligned(size, alignment, &kernel_heap_allocator);
 }
