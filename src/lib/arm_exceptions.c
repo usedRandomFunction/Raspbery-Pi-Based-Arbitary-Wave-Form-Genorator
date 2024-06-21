@@ -2,9 +2,34 @@
 
 #include "io/uart.h"
 
-void kernel_panic()
+__attribute__((noinline)) void kernel_panic()
 {
-	uart_puts("\nkernel panic!\n");
+	uart_puts("\nkernel panic!\nBegin function trace:\n");
+
+    uart_putc('0');
+    uart_puts(" : ");
+    uart_put_ptr(__builtin_return_address(0));
+    uart_putc('\n');
+
+    uart_putc('1');
+    uart_puts(" : ");
+    uart_put_ptr(__builtin_return_address(1));
+    uart_putc('\n');
+
+    uart_putc('2');
+    uart_puts(" : ");
+    uart_put_ptr(__builtin_return_address(2));
+    uart_putc('\n');
+
+    uart_putc('3');
+    uart_puts(" : ");
+    uart_put_ptr(__builtin_return_address(3));
+    uart_putc('\n');
+
+    uart_putc('4');
+    uart_puts(" : ");
+    uart_put_ptr(__builtin_return_address(4));
+    uart_putc('\n');
 
 	asm volatile ("wfe");
 	while (1)
@@ -66,7 +91,7 @@ void arm_exception_handler(unsigned long type) // TODO maby print x0-x30 for mor
     uart_put_number_as_hex(reg);
 
     asm volatile ( "mrs %0, elr_el1" : "=r"(reg));
-    uart_puts(" ELR_EL1 ");
+    uart_puts(" ELR_EL1 (falt address) ");
     uart_put_number_as_hex(reg);
 
     asm volatile ( "mrs %0, spsr_el1" : "=r"(reg));

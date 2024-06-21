@@ -1,6 +1,6 @@
 dumps/
 bin/
-.vscode/c_cpp_properties.json
-.vscode/settings.json
+debug/
 ArbitaryWaveFormGenorator.code-workspace
 bootloader.py
+.vscode/

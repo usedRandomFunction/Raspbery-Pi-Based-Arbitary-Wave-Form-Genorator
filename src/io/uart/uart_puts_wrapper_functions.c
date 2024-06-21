@@ -126,7 +126,7 @@ void uart_put_memory_dump_formated(void* ptr, size_t size)
 	uart_puts(" 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
 	size_t ptr_as_number = *(size_t*)&ptr;
 	size_t ptr_alligned_16 = (ptr_as_number << 4) >> 4;
-	size_t ptr_offset = ptr_as_number - ptr_alligned_16;
+	size_t ptr_offset = ptr_as_number & 0xF;
 	if (ptr_offset != 0)
 	{
 		uart_putc('\n');
@@ -136,7 +136,7 @@ void uart_put_memory_dump_formated(void* ptr, size_t size)
 		for (int i = 0; i < 1 + ptr_offset * 3; i++)
 			uart_putc(' ');
 	}
-
+	uart_putc('G');
 	for ( ; size > 0; size--, ptr++)
 	{
 		ptr_as_number = *(size_t*)&ptr;
@@ -153,7 +153,8 @@ void uart_put_memory_dump_formated(void* ptr, size_t size)
 		uart_put_hexdigit(*((uint8_t*)ptr) & 0xF);
 		uart_putc(' ');
 	}
-	
+
+	uart_putc('\n');
 }
 
 void uart_put_number_as_hex(size_t number)

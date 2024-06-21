@@ -13,7 +13,7 @@ C_DEFINITIONS := -DAARCH64
 
 OPATMANISER_SETTING = -O2
 
-DEBUGFLAGS := #-g
+DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
 CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Werror $(C_DEFINITIONS) -include inc/kconfig.h -g

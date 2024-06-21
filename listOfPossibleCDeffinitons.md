@@ -12,4 +12,8 @@
 || will print to uart if alloc failed
 | CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_IF_FAILED_FREE | If defined a central_block_memory_allocator
 || will print to uart if free failed
+| CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_ALLOC_FREE| If defined a central_block_memory_allocator
+|| will print info about new allocations and freeing (use for debuging)
+| CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED | If defined a central_block_memory_allocator
+|| will trigger a kernel panic if it fails
 | PAGE_ALLOCATOR_PAGE_SIZE_AS_POWER_OF_TWO | Sets the size of pages to be used by the page allocator 
