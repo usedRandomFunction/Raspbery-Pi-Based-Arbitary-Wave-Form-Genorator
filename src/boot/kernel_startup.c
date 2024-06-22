@@ -113,13 +113,13 @@ static void initialize_virtual_address_translation()
     uart_puts("Enabled temporary transliation table\n");
     
     void* new_allocator_base_address = (void*) 0xFFFF000040000000;
-    ptrdiff_t offset = new_allocator_base_address - kernel_heap_allocator.controll_region_start;
+    ptrdiff_t new_heap_location_offset = new_allocator_base_address - kernel_heap_allocator.controll_region_start;
     kernel_heap_allocator.controll_region_start = new_allocator_base_address;
-    kernel_heap_allocator.allocation_region_start += offset;
-    temporary_kernel_heap_pmd = (uint64_t*)void_ptr_offset_bytes(temporary_kernel_heap_pmd, offset);
-    temporary_kernel_code_pmd = (uint64_t*)void_ptr_offset_bytes(temporary_kernel_code_pmd, offset);
-    temporary_pud = (uint64_t*)void_ptr_offset_bytes(temporary_pud, offset);
-    temporary_pgd = (uint64_t*)void_ptr_offset_bytes(temporary_pgd, offset);
+    kernel_heap_allocator.allocation_region_start += new_heap_location_offset;
+    temporary_kernel_heap_pmd = (uint64_t*)void_ptr_offset_bytes(temporary_kernel_heap_pmd, new_heap_location_offset);
+    temporary_kernel_code_pmd = (uint64_t*)void_ptr_offset_bytes(temporary_kernel_code_pmd, new_heap_location_offset);
+    temporary_pud = (uint64_t*)void_ptr_offset_bytes(temporary_pud, new_heap_location_offset);
+    temporary_pgd = (uint64_t*)void_ptr_offset_bytes(temporary_pgd, new_heap_location_offset);
 
     uart_puts("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
 
@@ -138,7 +138,7 @@ static void initialize_virtual_address_translation()
 
     uart_puts("Create kernel code and kernel heap, page allocations\n");
 
-    translation_table_section_info table_sections[2];
+    translation_table_section_info table_sections[3];
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
@@ -147,6 +147,18 @@ static void initialize_virtual_address_translation()
     table_sections[1].allocation = kernel_heap_page_allocation;
     table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
+
+    // MMIO section
+    // This looks bad becouse it is lamo
+    // Since the mmio memory wont be allocateable we have to fake it
+    page_allocation_info* mmio_allocation = malloc(sizeof(page_allocation_info));
+    mmio_allocation->first_page = (MMIO_Base_Address / page_allocator_page_size_bytes);
+    mmio_allocation->size = (1 << 24) / page_allocator_page_size_bytes; // Just assume the MMIO is 2^24 bytes
+    mmio_allocation->next = NULL;
+    table_sections[2].allocation = mmio_allocation;
+    table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[2].section_start = (void*)0x000080000000; // We dont include the FFFF prefix here
+
 
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
@@ -159,9 +171,10 @@ static void initialize_virtual_address_translation()
     free(temporary_pud);
     free(temporary_pgd);
 
+    MMIO_Base_Address = 0xFFFF000080000000;
+    set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
-    
-    
+    uart_puts("Remapped MMIO to 0xFFFF000080000000.\n");
 }
 
 void free(void* p)

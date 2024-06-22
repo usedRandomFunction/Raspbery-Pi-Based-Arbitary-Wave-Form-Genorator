@@ -29,9 +29,9 @@ void invalidate_tlb();
 
 enum
 {
-    MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1,
-    MMU_LOWER_ATTRIBUTES_nGnRnE = 0b0 << 8,
-    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 0b1 << 8,
+    MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1<< 8,
+    MMU_LOWER_ATTRIBUTES_nGnRnE = 0b0,              // Non-Gathering, Non-Reordering, No Early write acknowledgement
+    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 0b1,        // Non-cacheable attribute
 };
 
 #ifdef __cplusplus
