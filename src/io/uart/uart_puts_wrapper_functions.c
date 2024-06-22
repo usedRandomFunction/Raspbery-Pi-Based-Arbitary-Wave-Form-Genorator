@@ -136,7 +136,7 @@ void uart_put_memory_dump_formated(void* ptr, size_t size)
 		for (int i = 0; i < 1 + ptr_offset * 3; i++)
 			uart_putc(' ');
 	}
-	uart_putc('G');
+	
 	for ( ; size > 0; size--, ptr++)
 	{
 		ptr_as_number = *(size_t*)&ptr;

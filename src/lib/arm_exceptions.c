@@ -98,7 +98,7 @@ void arm_exception_handler(unsigned long type) // TODO maby print x0-x30 for mor
     uart_puts("\n SPSR_EL1 ");
     uart_put_number_as_hex(reg);
 
-    asm volatile ( "mrs %0, spsr_el1" : "=r"(reg));
+    asm volatile ( "mrs %0, far_el1" : "=r"(reg));
     uart_puts(" FAR_EL1 ");
     uart_put_number_as_hex(reg);
     uart_puts("\n");
