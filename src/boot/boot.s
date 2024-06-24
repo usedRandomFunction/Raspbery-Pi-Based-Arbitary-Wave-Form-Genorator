@@ -134,14 +134,16 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
 	msr	    ttbr0_el1, x0 // Basicly this needs to be added as i keept getting a prefetch abort just before jumping to the new addresses
 
 	ldr	    x0, =(TCR_VALUE)		
-	msr	    tcr_el1, x0
-
+	msr	    tcr_el1, x0 
+    
 	ldr	    x0, =(MAIR_VALUE)
 	msr	    mair_el1, x0
 
     ldr     x2, =kernel_main
-    mov	    x0, #SCTLR_MMU_ENABLED				
+    mov	    x0, #SCTLR_MMU_ENABLED_WITH_CACHE			
 	msr	    sctlr_el1, x0
+
+    
     // jump to C code, should not return
 start_kernel:  
     blr      x2

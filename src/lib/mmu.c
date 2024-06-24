@@ -46,7 +46,51 @@ void set_ttbr0_el1(void* ptr)
 
 void invalidate_tlb()
 {
-    asm volatile ("tlbi vmalle1is\n\t"
-    "DSB ISH\n\t"
-    "isb");
+    asm volatile ("tlbi vmalle1is\n\t"  // Invalidate all TLB entries for EL1
+    "dsb ish\n\t"                       // Data Synchronization Barrier
+    "isb");                             // Instruction Synchronization Barrier
+}
+
+void enable_caches()
+{
+    invalidate_caches();
+    size_t sctlr;
+    asm volatile ("mrs %x0, sctlr_el1" : "=r" (sctlr));
+
+    sctlr |= 1 << 2;                    // Set the C bit (bit 2) to enable data cache
+    sctlr |= 1 << 12;                   // Set the I bit (bit 12) to enable instruction cache
+
+    asm volatile ("msr sctlr_el1, x0\n\t"
+    "isb"                               // Instruction Synchronization Barrier
+	:
+	: "r" (sctlr)
+	: "x0");
+
+    invalidate_tlb();
+}
+
+void dissable_caches()
+{
+    size_t sctlr;
+    asm volatile ("mrs %x0, sctlr_el1" : "=r" (sctlr));
+
+    sctlr &= ~(((size_t)1) << 2);                    // Reset the C bit (bit 2) to dissable data cache
+    sctlr &= ~(((size_t)1) << 12);                   // Reset the I bit (bit 12) to dissable instruction cache
+
+    asm volatile ("msr sctlr_el1, x0\n\t"
+    "isb"                               // Instruction Synchronization Barrier
+	:
+	: "r" (sctlr)
+	: "x0");
+    
+    invalidate_tlb();
+}
+
+void invalidate_caches()
+{
+    asm volatile ("ic iallu\n\t"        // Invalidate all instruction caches to PoU
+    "dsb nsh\n\t"                       // Data Synchronization Barrier
+    "isb\n\t"                           // Instruction Synchronization Barrier
+    "dc ivac, xzr\n\t"                  // Invalidate all data caches to PoU
+    "dsb nsh");                         // Data Synchronization Barrier
 }

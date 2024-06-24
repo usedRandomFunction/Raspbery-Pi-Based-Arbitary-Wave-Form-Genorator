@@ -27,11 +27,22 @@ void set_ttbr0_el1(void* ptr);
 // Invalidates the translation lookaside buffer
 void invalidate_tlb();
 
+// Enables both the data and instruction caches
+void enable_caches();
+
+// Dissables both the data and instruction caches
+void dissable_caches();
+
+// Invalidates both the data and instruction caches
+void invalidate_caches();
+
 enum
 {
     MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1<< 8,
-    MMU_LOWER_ATTRIBUTES_nGnRnE = 0b0,              // Non-Gathering, Non-Reordering, No Early write acknowledgement
-    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 0b1,        // Non-cacheable attribute
+    MMU_LOWER_ATTRIBUTES_nGnRnE = 0,                            // Non-Gathering, Non-Reordering, No Early write acknowledgement
+    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 1,                      // Non-cacheable attribute
+    MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_EXECTUE = 2,       // Cacheable read write exicute
+    MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_NON_EXECTUE = 3,   // Cacheable read write exicute
 };
 
 #ifdef __cplusplus

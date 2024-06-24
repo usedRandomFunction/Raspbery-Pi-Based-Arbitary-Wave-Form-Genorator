@@ -142,10 +142,10 @@ static void initialize_virtual_address_translation()
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
-    table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_EXECTUE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[0].section_start = (void*)0x000000000000; // We dont include the FFFF prefix here
     table_sections[1].allocation = kernel_heap_page_allocation;
-    table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_NON_EXECTUE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
 
     // MMIO section
@@ -163,6 +163,7 @@ static void initialize_virtual_address_translation()
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
 
+    
     set_ttbr1_el1(get_physical_address(kernel_translation_table.page_global_directory));
 
     uart_puts("Switched to permante translation_table.\n");
@@ -175,6 +176,7 @@ static void initialize_virtual_address_translation()
     set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
     uart_puts("Remapped MMIO to 0xFFFF000080000000.\n");
+
 }
 
 void free(void* p)
