@@ -46,10 +46,10 @@
 .equ MT_NORMAL_NC_FLAGS,               0x44 // Normal Non-Cacheable attributes
 .equ MT_NORMAL_FLAGS,                  0xff // Normal Cacheable attributes
 
-.equ MAIR_VALUE,                            (MT_DEVICE_nGnRnE_FLAGS << (8 * MT_DEVICE_nGnRnE)) | (MT_NORMAL_NC_FLAGS << (8 * MT_NORMAL_NC)) | (MT_NORMAL_FLAGS << (8 * MT_NORMAL)) | 
+.equ MAIR_VALUE,                            (MT_DEVICE_nGnRnE_FLAGS << (8 * MT_DEVICE_nGnRnE)) | (MT_NORMAL_NC_FLAGS << (8 * MT_NORMAL_NC)) | (MT_NORMAL_FLAGS << (8 * MT_NORMAL))
 
 
-.equ MMU_FLAGS,	 		                    (MM_TYPE_BLOCK | (MT_NORMAL_NC_EXEC << 2) | MM_ACCESS)	
+.equ MMU_FLAGS,	 		                    (MM_TYPE_BLOCK | (MT_NORMAL_NC << 2) | MM_ACCESS)	
 .equ MMU_DEVICE_FLAGS,		                (MM_TYPE_BLOCK | (MT_DEVICE_nGnRnE << 2) | MM_ACCESS)	
 .equ MMU_PTE_FLAGS,			                (MM_TYPE_PAGE | (MT_NORMAL_NC << 2) | MM_ACCESS | MM_ACCESS_PERMISSION)	
 
