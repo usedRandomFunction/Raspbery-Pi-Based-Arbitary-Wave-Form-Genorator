@@ -27,7 +27,7 @@ uint32_t get_clock_rate(uint32_t clock_id)
 
 uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate)
 {
-    return set_clock_rate_given_alloc_functions(clock_id, rate, aligned_alloc, free);
+    return set_clock_rate_given_alloc_functions(clock_id, rate, aligned_alloc_noncachable, free_noncachable_memory);
 }
 
 uint32_t set_clock_rate_given_alloc_functions(uint32_t clock_id, uint32_t rate, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
@@ -61,14 +61,14 @@ static uint32_t s_get_clock_rate_of_type(uint32_t clock_id, uint32_t type)
     get_clock_rate_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
     get_clock_rate_tag.header.buffersize = PROPERTY_TAG_GET_CLOCK_RATE_REQUEST_RESPONSE_SIZE;
     get_clock_rate_tag.clock_id = clock_id;
-    property_tag_get_clock_rate_responce* get_clock_rate_tag_responce = (property_tag_get_clock_rate_responce*)get_property_tag((property_tag*)&get_clock_rate_tag, aligned_alloc, free);
+    property_tag_get_clock_rate_responce* get_clock_rate_tag_responce = (property_tag_get_clock_rate_responce*)get_property_tag((property_tag*)&get_clock_rate_tag, aligned_alloc_noncachable, free_noncachable_memory);
 
     if (get_clock_rate_tag_responce == NULL)
         return 0;
 
     uint32_t rate = get_clock_rate_tag_responce->rate;
 
-    free(get_clock_rate_tag_responce);
+    free_noncachable_memory(get_clock_rate_tag_responce);
 
     return rate;
 }

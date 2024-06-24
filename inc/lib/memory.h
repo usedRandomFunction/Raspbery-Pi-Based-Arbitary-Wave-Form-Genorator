@@ -17,6 +17,16 @@ extern char __end[]; // Linker will set this to point to the end of the program
 #define PROGRAM_END_ADDRESS_POINTER (void*) &__end
 #define PROGRAM_END_ADDRESS_SIZE_T (size_t)&__end
 
+#ifdef AARCH64
+#define data_sync_barrier() asm volatile ("dsb sy" : : : "memory")
+#define data_mem_barrier()  asm volatile ("dmb sy" : : : "memory")
+#else
+#define data_sync_barrier()	asm volatile ("mcr p15, 0, %0, c7, c10, 4" : : "r" (0) : "memory")
+#define data_mem_barrier() 	asm volatile ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
+#endif
+
+#define peripheral_entry()	data_sync_barrier()
+#define peripheral_exit()	data_mem_barrier()
 
 typedef void (*FREE_PTR)(void*);
 typedef void* (*MALLOC_PTR)(size_t);

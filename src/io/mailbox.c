@@ -45,7 +45,7 @@ void mailbox_write(uint32_t data, uint8_t channel)
 
 uint32_t mailbox_write_read(uint32_t data, uint8_t channel)
 {
-	// peripheral_entry();
+	peripheral_entry();
 
 	mailbox_flush();
 
@@ -53,7 +53,7 @@ uint32_t mailbox_write_read(uint32_t data, uint8_t channel)
 
 	uint32_t resault = mailbox_read(channel);
 
-	// peripheral_exit();
+	peripheral_exit();
 
 	return resault;
 }

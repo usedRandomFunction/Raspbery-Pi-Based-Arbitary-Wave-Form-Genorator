@@ -8,6 +8,10 @@
 #include "io/gpio.h"
 #include "io/uart.h"
 
+#include <stdbool.h>
+
+bool uart_initall_init_has_occured = false;
+
 void uart_init(int baudrate)
 {
 	// Disable UART0.
@@ -48,12 +52,20 @@ void uart_init(int baudrate)
 
 void uart_set_base_freqency(int freqenecy, int baudrate)
 {
+	if (uart_initall_init_has_occured == false)
+	{
+		unsigned int  __attribute__((aligned(16))) mbox_buffer[9];
+		preset_alloc_set_buffers(&mbox_buffer, sizeof(mbox_buffer), &mbox_buffer, 28);
 
-	unsigned int  __attribute__((aligned(16))) mbox_buffer[9];
-	preset_alloc_set_buffers(&mbox_buffer, sizeof(mbox_buffer), &mbox_buffer, 28);
+		// Set UART base clock
+		set_clock_rate_given_alloc_functions(PROPERTY_TAG_CLOCK_ID_UART, freqenecy, preset_alloc_aligned_alloc, preset_alloc_free);
 
-	// Set UART base clock
-	set_clock_rate_given_alloc_functions(PROPERTY_TAG_CLOCK_ID_UART, freqenecy, preset_alloc_aligned_alloc, preset_alloc_free);
+		uart_initall_init_has_occured = true;
+	}
+	else
+	{
+		set_clock_rate(PROPERTY_TAG_CLOCK_ID_UART, freqenecy);
+	}
 
 	float divider = freqenecy / (16.0f * baudrate);
 	int ibrd = (int)divider;
