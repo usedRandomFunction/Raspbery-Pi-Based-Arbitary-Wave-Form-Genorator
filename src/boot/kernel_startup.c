@@ -105,8 +105,8 @@ static void initialize_virtual_address_translation()
         write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 0x0, 
         MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
 
-    write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 0x0, 
-    MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
+    write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 
+    MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER, MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
 
     set_ttbr1_el1(get_physical_address(temporary_pgd));
 
@@ -142,10 +142,11 @@ static void initialize_virtual_address_translation()
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
-    table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_EXECTUE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[0].section_start = (void*)0x000000000000; // We dont include the FFFF prefix here
     table_sections[1].allocation = kernel_heap_page_allocation;
-    table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_NON_EXECTUE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[1].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
 
     // MMIO section
@@ -157,6 +158,7 @@ static void initialize_virtual_address_translation()
     mmio_allocation->next = NULL;
     table_sections[2].allocation = mmio_allocation;
     table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[2].section_start = (void*)0x000080000000; // We dont include the FFFF prefix here
 
 

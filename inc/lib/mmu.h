@@ -41,8 +41,10 @@ enum
     MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1<< 8,
     MMU_LOWER_ATTRIBUTES_nGnRnE = 0,                            // Non-Gathering, Non-Reordering, No Early write acknowledgement
     MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 1,                      // Non-cacheable attribute
-    MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_EXECTUE = 2,       // Cacheable read write exicute
-    MMU_LOWER_ATTRIBUTES_CACHABLE_READ_WRITE_NON_EXECTUE = 3,   // Cacheable read write exicute
+    MMU_LOWER_ATTRIBUTES_CACHABLE = 2,                          // Cacheable read write
+
+    MMU_UPPER_ATTRIBUTES_PRIVILEGED_EXECUTE_NEVER = 1 << 5,     // Privileged Execute Never
+    MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER  = 1 << 6                // Execute Never
 };
 
 #ifdef __cplusplus
