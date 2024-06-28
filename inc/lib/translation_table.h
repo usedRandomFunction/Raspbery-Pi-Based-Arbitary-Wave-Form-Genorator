@@ -65,6 +65,10 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
 // but to be safe the TLB still should be invalidated.
 bool remake_translation_table_section(translation_table_info* table, void* section_start, bool only_update_active_buffers_when_ready);
 
+// Prints all translation table entrys of a given table to the UART
+// @param table The table to print
+void print_translation_table(translation_table_info* table);
+
 // Updates the translation table to appened the new section
 // @param table The table info struct
 // @param section To add to the translation table

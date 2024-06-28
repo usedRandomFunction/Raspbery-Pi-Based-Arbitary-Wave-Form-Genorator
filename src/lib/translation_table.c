@@ -109,6 +109,40 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
     return true;
 }
 
+void print_translation_table(translation_table_info* table)
+{
+    uart_puts("Translation table: ");
+    uart_put_ptr(table); uart_puts(" debug.\n");
+
+    uart_puts("page global directory:\n");
+    print_page_descriptor(table->page_global_directory);
+
+    uart_puts("\npage upper directory:\n");
+
+    for (int i = 0; i < table->number_of_page_upper_directory_entrys; i++)
+    {
+        print_page_descriptor(table->page_upper_directory + i);
+    }
+
+    uart_puts("\nsections: ");
+
+    for (int i = 0; i < table->number_of_sections; i++)
+    {
+        uart_puts("section: ");
+        uart_puti(i);
+        uart_puts("\npage middle directory:\n");
+        
+        translation_table_page_middle_directory_info* section = table->page_middle_directorys + i;
+
+        for (int i = 0; i < section->number_of_page_middle_directory_entrys; i++)
+        {
+            print_page_descriptor(section->page_middle_directory + i);
+        }
+
+        uart_putc('\n');
+    }
+}
+
 bool remake_translation_table_section(translation_table_info* table, void* section_start, bool only_update_active_buffers_when_ready);
 
 bool append_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready);
@@ -139,7 +173,7 @@ void destory_translation_table(translation_table_info* table)
 
 static bool s_vailidate_section(translation_table_section_info* section)
 {
-    // Check if the section is alligned to 2^30 bytes (2 MiB)
+    // Check if the section is alligned to 2^30 bytes (1 GiB)
     if ((*(size_t*)&section->section_start) & ((1 << 30) - 1) != 0)
         return false;
 

@@ -1,6 +1,7 @@
 #include "lib/mmu.h"
 
 #include "lib/arm_exceptions.h"
+#include "lib/memory.h"
 #include "io/uart.h"
 
 
@@ -26,21 +27,52 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
     *descriptor_address = descriptor;
 }
 
+void print_page_descriptor(uint64_t* descriptor_address)
+{
+    uint64_t descriptor = *descriptor_address;
+    uart_puts("Page table entry: ");
+    uart_put_ptr(get_physical_address(descriptor_address));
+    uart_puts(": \n    valid: ");
+    if (descriptor & 0b1)
+    {
+        uart_puts("true\n    type: ");
+    }
+    else
+    {
+        uart_puts("false\n");
+        return;
+    }
+
+    if (descriptor & 0b10)
+    {
+        uart_puts("table entry\n    pointer: ");
+    }
+    else
+    {
+        uart_puts("page address\n    pointer: ");
+    }
+
+    uart_put_number_as_hex(descriptor & 0xFFFFFFFFF000);
+    uart_puts("\n    lower attributes: ");
+    uart_put_number_as_hex_without_leading_zeros((descriptor >> 2) & 0b111111111);
+    uart_puts("\n    upper attributes: ");
+    uart_put_number_as_hex_without_leading_zeros((descriptor >> 48) & 0x3FFFFF);
+    uart_putc('\n');
+}
+
 void set_ttbr1_el1(void* ptr)
 {
-    asm volatile ("msr ttbr1_el1, x0"
+    asm volatile ("msr ttbr1_el1, %0"
 	:
-	: "r" (ptr)
-	: "x0");
+	: "r" (ptr));
     invalidate_tlb();
 }
 
 void set_ttbr0_el1(void* ptr)
 {   
-    asm volatile ("msr ttbr0_el1, x0"
+    asm volatile ("msr ttbr0_el1, %0"
 	:
-	: "r" (ptr)
-	: "x0");
+	: "r" (ptr));
     invalidate_tlb();
 }   
 

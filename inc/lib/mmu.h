@@ -16,6 +16,9 @@ extern "C" {
 // @param block_table_bit If set to true entry points to other table entry if false entry points to page address
 void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint16_t upper_attributes, uint16_t lower_attributes, bool block_table_bit);
 
+// Prints the given descriptor to the UART
+void print_page_descriptor(uint64_t* descriptor_address);
+
 // Writes to the ttbr1_el1 register
 // @param ptr thr new page table address (must be physcial address)
 void set_ttbr1_el1(void* ptr);
