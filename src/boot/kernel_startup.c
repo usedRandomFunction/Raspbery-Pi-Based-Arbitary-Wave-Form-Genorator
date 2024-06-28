@@ -162,10 +162,10 @@ static void initialize_virtual_address_translation()
     table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[2].section_start = (void*)0x000080000000; // We dont include the FFFF prefix here
 
-    page_allocation_info* non_cache_able_heap_allocation = create_new_page_allocation(1024 * 16); 
+    page_allocation_info* non_cachable_heap_allocation = create_new_page_allocation(1024 * 16); 
     // We create a heap of size 16 Kib, ik that at the moment the page size 2 Mib but the small size is for latter,
     // When the page size is smaller
-    table_sections[3].allocation = non_cache_able_heap_allocation;
+    table_sections[3].allocation = non_cachable_heap_allocation;
     table_sections[3].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[3].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[3].section_start = (void*)0x0000C0000000; // We dont include the FFFF prefix here
