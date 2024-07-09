@@ -6,7 +6,7 @@
 #include "io/uart.h"
 
 
-static void s_PrintMaxiumClockSpeedAndSet(uint32_t clock_id, const char* name, float targetSpeed)
+void PrintMaxiumClockSpeedAndSet(uint32_t clock_id, const char* name, float targetSpeed)
 {
     uint32_t maximum_rate = get_maximum_clock_rate(clock_id);
 
@@ -35,8 +35,8 @@ static void s_PrintMaxiumClockSpeedAndSet(uint32_t clock_id, const char* name, f
 
 void SetupSystemClocks(float targetSpeed)
 {
-    s_PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_ARM, "Arm", targetSpeed);
-    s_PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_CORE, "Core", targetSpeed);
+    PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_ARM, "Arm", targetSpeed);
+    PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_CORE, "Core", targetSpeed);
 }
 
 void PrintSystemSpecs()

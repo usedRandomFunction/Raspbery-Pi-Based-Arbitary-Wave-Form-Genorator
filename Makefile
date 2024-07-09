@@ -64,19 +64,23 @@ clean:
 
 run_halt:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3 -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -display none -serial stdio -s -S
+	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -display none -serial stdio -s -S
 
 run:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3 -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -display none -serial stdio
+	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -display none -serial stdio
 
 
 run_halt_serial_over_tcp:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3 -device loader,file=bin/kernel8.img,addr=0x80000,cpu-num=0 -display none -serial tcp::4444,server=on -s -S
+	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x80000,cpu-num=0 -display none -serial tcp::4444,server=on -s -S
 
 run_serial_over_tcp:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3 -device loader,file=bin/kernel8.img,addr=0x80000,cpu-num=0 -display none -serial tcp::4444,server=on
+	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x80000,cpu-num=0 -display none -serial tcp::4444,server=on
+
+run_bootloader:
+	@echo !==== Running ====!
+	sudo python3 ./bootloader.py
 
 .PHONY: all clean

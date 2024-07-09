@@ -1,7 +1,10 @@
+#include "app/data_output.h"
 #include "io/propertyTags.h"
 #include "app/startup.h"
 #include "lib/string.h"
 #include "lib/memory.h"
+#include "lib/alloc.h"
+#include "lib/math.h"
 #include "io/gpio.h"
 #include "io/uart.h"
 
@@ -9,63 +12,70 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// // Tempoary for testing
+// #include "lib/translation_table.h"
+// #include "lib/page_allocator.h"
+// #include "lib/mmu.h"
+
 
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for main. */
 #endif
 int main()
 {
-    SetupSystemClocks(1.2f);
+    PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_ARM, "Arm", 1.2f);
+    PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_CORE, "Core", 1.3f);
+    PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_SDRAM, "SDRam", 1.2f);
 
+    gpio_function_select(16, GPFSEL_Output); // Latch
     gpio_function_select(17, GPFSEL_Output); // Clock
-    gpio_function_select(18, GPFSEL_Output); // Data
-    gpio_function_select(27, GPFSEL_Output); // Latch
+    gpio_function_select(18, GPFSEL_Output); // Data 1 LSB
+    gpio_function_select(19, GPFSEL_Output); // Data 1 MSB
 
-    auto* set_address = get_mmio_pointer(GPSET0);
-    auto* clr_address = get_mmio_pointer(GPCLR0);
+    const double samples_per_second = 8568000; 
+    
+    const double seconds_per_sample = 1 / samples_per_second;
+    const double freqency = 1000;
+    const double period = 1 / freqency;
 
-    constexpr uint32_t clock_mask = 1 << 17;
-    constexpr uint32_t data_mask = 1 << 18;
-    constexpr uint32_t both_mask = clock_mask | data_mask;
-    constexpr uint32_t mask_all = UINT32_MAX;
+    const double convetion_factor = (2.0f * M_PI * freqency) / samples_per_second;
 
-    while (1)
-	{
-        *clr_address = clock_mask | (data_mask & ~(0));
-        *set_address = data_mask & (0);
-        *set_address = clock_mask;
+    const int reqired_samples = period * samples_per_second;
 
-        *clr_address = clock_mask | (data_mask & ~(mask_all));
-        *set_address = data_mask & (mask_all);
-        *set_address = clock_mask;
+    for (int i = 0; i < reqired_samples; i++)
+    {
+        double value = sin(convetion_factor * (double)i);
 
-        *clr_address = clock_mask | (data_mask & ~(0));
-        *set_address = data_mask & (0);
-        *set_address = clock_mask;
+        for (int j = 1; j < 10; j++) // To make cursed waveform https://www.desmos.com/calculator/ml04pusu2o
+        {
+            double n = (double)j * 2.0;
+            value += (1.0 / n) * sin(n * convetion_factor * (double)i);
+        }
 
-        *clr_address = clock_mask | (data_mask & ~(mask_all));
-        *set_address = data_mask & (mask_all);
-        *set_address = clock_mask;
+        value += 1;
+        value *= 2.5; // Now is in range [0, 5]
 
-        *clr_address = clock_mask | (data_mask & ~(0));
-        *set_address = data_mask & (0);
-        *set_address = clock_mask;
+        double output = value * 51;
+        output = clamp(output, 255, 0);
+        write_buffer_one_channle_8_bit_samples(((uint64_t*)0xFFFF000100000000), (uint8_t)output, i);
+    }
 
-        *clr_address = clock_mask | (data_mask & ~(mask_all));
-        *set_address = data_mask & (mask_all);
-        *set_address = clock_mask;
+    uart_puts("output starts now!\n");
 
-        *clr_address = clock_mask | (data_mask & ~(0));
-        *set_address = data_mask & (0);
-        *set_address = clock_mask;
-
-        *clr_address = clock_mask | (data_mask & ~(mask_all));
-        *set_address = data_mask & (mask_all);
-        *set_address = clock_mask;
-
-        gpio_write(27, 1);
-        gpio_write(27, 0);
-	}
+    write_one_channel_8_bit_samples((uint64_t*)0xFFFF000100000000, ((uint64_t*)0xFFFF000100000000) + reqired_samples / sizeof(uint64_t));
 
     return 0;
+}
+
+#ifndef __INTELLISENSE__ // Vscode hate this line for some unknow reason
+void* operator new(size_t size)
+{
+    void * p = malloc(size);
+    return p;
+}
+#endif
+
+void operator delete(void * p)
+{
+    free(p);
 }
