@@ -42,9 +42,9 @@ void SetupSystemClocks(float targetSpeed)
 void PrintSystemSpecs()
 {
     property_tag_get_arm_memory arm_memory_tag;
-    arm_memory_tag.tagID = PROPERTY_TAG_ID_GET_ARM_MEMORY;
-    arm_memory_tag.request = PROPERTY_TAG_PROCESS_REQUEST;
-    arm_memory_tag.buffersize = PROPERTY_TAG_GET_ARM_MEMORY_REQUEST_RESPONSE_SIZE;
+    arm_memory_tag.header.tagID = PROPERTY_TAG_ID_GET_ARM_MEMORY;
+    arm_memory_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    arm_memory_tag.header.buffersize = PROPERTY_TAG_GET_ARM_MEMORY_REQUEST_RESPONSE_SIZE;
     
     auto* arm_memory_tag_responce = (property_tag_get_arm_memory_responce*)get_property_tag((property_tag*)&arm_memory_tag, aligned_alloc, free);
     if (arm_memory_tag_responce != NULL)

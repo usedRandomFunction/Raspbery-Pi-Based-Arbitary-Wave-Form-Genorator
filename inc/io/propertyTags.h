@@ -76,6 +76,7 @@ struct property_tag_get_clock_rate_responce
 
 typedef struct property_tag_get_clock_rate_responce property_tag_set_clock_rate_responce;
 typedef struct property_tag_get_clock_rate_responce property_tag_get_clock_rate_responce;
+
 typedef struct property_tag_get_clock_rate_responce property_tag_get_max_clock_rate_responce;
 typedef struct property_tag_get_clock_rate_responce property_tag_get_clock_rate_measured_responce;
 
@@ -103,8 +104,145 @@ struct property_tag_get_arm_memory_responce
     uint32_t size;
 }__attribute__((packed));
 
-typedef struct property_tag property_tag_get_arm_memory;
+typedef struct property_tag_get_arm_memory_responce property_tag_get_arm_memory;
 typedef struct property_tag_get_arm_memory_responce property_tag_get_arm_memory_responce;
+
+struct property_tag_allocate_buffer
+{
+    property_tag header;
+
+    uint32_t alignment_in_bytes;
+    uint32_t unsed; // dont remove this is for maching the size with the return class
+
+}__attribute__((packed));
+
+typedef struct property_tag_allocate_buffer property_tag_allocate_buffer;
+typedef struct property_tag property_tag_release_buffer;
+
+struct property_tag_allocate_buffer_responce
+{
+    property_tag header;
+
+    uint32_t base_address;
+    uint32_t size;
+
+}__attribute__((packed));
+
+typedef struct property_tag_allocate_buffer_responce property_tag_allocate_buffer_responce;
+
+struct property_tag_display_width_height
+{
+    property_tag header;
+
+    uint32_t width;
+    uint32_t height;
+
+}__attribute__((packed));
+
+typedef struct property_tag_display_width_height property_tag_get_physical_display_width_height;
+typedef struct property_tag_display_width_height property_tag_get_physical_display_width_height_responce;
+
+typedef struct property_tag_display_width_height property_tag_test_physical_display_width_height;
+typedef struct property_tag_display_width_height property_tag_test_physical_display_width_height_responce;
+
+typedef struct property_tag_display_width_height property_tag_set_physical_display_width_height;
+typedef struct property_tag_display_width_height property_tag_set_physical_display_width_height_responce;
+
+typedef struct property_tag_display_width_height property_tag_get_virtual_buffer_width_height;
+typedef struct property_tag_display_width_height property_tag_get_virtual_buffer_width_height_responce;
+
+typedef struct property_tag_display_width_height property_tag_test_virtual_buffer_width_height;
+typedef struct property_tag_display_width_height property_tag_test_virtual_buffer_width_height_responce;
+
+typedef struct property_tag_display_width_height property_tag_set_virtual_buffer_width_height;
+typedef struct property_tag_display_width_height property_tag_set_virtual_buffer_width_height_responce;
+
+struct property_tag_display_depth
+{
+    property_tag header;
+
+    uint32_t bits_per_pixel;
+}__attribute__((packed));
+
+typedef struct property_tag_display_depth property_tag_get_depth;
+typedef struct property_tag_display_depth property_tag_get_depth_responce;
+
+typedef struct property_tag_display_depth property_tag_test_depth;
+typedef struct property_tag_display_depth property_tag_test_depth_responce;
+
+typedef struct property_tag_display_depth property_tag_set_depth;
+typedef struct property_tag_display_depth property_tag_set_depth_responce;
+
+struct property_tag_display_state
+{
+    property_tag header;
+
+    uint32_t state;
+}__attribute__((packed));
+
+typedef struct property_tag_display_state property_tag_get_pixel_order;
+typedef struct property_tag_display_state property_tag_get_pixel_order_responce;
+
+typedef struct property_tag_display_state property_tag_test_pixel_order;
+typedef struct property_tag_display_state property_tag_test_pixel_order_responce;
+
+typedef struct property_tag_display_state property_tag_set_pixel_order;
+typedef struct property_tag_display_state property_tag_set_pixel_order_responce;
+
+typedef struct property_tag_display_state property_tag_get_alpha_mode;
+typedef struct property_tag_display_state property_tag_get_alpha_mode_responce;
+
+typedef struct property_tag_display_state property_tag_test_alpha_mode;
+typedef struct property_tag_display_state property_tag_test_alpha_mode_responce;
+
+typedef struct property_tag_display_state property_tag_set_alpha_mode;
+typedef struct property_tag_display_state property_tag_set_alpha_mode_responce;
+
+struct property_tag_get_pitch
+{
+    property_tag header;
+
+    uint32_t bytes_per_line;
+}__attribute__((packed));
+
+typedef struct property_tag_get_pitch property_tag_get_pitch;
+typedef struct property_tag_get_pitch property_tag_get_pitch_responce;
+
+struct property_tag_virtual_offset
+{
+    property_tag header;
+
+    uint32_t X;
+    uint32_t Y;
+}__attribute__((packed));
+
+typedef struct property_tag_virtual_offset property_tag_get_virtual_offset;
+typedef struct property_tag_virtual_offset property_tag_get_virtual_offset_responce;
+
+typedef struct property_tag_virtual_offset property_tag_test_virtual_offset;
+typedef struct property_tag_virtual_offset property_tag_test_virtual_offset_responce;
+
+typedef struct property_tag_virtual_offset property_tag_set_virtual_offset;
+typedef struct property_tag_virtual_offset property_tag_set_virtual_offset_responce;
+
+struct property_tag_overscan
+{
+    property_tag header;
+
+    uint32_t top;
+    uint32_t bottom;
+    uint32_t left;
+    uint32_t right;
+}__attribute__((packed));
+
+typedef struct property_tag_overscan property_tag_get_overscan;
+typedef struct property_tag_overscan property_tag_get_overscan_responce;
+
+typedef struct property_tag_overscan property_tag_test_overscan;
+typedef struct property_tag_overscan property_tag_test_overscan_responce;
+
+typedef struct property_tag_overscan property_tag_set_overscan;
+typedef struct property_tag_overscan property_tag_set_overscan_responce;
 
 #pragma endregion
 
@@ -186,13 +324,17 @@ enum
     PROPERTY_TAG_ID_SET_SDHOST_CLOCK	    = 0x00038042,
     PROPERTY_TAG_ID_ALLOCATE_BUFFER		    = 0x00040001,
     PROPERTY_TAG_ID_GET_DISPLAY_DIMENSIONS	= 0x00040003,
+    PROPERTY_TAG_ID_SET_PIXEL_ORDER		    = 0x00040006,
     PROPERTY_TAG_ID_GET_PITCH		        = 0x00040008,
     PROPERTY_TAG_ID_GET_TOUCHBUF		    = 0x0004000F,
     PROPERTY_TAG_ID_GET_GPIO_VIRTBUF	    = 0x00040010,
     PROPERTY_TAG_ID_GET_NUM_DISPLAYS	    = 0x00040013,
+    PROPERTY_TAG_ID_RELEASE_BUFFER          = 0x00048001,
     PROPERTY_TAG_ID_SET_PHYS_WIDTH_HEIGHT	= 0x00048003,
     PROPERTY_TAG_ID_SET_VIRT_WIDTH_HEIGHT	= 0x00048004,
+    PROPERTY_TAG_ID_TEST_PIXEL_ORDER		= 0x00044006,
     PROPERTY_TAG_ID_SET_DEPTH		        = 0x00048005,
+    PROPERTY_TAG_ID_GET_PIXEL_ORDER		    = 0x00048006,
     PROPERTY_TAG_ID_SET_VIRTUAL_OFFSET	    = 0x00048009,
     PROPERTY_TAG_ID_SET_PALETTE		        = 0x0004800B,
     PROPERTY_TAG_ID_WAIT_FOR_VSYNC		    = 0x0004800E,
@@ -213,6 +355,30 @@ enum
     PROPERTY_TAG_GET_MAX_CLOCK_RATE_REQUEST_RESPONSE_SIZE = 0x08,
     PROPERTY_TAG_GET_ARM_MEMORY_REQUEST_RESPONSE_SIZE = 0x08,
     PROPERTY_TAG_SET_CLOCK_RATE_REQUEST_RESPONSE_SIZE = 0x0C,
+    PROPERTY_TAG_ALLOCATE_BUFFER_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_RELEASE_BUFFER_REQUEST_RESPONSE_SIZE = 0x00,
+    PROPERTY_TAG_GET_PHYSICAL_DISPLAY_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_TEST_PHYSICAL_DISPLAY_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_SET_PHYSICAL_DISPLAY_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_GET_VIRTUAL_BUFFER_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_TEST_VIRTUAL_BUFFER_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_SET_VIRTUAL_BUFFER_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_GET_DEPTH_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_TEST_DEPTH_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_SET_DEPTH_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_GET_PIXEL_ORDER_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_TEST_PIXEL_ORDER_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_SET_PIXEL_ORDER_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_GET_ALPHA_MODE_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_TEST_ALPHA_MODE_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_SET_ALPHA_MODE_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_GET_PITCH_REQUEST_RESPONSE_SIZE = 0x04,
+    PROPERTY_TAG_GET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_TEST_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_SET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE = 0x08,
+    PROPERTY_TAG_GET_OVERSCAN_REQUEST_RESPONSE_SIZE = 0x10,
+    PROPERTY_TAG_TEST_OVERSCAN_REQUEST_RESPONSE_SIZE = 0x10,
+    PROPERTY_TAG_SET_OVERSCAN_REQUEST_RESPONSE_SIZE = 0x10,
 };
 
 enum
@@ -232,6 +398,19 @@ enum
     PROPERTY_TAG_CLOCK_ID_EMMC2       = 0xc,
     PROPERTY_TAG_CLOCK_ID_M2MC        = 0xd,
     PROPERTY_TAG_CLOCK_ID_PIXEL_BVB   = 0xe,
+};
+
+enum
+{
+    PROPERTY_TAG_PIXEL_ORDER_BGR = 0,
+    PROPERTY_TAG_PIXEL_ORDER_RGB = 1,
+};
+
+enum
+{
+    PROPERTY_TAG_ALPHA_MODE_ENABLED = 0,
+    PROPERTY_TAG_ALPHA_MODE_REVERSED = 1,
+    PROPERTY_TAG_ALPHA_MODE_IGNORED = 2,
 };
     
 #ifdef __cplusplus
