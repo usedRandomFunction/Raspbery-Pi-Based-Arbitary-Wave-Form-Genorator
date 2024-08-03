@@ -8,6 +8,7 @@ the goal is to make a Arbitary-Wave-Form-Genorator (AWG) using a pi3b and some 7
 ## pin out
 
 | GPIO | Use |
+|------|-----|
 | 16   | Shift register latch
 | 17   | Shift register clock
 | 18   | Channel 1 LSB
