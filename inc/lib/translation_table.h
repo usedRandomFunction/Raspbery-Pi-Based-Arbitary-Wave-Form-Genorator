@@ -56,14 +56,14 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
 
 // Updates the buffers for the mmu for the given section
 // @param table The table info struct
-// @param section_start The virtual address the section to be updated starts in
+// @param section_id The index of the section
 // @param only_update_active_buffers_when_ready Used to prevent the function from
 // overwriting any buffers untill the new contents are ready, This is achived by allocating new buffers
 // @return True, if success, False if failer
 // @note This function does not update ttbr1_el1 or ttbr1_el0 that must be done elsewhere,
 // however if this table is currently in use it will take imediate effect
 // but to be safe the TLB still should be invalidated.
-bool remake_translation_table_section(translation_table_info* table, void* section_start, bool only_update_active_buffers_when_ready);
+bool remake_translation_table_section(translation_table_info* table, int section_id, bool only_update_active_buffers_when_ready);
 
 // Prints all translation table entrys of a given table to the UART
 // @param table The table to print
