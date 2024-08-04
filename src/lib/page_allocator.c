@@ -52,7 +52,7 @@ bool initialize_page_allocator()
     memory_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
     memory_tag.header.tagID = PROPERTY_TAG_ID_GET_ARM_MEMORY;
 
-    property_tag_get_arm_memory_responce* memory_tag_responce = (property_tag_get_arm_memory_responce*)get_property_tag(&memory_tag, aligned_alloc, free);
+    property_tag_get_arm_memory_responce* memory_tag_responce = (property_tag_get_arm_memory_responce*)get_property_tag((property_tag*)&memory_tag, aligned_alloc, free);
 
     if (memory_tag_responce == false)
     {
