@@ -48,9 +48,9 @@ bool initialize_page_allocator()
     s_total_allocated_pages = 0;
 
     property_tag_get_arm_memory memory_tag;
-    memory_tag.buffersize = PROPERTY_TAG_GET_ARM_MEMORY_REQUEST_RESPONSE_SIZE;
-    memory_tag.request = PROPERTY_TAG_PROCESS_REQUEST;
-    memory_tag.tagID = PROPERTY_TAG_ID_GET_ARM_MEMORY;
+    memory_tag.header.buffersize = PROPERTY_TAG_GET_ARM_MEMORY_REQUEST_RESPONSE_SIZE;
+    memory_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    memory_tag.header.tagID = PROPERTY_TAG_ID_GET_ARM_MEMORY;
 
     property_tag_get_arm_memory_responce* memory_tag_responce = (property_tag_get_arm_memory_responce*)get_property_tag(&memory_tag, aligned_alloc, free);
 
