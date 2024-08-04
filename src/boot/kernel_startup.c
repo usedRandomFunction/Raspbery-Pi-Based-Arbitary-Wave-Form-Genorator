@@ -60,6 +60,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	prepare_memory_manager();
     initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
+    print_translation_table(&kernel_translation_table);
 	uart_puts("Starting main function!\n");
 	int result = main();
 
@@ -187,7 +188,6 @@ static void initialize_virtual_address_translation()
     uart_puts("Remapped MMIO to 0xFFFF000080000000.\n");
 
     initialize_central_block_memory_allocator((void*)0xFFFF0000C0000000, 1024 * 16, 5, &kernel_non_cachable_heap_allocator);
-
 }
 
 void free(void* p)
