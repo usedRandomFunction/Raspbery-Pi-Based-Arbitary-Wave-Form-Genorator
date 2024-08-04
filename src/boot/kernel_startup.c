@@ -60,6 +60,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	prepare_memory_manager();
     initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
+    print_translation_table(&kernel_translation_table);
 	uart_puts("Starting main function!\n");
 	int result = main();
 
@@ -139,7 +140,7 @@ static void initialize_virtual_address_translation()
 
     uart_puts("Create kernel code and kernel heap, page allocations\n");
 
-    translation_table_section_info table_sections[5]; // UNDONE The fith section is for testing and needs to beremoved (see issue #12)
+    translation_table_section_info table_sections[4];
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
@@ -170,11 +171,6 @@ static void initialize_virtual_address_translation()
     table_sections[3].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[3].section_start = (void*)0x0000C0000000; // We dont include the FFFF prefix here
 
-    table_sections[4].allocation = create_new_page_allocation(1024 * 1024 * 64); // UNDONE The fith section is for testing and needs to beremoved  (see issue #12)
-    table_sections[4].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_sections[4].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
-    table_sections[4].section_start = (void*)0x000100000000; // We dont include the FFFF prefix here
-
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
     
@@ -192,7 +188,6 @@ static void initialize_virtual_address_translation()
     uart_puts("Remapped MMIO to 0xFFFF000080000000.\n");
 
     initialize_central_block_memory_allocator((void*)0xFFFF0000C0000000, 1024 * 16, 5, &kernel_non_cachable_heap_allocator);
-
 }
 
 void free(void* p)
