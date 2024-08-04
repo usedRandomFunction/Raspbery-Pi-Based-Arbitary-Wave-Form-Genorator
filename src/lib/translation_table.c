@@ -71,11 +71,13 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
         get_page_allocation_size(sections[number_of_sections - 1].allocation) - 1);
     uint32_t last_pud_index = (uint32_t)((*(size_t*)&last_virtual_address) >>  30);
     table->number_of_page_upper_directory_entrys = last_pud_index + 1;
-    table->page_global_directory = aligned_alloc(4096, 8);
-    table->page_upper_directory = aligned_alloc(4096, 8 * (last_pud_index + 1));
+
+    table->page_global_directory = aligned_alloc(4096, 4096);
+    table->page_upper_directory = aligned_alloc(4096, 4096);
     table->page_middle_directorys = malloc(sizeof(translation_table_page_middle_directory_info) * number_of_sections);
     memclr(table->page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * number_of_sections);
-    memclr(table->page_upper_directory, 8 * (last_pud_index + 1));
+    memclr(table->page_global_directory, 4096);
+    memclr(table->page_upper_directory, 4096);
 
     write_page_descriptor(table->page_global_directory,     // Write to PGD
         get_physical_address(table->page_upper_directory),  // Address of PUD first entry
@@ -213,13 +215,10 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
     
     uint64_t* pmd_buffer = NULL;
 
-    if (pmd->number_of_page_middle_directory_entrys != required_entrys 
-        || only_update_active_buffers_when_ready == true 
-        || pmd->page_middle_directory == NULL)
+    if (only_update_active_buffers_when_ready == true || pmd->page_middle_directory == NULL)
     {
-        pmd->number_of_page_middle_directory_entrys = required_entrys;
-        pmd_buffer = aligned_alloc(4096, required_entrys * 8);
-        memclr(pmd_buffer, required_entrys * 8);
+        pmd_buffer = aligned_alloc(4096, 4096);
+        memclr(pmd_buffer, 4096);
 
         if (only_update_active_buffers_when_ready == false)
         {
@@ -230,6 +229,8 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
     }
     else
         pmd_buffer = pmd->page_middle_directory;
+
+    pmd->number_of_page_middle_directory_entrys = required_entrys;
 
     page_allocation_info* allocation = section->allocation;
     
