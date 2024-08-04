@@ -210,15 +210,17 @@ static bool s_check_sections_for_page_clashing(translation_table_section_info* s
 static uint32_t s_fill_out_page_middle_directory(translation_table_section_info* section, translation_table_page_middle_directory_info* pmd, bool only_update_active_buffers_when_ready)
 {
     size_t section_size = get_page_allocation_size(section->allocation);
+    size_t last_section_size_GiB = (pmd->number_of_page_middle_directory_entrys >> 9) + ((pmd->number_of_page_middle_directory_entrys & ((1 << 9) - 1)) ? 1 : 0);
+    size_t section_size_GiB = (section_size >> 30) + ((section_size & ((1 << 30) - 1)) ? 1 : 0);
     
-    uint32_t required_entrys = section_size >> 21 + ((section_size & ((1 << 21) - 1)) ? 1 : 0); 
+    uint32_t required_entrys = (section_size >> 21) + ((section_size & ((1 << 21) - 1)) ? 1 : 0); 
     
     uint64_t* pmd_buffer = NULL;
 
-    if (only_update_active_buffers_when_ready == true || pmd->page_middle_directory == NULL)
+    if (pmd->page_middle_directory == NULL || only_update_active_buffers_when_ready == true || last_section_size_GiB != section_size_GiB)
     {
-        pmd_buffer = aligned_alloc(4096, 4096);
-        memclr(pmd_buffer, 4096);
+        pmd_buffer = aligned_alloc(4096, 4096 * section_size_GiB);
+        memclr(pmd_buffer, 4096 * section_size_GiB);
 
         if (only_update_active_buffers_when_ready == false)
         {
