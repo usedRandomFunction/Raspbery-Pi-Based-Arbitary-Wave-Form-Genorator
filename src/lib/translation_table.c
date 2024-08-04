@@ -31,6 +31,15 @@ static bool s_check_sections_for_page_clashing(translation_table_section_info* s
 // @return The number of entrys used
 static uint32_t s_fill_out_page_middle_directory(translation_table_section_info* section, translation_table_page_middle_directory_info* pmd, bool only_update_active_buffers_when_ready);
 
+// Fills out / allocates the PUD for a given  table also updates PGD
+// @param table The table to update the PUD for
+// @param only_update_active_buffers_when_ready Used to prevent the function from
+// overwriting any buffers untill the new contents are ready, This is achived by allocating new buffers
+// @return True if passed, False if failed
+// @note The PMDs must be filled out before calling this function. 
+// When updating PGD only_update_active_buffers_when_ready is ignored
+static bool s_fill_out_page_upper_directory(translation_table_info* table, bool only_update_active_buffers_when_ready);
+
 #pragma endregion
 
 
@@ -67,43 +76,22 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
     if (!s_check_sections_for_page_clashing(sections, number_of_sections))
         return false;
     
-    void* last_virtual_address = void_ptr_offset_bytes(sections[number_of_sections - 1].section_start,
-        get_page_allocation_size(sections[number_of_sections - 1].allocation) - 1);
-    uint32_t last_pud_index = (uint32_t)((*(size_t*)&last_virtual_address) >>  30);
-    table->number_of_page_upper_directory_entrys = last_pud_index + 1;
-    table->page_global_directory = aligned_alloc(4096, 8);
-    table->page_upper_directory = aligned_alloc(4096, 8 * (last_pud_index + 1));
+
+    table->page_global_directory = aligned_alloc(4096, 4096);
     table->page_middle_directorys = malloc(sizeof(translation_table_page_middle_directory_info) * number_of_sections);
     memclr(table->page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * number_of_sections);
-    memclr(table->page_upper_directory, 8 * (last_pud_index + 1));
+    memclr(table->page_global_directory, 4096);
 
-    write_page_descriptor(table->page_global_directory,     // Write to PGD
-        get_physical_address(table->page_upper_directory),  // Address of PUD first entry
-        0x0,                                                // No upper attributes
-        0x0,                                                // No lowwer attributes
-        true);                                              // Points to page table entry
 
     for (int i = 0; i < number_of_sections; i++)
     {
-        uint32_t section_size = s_fill_out_page_middle_directory(sections + i, table->page_middle_directorys + i, false);
-        uint32_t section_pud_size = section_size >> (30 - page_allocator_page_size_as_power_of_two);
-        section_pud_size += (section_size & ((1 << (30 - page_allocator_page_size_as_power_of_two)) - 1) ? 1 : 0); // Round Up
-        
+        s_fill_out_page_middle_directory(sections + i, table->page_middle_directorys + i, false);
+    }
 
-        void* section_first_virtual_address = sections[i].section_start;
-        uint32_t section_first_pud_index = (uint32_t)((*(size_t*)&section_first_virtual_address) >> 30);
-
-        for (uint32_t j = 0; j < section_pud_size; j++)
-        {
-            write_page_descriptor(
-                table->page_upper_directory + section_first_pud_index + j,  // PUD entry
-                get_physical_address(table->page_middle_directorys[i].page_middle_directory),        
-                                                                            // Address of PMD entry
-                0x0,                                                        // No upper attributes
-                0x0,                                                        // No lowwer attributes
-                true);                                                      // Points to page table entry
-
-        }
+    if (!s_fill_out_page_upper_directory(table, false))
+    {
+        uart_puts("Failed to initialize translation table: failed to fill PUD\n");
+        return false;
     }
 
     return true;
@@ -114,8 +102,15 @@ void print_translation_table(translation_table_info* table)
     uart_puts("Translation table: ");
     uart_put_ptr(table); uart_puts(" debug.\n");
 
+    uint32_t last_pud_index = table->number_of_page_upper_directory_entrys - 1;
+
+    uint32_t number_of_page_upper_directories = (last_pud_index >> 8) + ((last_pud_index & ((1 << 8) - 1)) ? 1 : 0);
+
     uart_puts("page global directory:\n");
-    print_page_descriptor(table->page_global_directory);
+    for (int i = 0; i < number_of_page_upper_directories; i++)
+    {
+        print_page_descriptor(table->page_global_directory + i);
+    }
 
     uart_puts("\npage upper directory:\n");
 
@@ -143,9 +138,131 @@ void print_translation_table(translation_table_info* table)
     }
 }
 
-bool remake_translation_table_section(translation_table_info* table, void* section_start, bool only_update_active_buffers_when_ready);
+bool remake_translation_table_section(translation_table_info* table, int section_id, bool only_update_active_buffers_when_ready)
+{
+    uart_puts("Translation table: ");
+    uart_put_ptr(table);
+    uart_puts("\nRemaking section: ");
+    uart_puti(section_id); uart_putc('\n');
 
-bool append_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready);
+    if (table->number_of_sections <= section_id)
+    {
+        uart_puts("Failed to remake section, section does not exist!\n");
+        return false;
+    }
+
+    translation_table_page_middle_directory_info* pmd = &table->page_middle_directorys[section_id];
+    translation_table_section_info* section = &table->sections[section_id];
+
+    size_t section_size = get_page_allocation_size(section->allocation);
+    size_t last_section_size_GiB = (pmd->number_of_page_middle_directory_entrys >> 9) + ((pmd->number_of_page_middle_directory_entrys & ((1 << 9) - 1)) ? 1 : 0);
+    size_t section_size_GiB = (section_size >> 30) + ((section_size & ((1 << 30) - 1)) ? 1 : 0);
+
+    if (section_size_GiB > last_section_size_GiB && table->number_of_sections > (section_id + 1)) // If we're not the last section, make sure we dont overwrite stuff
+    {
+        size_t next_section_first_address = *(size_t*)table->sections[section_id + 1].section_start;
+        size_t section_last_address = *(size_t*)section->section_start + section_size;
+
+        if (section_last_address >= next_section_first_address)
+        {
+            uart_puts("Failed to remake section, end address classes with section: ");
+            uart_puti(section_id + 1); uart_puts("!\n");
+            return false;
+        }
+    }
+
+    s_fill_out_page_middle_directory(section, pmd, only_update_active_buffers_when_ready);
+
+    if (!s_fill_out_page_upper_directory(table, only_update_active_buffers_when_ready))
+    {
+        uart_puts("Failed to remake section: failed to fill PUD\n");
+        return false;
+    }
+
+    uart_puts("success!\n");
+    invalidate_caches();
+    invalidate_tlb();
+
+    return true;
+}
+
+bool insert_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready)
+{
+    int target_section_id = table->number_of_sections;
+
+    uart_puts("Translation table: ");
+    uart_put_ptr(table);
+    uart_puts("\nInserting section: [start]: ");
+    uart_put_ptr(section->section_start); 
+    uart_puts(", [allocation]: ");
+    uart_put_ptr(section->allocation); 
+    uart_putc('\n');
+
+    for (int i = 0; i < table->number_of_sections; i++) // Check if we are inserting not apending
+    {
+        if (table->sections[i].section_start < section->section_start)
+            continue; // Wait untill the new section is bellow the current section
+
+        size_t section_size = get_page_allocation_size(section->allocation);
+
+        size_t next_section_start = *((size_t*)&table->sections[i].section_start);
+        size_t section_end = *((size_t*)&section->section_start) + section_size;
+
+        if (next_section_start < section_end)
+        {
+            uart_puts("Failed to insert section, virtual address clashes with section: ");
+            uart_puti(i); uart_putc('\n');
+            return false;
+        }
+
+        target_section_id = i;
+        break;
+    }
+    // Now we know where its going, we can check if it can fit there
+    size_t last_section_size = get_page_allocation_size(table->sections[target_section_id - 1].allocation);
+    size_t last_section_end = *((size_t*)&table->sections[target_section_id - 1].section_start) + last_section_size;
+
+    if (last_section_end > *((size_t*)&section->section_start))
+    {
+        uart_puts("Failed to insert section, virtual address clashes with section: ");
+        uart_puti(target_section_id - 1); uart_putc('\n');
+        return false;
+    }
+    // Now it fits, lets set up the buffers
+
+    translation_table_page_middle_directory_info* page_middle_directorys = malloc(sizeof(translation_table_section_info) * table->number_of_sections + 1);
+    memclr(page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * table->number_of_sections + 1);
+
+    memcpy(page_middle_directorys, table->page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * target_section_id);
+    memcpy(page_middle_directorys + target_section_id + 1, table->page_middle_directorys + target_section_id, 
+        sizeof(translation_table_page_middle_directory_info) * (table->number_of_sections - target_section_id));
+    free(table->page_middle_directorys);
+    table->page_middle_directorys = page_middle_directorys;
+
+    translation_table_section_info* sections = malloc(sizeof(translation_table_section_info) * table->number_of_sections + 1);
+    memclr(sections, sizeof(translation_table_section_info) * table->number_of_sections + 1);
+
+    memcpy(sections, table->sections, sizeof(translation_table_section_info) * target_section_id);
+    memcpy(sections + target_section_id + 1, table->sections + target_section_id, 
+        sizeof(translation_table_section_info) * (table->number_of_sections - target_section_id));
+    free(table->sections);
+    table->sections = sections;
+    // Buffers have been updated to include space for the new section
+
+    memcpy(sections + target_section_id, section, sizeof(translation_table_section_info));
+    section = NULL; // We dont want to use this one anymore as it will not update the values in the table object
+
+    table->number_of_sections++;
+
+    s_fill_out_page_middle_directory(&table->sections[target_section_id], 
+        &table->page_middle_directorys[target_section_id], false);
+
+    s_fill_out_page_upper_directory(table, only_update_active_buffers_when_ready);
+
+    uart_puts("Success!\n");
+
+    return true;
+}
 
 size_t get_translation_table_memory_mannaged(translation_table_info* table)
 {
@@ -208,18 +325,16 @@ static bool s_check_sections_for_page_clashing(translation_table_section_info* s
 static uint32_t s_fill_out_page_middle_directory(translation_table_section_info* section, translation_table_page_middle_directory_info* pmd, bool only_update_active_buffers_when_ready)
 {
     size_t section_size = get_page_allocation_size(section->allocation);
+    size_t last_section_size_GiB = (pmd->number_of_page_middle_directory_entrys >> 9) + ((pmd->number_of_page_middle_directory_entrys & ((1 << 9) - 1)) ? 1 : 0);
+    size_t section_size_GiB = (section_size >> 30) + ((section_size & ((1 << 30) - 1)) ? 1 : 0);
     
-    uint32_t required_entrys = section_size >> 21 + ((section_size & ((1 << 21) - 1)) ? 1 : 0); 
+    uint32_t required_entrys = (section_size >> 21) + ((section_size & ((1 << 21) - 1)) ? 1 : 0); 
     
     uint64_t* pmd_buffer = NULL;
 
-    if (pmd->number_of_page_middle_directory_entrys != required_entrys 
-        || only_update_active_buffers_when_ready == true 
-        || pmd->page_middle_directory == NULL)
+    if (pmd->page_middle_directory == NULL || only_update_active_buffers_when_ready == true || last_section_size_GiB != section_size_GiB)
     {
-        pmd->number_of_page_middle_directory_entrys = required_entrys;
-        pmd_buffer = aligned_alloc(4096, required_entrys * 8);
-        memclr(pmd_buffer, required_entrys * 8);
+        pmd_buffer = aligned_alloc(4096, 4096 * section_size_GiB);
 
         if (only_update_active_buffers_when_ready == false)
         {
@@ -230,6 +345,9 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
     }
     else
         pmd_buffer = pmd->page_middle_directory;
+    memclr(pmd_buffer, 4096 * section_size_GiB);
+
+    pmd->number_of_page_middle_directory_entrys = required_entrys;
 
     page_allocation_info* allocation = section->allocation;
     
@@ -259,4 +377,86 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
     }
 
     return required_entrys;
+}
+
+static bool s_fill_out_page_upper_directory(translation_table_info* table, bool only_update_active_buffers_when_ready)
+{
+    uint64_t* pud_buffer = NULL;
+    translation_table_section_info* test = &table->sections[table->number_of_sections - 1];
+
+
+    void* last_virtual_address = void_ptr_offset_bytes(table->sections[table->number_of_sections - 1].section_start,
+        get_page_allocation_size(table->sections[table->number_of_sections - 1].allocation) - 1);
+    uint32_t last_pud_index = (uint32_t)((*(size_t*)&last_virtual_address) >>  30);
+    uint32_t previous_number_of_page_upper_directories = table->number_of_page_upper_directory_entrys - 1;
+    previous_number_of_page_upper_directories = (previous_number_of_page_upper_directories >> 8) + ((previous_number_of_page_upper_directories & ((1 << 8) - 1)) ? 1 : 0);
+    uint32_t number_of_page_upper_directories = (last_pud_index >> 8) + ((last_pud_index & ((1 << 8) - 1)) ? 1 : 0);
+    table->number_of_page_upper_directory_entrys = last_pud_index + 1;
+    
+    if (number_of_page_upper_directories > (1 << 8))
+    {
+        uart_puts("Failed to fill out page upper directory: out of address space\n");
+        return false;
+    }
+    test->lowwer_attributes &= 0xFFFFFFFF;
+
+    if (table->page_upper_directory == NULL || only_update_active_buffers_when_ready == true || number_of_page_upper_directories != previous_number_of_page_upper_directories)
+    {
+        pud_buffer = aligned_alloc(4096, 4096 * number_of_page_upper_directories);
+
+        // memclr(pud_buffer, 4096 * number_of_page_upper_directories);
+        if (only_update_active_buffers_when_ready == false)
+        {
+            if (table->page_upper_directory != NULL)
+                free(table->page_upper_directory);
+            table->page_upper_directory = pud_buffer;
+        }
+    }
+    else
+        pud_buffer = table->page_upper_directory;
+    memclr(pud_buffer, 4096 * number_of_page_upper_directories);// Should be here but the program just halts for no reason
+
+
+    
+    for (int i = 0; i < table->number_of_sections; i++)
+    {
+        uint32_t section_size = table->page_middle_directorys[i].number_of_page_middle_directory_entrys;
+        uint32_t section_pud_size = section_size >> (30 - page_allocator_page_size_as_power_of_two);
+        section_pud_size += (section_size & ((1 << (30 - page_allocator_page_size_as_power_of_two)) - 1) ? 1 : 0); // Round Up
+        
+
+        void* section_first_virtual_address = table->sections[i].section_start;
+        uint32_t section_first_pud_index = (uint32_t)((*(size_t*)&section_first_virtual_address) >> 30);
+
+        for (uint32_t j = 0; j < section_pud_size; j++)
+        {
+            write_page_descriptor(
+                pud_buffer + section_first_pud_index + j,  // PUD entry
+                get_physical_address(table->page_middle_directorys[i].page_middle_directory),        
+                                                                            // Address of PMD entry
+                0x0,                                                        // No upper attributes
+                0x0,                                                        // No lowwer attributes
+                true);                                                      // Points to page table entry
+        }
+    }
+
+
+    if (only_update_active_buffers_when_ready == true)
+    {
+        free(table->page_upper_directory);
+        table->page_upper_directory = pud_buffer;
+    }
+
+    for (int i = 0; i < number_of_page_upper_directories; i++)
+    {
+        write_page_descriptor(table->page_global_directory + i,             // Write to PGD
+            get_physical_address(pud_buffer + 4096 * i),   // Address of PUD first entry
+            0x0,                                                            // No upper attributes
+            0x0,                                                            // No lowwer attributes
+            true);                                                          // Points to page table entry
+    }
+
+    memclr(table->page_global_directory + number_of_page_upper_directories, 4096 - (number_of_page_upper_directories * 8));
+
+    return true;
 }
