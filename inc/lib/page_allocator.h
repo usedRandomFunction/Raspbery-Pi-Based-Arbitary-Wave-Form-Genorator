@@ -35,7 +35,7 @@ const extern size_t page_allocator_page_size_bytes;
 // @return True is success, False if failer
 bool initialize_page_allocator();
 
-// Creates a new allocation
+// Creates a new allocation of a given size
 // @param size: Size of allocation in bytes
 // @return Pointer to allocation header or NULL if failed
 page_allocation_info* create_new_page_allocation(size_t size);

@@ -139,7 +139,7 @@ static void initialize_virtual_address_translation()
 
     uart_puts("Create kernel code and kernel heap, page allocations\n");
 
-    translation_table_section_info table_sections[5]; // UNDONE The fith section is for testing and needs to beremoved (see issue #12)
+    translation_table_section_info table_sections[4];
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
@@ -169,11 +169,6 @@ static void initialize_virtual_address_translation()
     table_sections[3].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[3].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[3].section_start = (void*)0x0000C0000000; // We dont include the FFFF prefix here
-
-    table_sections[4].allocation = create_new_page_allocation(1024 * 1024 * 64); // UNDONE The fith section is for testing and needs to beremoved  (see issue #12)
-    table_sections[4].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_sections[4].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
-    table_sections[4].section_start = (void*)0x000100000000; // We dont include the FFFF prefix here
 
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();

@@ -25,7 +25,7 @@ void* memclr(void* dst, size_t size)
 {
     uint8_t* true_dst = dst;
 
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
         true_dst[i] = 0;
 
     return dst;
