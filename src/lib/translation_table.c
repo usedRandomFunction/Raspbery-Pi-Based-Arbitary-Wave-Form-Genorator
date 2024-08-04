@@ -186,7 +186,83 @@ bool remake_translation_table_section(translation_table_info* table, int section
     return true;
 }
 
-bool append_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready);
+bool insert_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready)
+{
+    int target_section_id = table->number_of_sections;
+
+    uart_puts("Translation table: ");
+    uart_put_ptr(table);
+    uart_puts("\nInserting section: [start]: ");
+    uart_put_ptr(section->section_start); 
+    uart_puts(", [allocation]: ");
+    uart_put_ptr(section->allocation); 
+    uart_putc('\n');
+
+    for (int i = 0; i < table->number_of_sections; i++) // Check if we are inserting not apending
+    {
+        if (table->sections[i].section_start < section->section_start)
+            continue; // Wait untill the new section is bellow the current section
+
+        size_t section_size = get_page_allocation_size(section->allocation);
+
+        size_t next_section_start = *((size_t*)&table->sections[i].section_start);
+        size_t section_end = *((size_t*)&section->section_start) + section_size;
+
+        if (next_section_start < section_end)
+        {
+            uart_puts("Failed to insert section, virtual address clashes with section: ");
+            uart_puti(i); uart_putc('\n');
+            return false;
+        }
+
+        target_section_id = i;
+        break;
+    }
+    // Now we know where its going, we can check if it can fit there
+    size_t last_section_size = get_page_allocation_size(table->sections[target_section_id - 1].allocation);
+    size_t last_section_end = *((size_t*)&table->sections[target_section_id - 1].section_start) + last_section_size;
+
+    if (last_section_end > *((size_t*)&section->section_start))
+    {
+        uart_puts("Failed to insert section, virtual address clashes with section: ");
+        uart_puti(target_section_id - 1); uart_putc('\n');
+        return false;
+    }
+    // Now it fits, lets set up the buffers
+
+    translation_table_page_middle_directory_info* page_middle_directorys = malloc(sizeof(translation_table_section_info) * table->number_of_sections + 1);
+    memclr(page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * table->number_of_sections + 1);
+
+    memcpy(page_middle_directorys, table->page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * target_section_id);
+    memcpy(page_middle_directorys + target_section_id + 1, table->page_middle_directorys + target_section_id, 
+        sizeof(translation_table_page_middle_directory_info) * (table->number_of_sections - target_section_id));
+    free(table->page_middle_directorys);
+    table->page_middle_directorys = page_middle_directorys;
+
+    translation_table_section_info* sections = malloc(sizeof(translation_table_section_info) * table->number_of_sections + 1);
+    memclr(sections, sizeof(translation_table_section_info) * table->number_of_sections + 1);
+
+    memcpy(sections, table->sections, sizeof(translation_table_section_info) * target_section_id);
+    memcpy(sections + target_section_id + 1, table->sections + target_section_id, 
+        sizeof(translation_table_section_info) * (table->number_of_sections - target_section_id));
+    free(table->sections);
+    table->sections = sections;
+    // Buffers have been updated to include space for the new section
+
+    memcpy(sections + target_section_id, section, sizeof(translation_table_section_info));
+    section = NULL; // We dont want to use this one anymore as it will not update the values in the table object
+
+    table->number_of_sections++;
+
+    s_fill_out_page_middle_directory(&table->sections[target_section_id], 
+        &table->page_middle_directorys[target_section_id], false);
+
+    s_fill_out_page_upper_directory(table, only_update_active_buffers_when_ready);
+
+    uart_puts("Success!\n");
+
+    return true;
+}
 
 size_t get_translation_table_memory_mannaged(translation_table_info* table)
 {
@@ -303,10 +379,11 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
     return required_entrys;
 }
 
-
 static bool s_fill_out_page_upper_directory(translation_table_info* table, bool only_update_active_buffers_when_ready)
 {
     uint64_t* pud_buffer = NULL;
+    translation_table_section_info* test = &table->sections[table->number_of_sections - 1];
+
 
     void* last_virtual_address = void_ptr_offset_bytes(table->sections[table->number_of_sections - 1].section_start,
         get_page_allocation_size(table->sections[table->number_of_sections - 1].allocation) - 1);
@@ -321,7 +398,7 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
         uart_puts("Failed to fill out page upper directory: out of address space\n");
         return false;
     }
-
+    test->lowwer_attributes &= 0xFFFFFFFF;
 
     if (table->page_upper_directory == NULL || only_update_active_buffers_when_ready == true || number_of_page_upper_directories != previous_number_of_page_upper_directories)
     {

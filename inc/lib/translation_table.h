@@ -69,17 +69,18 @@ bool remake_translation_table_section(translation_table_info* table, int section
 // @param table The table to print
 void print_translation_table(translation_table_info* table);
 
-// Updates the translation table to appened the new section
+// Updates the translation table to include the new section
 // @param table The table info struct
 // @param section To add to the translation table
 // @param only_update_active_buffers_when_ready Used to prevent the function from
 // overwriting any buffers untill the new contents are ready, This is achived by allocating new buffers
 // this paraeter is only ment to be used with the translation table controlls the code being activly ran
-// @return True, if success, False if failer (many failed to find section) 
-// @note This function does not update ttbr1_el1 or ttbr1_el0 that must be done elsewhere,
+// @return True, if success, False if failer
+// @note Only_update_active_buffers_when_ready is ignored when setting the section info buffer.
+// This function does not update ttbr1_el1 or ttbr1_el0 that must be done elsewhere,
 // however if this table is currently in use it will take imediate effect
 // but to be safe the TLB still should be invalidated.
-bool append_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready);
+bool insert_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready);
 
 // Calucates the ammount of memory mannaged by the translation table
 // @param table The table to messure
