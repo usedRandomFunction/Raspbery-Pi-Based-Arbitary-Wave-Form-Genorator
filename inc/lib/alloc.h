@@ -1,5 +1,5 @@
-#ifndef _H
-#define _H
+#ifndef ALLOC_H
+#define ALLOC_H
 
 #ifdef __cplusplus
 extern "C" {

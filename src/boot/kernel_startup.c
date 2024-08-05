@@ -4,6 +4,7 @@
 #include "lib/arm_exceptions.h"
 #include "lib/page_allocator.h"
 #include "io/memoryMappedIO.h"
+#include "io/framebuffer.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
 #include "lib/mmu.h"
@@ -60,7 +61,9 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	prepare_memory_manager();
     initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
-    print_translation_table(&kernel_translation_table);
+    if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
+        kernel_panic();
+    
 	uart_puts("Starting main function!\n");
 	int result = main();
 

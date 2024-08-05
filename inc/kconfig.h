@@ -14,4 +14,9 @@
 
 #define UART_BASE_CLOCK_FREQUENCY 3000000 // (3 MHz)
 
+#define FRAMEBUFFER_HEIGHT 600
+#define FRAMEBUFFER_WIDTH 1024
+
+#define FRAMEBUFFER_VIRUTAL_ADDRESS_BASE (void*)0x000100000000 // We dont include the 0xFFFF Prefix here
+
 #endif

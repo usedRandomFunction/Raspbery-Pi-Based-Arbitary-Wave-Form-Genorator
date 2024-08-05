@@ -26,6 +26,7 @@ extern char __end[]; // Linker will set this to point to the end of the program
 #endif
 
 #define VC_address_to_arm(ptr) (void_ptr_bitwise_and(ptr, 0x3FFFFFFF))
+#define KERNEL_MEMORY_PREFIX 0xFFFF000000000000
 
 #define peripheral_entry()	data_sync_barrier()
 #define peripheral_exit()	data_mem_barrier()
