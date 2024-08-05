@@ -146,6 +146,12 @@ page_allocation_info* create_new_page_allocation(size_t size)
 
     s_total_allocated_pages += required_pages;
 
+    uart_puts("Created page allocation ");
+    uart_put_ptr(root);
+    uart_puts(" with size: ");
+    uart_putui((required_pages << page_allocator_page_size_as_power_of_two) / 1024);
+    uart_puts(" kib\n");
+
     return root;
 }
 
@@ -193,11 +199,43 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
     if (offset != NULL)
         *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
 
-    uart_puts("Created page allocation ");
+    uart_puts("Created continuous physical page allocation ");
     uart_put_ptr(allocation);
-    uart_puts(" with size ");
+    uart_puts(" with size: ");
     uart_putui((required_pages << page_allocator_page_size_as_power_of_two) / 1024);
     uart_puts(" kib\n");
+    uart_puts("starting at: ");
+    uart_put_number_as_hex(page_start << page_allocator_page_size_as_power_of_two);
+    uart_putc('\n');
+
+    return allocation;
+}
+
+page_allocation_info* create_new_page_allocation_for_unmanaged_continuous_physical_address(void* physical_address_start, size_t size, ptrdiff_t* offset)
+{
+    size_t physical_address = *(size_t*)&physical_address_start;
+    size_t page_start = physical_address >> page_allocator_page_size_as_power_of_two;
+    size += physical_address % page_allocator_page_size_bytes;
+
+    size_t required_pages = size >> page_allocator_page_size_as_power_of_two;
+    required_pages += (size & (page_allocator_page_size_bytes - 1) ? 1 : 0); // Devide round up
+
+    page_allocation_info* allocation = malloc(sizeof(page_allocation_info));
+    allocation->first_page = page_start;
+    allocation->size = required_pages;
+    allocation->next = NULL;
+
+    if (offset != NULL)
+        *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
+
+    uart_puts("Created continuous (unmanaged) physical page allocation ");
+    uart_put_ptr(allocation);
+    uart_puts(" with size: ");
+    uart_putui((required_pages << page_allocator_page_size_as_power_of_two) / 1024);
+    uart_puts(" kib\n");
+    uart_puts("starting at: ");
+    uart_put_number_as_hex(page_start << page_allocator_page_size_as_power_of_two);
+    uart_putc('\n');
 
     return allocation;
 }

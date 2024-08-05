@@ -47,6 +47,14 @@ page_allocation_info* create_new_page_allocation(size_t size);
 // @return Pointer to allocation header or NULL if failed
 page_allocation_info* create_new_page_allocation_at_continuous_physical_address(void* physical_address_start, size_t size, ptrdiff_t* offset);
 
+// Creates a new continuous allocation at the given phyiscal address, but ignoreds if the allocation is valid
+// This is used for device propertys e.i MMIO or framebuffer
+// @param physical_address_start: The physica address that this allocation would begin at
+// @param size Size of allocation in bytes
+// @param offset If not NULL it will be set to the offset from the start of the address that the given address starts at
+// @return Pointer to allocation header
+page_allocation_info* create_new_page_allocation_for_unmanaged_continuous_physical_address(void* physical_address_start, size_t size, ptrdiff_t* offset);
+
 // Finds the size of a given page allocation
 // @param allocation A pointer to the allocation to messure
 // @return The size of the allocation in bytes
