@@ -127,13 +127,29 @@ static void initialize_virtual_address_translation()
 
     if (!initialize_page_allocator())
         kernel_panic();
+
+    ptrdiff_t allocation_offset;
     
-    page_allocation_info* kernel_code_page_allocation = create_new_page_allocation_at_continuous_physical_address(mapping_ptr, kernel_code_size);
+    page_allocation_info* kernel_code_page_allocation = create_new_page_allocation_at_continuous_physical_address(mapping_ptr, kernel_code_size, 
+        &allocation_offset);
 
     if (kernel_code_page_allocation == NULL)
         kernel_panic();
 
-    page_allocation_info* kernel_heap_page_allocation = create_new_page_allocation_at_continuous_physical_address(void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 1 << 21);
+    if (allocation_offset != 0)
+    {
+        uart_puts("Failed to create kernel code allocation: offset != 0\n");
+        kernel_panic();
+    }
+
+    page_allocation_info* kernel_heap_page_allocation = create_new_page_allocation_at_continuous_physical_address(
+        void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 1 << 21, &allocation_offset);
+
+    if (allocation_offset != 0)
+    {
+        uart_puts("Failed to create kernel heap allocation: offset != 0\n");
+        kernel_panic();
+    }
 
     if (kernel_heap_page_allocation == NULL)
         kernel_panic();
@@ -154,10 +170,13 @@ static void initialize_virtual_address_translation()
     // MMIO section
     // This looks bad becouse it is lamo
     // Since the mmio memory wont be allocateable we have to fake it
-    page_allocation_info* mmio_allocation = malloc(sizeof(page_allocation_info));
-    mmio_allocation->first_page = (MMIO_Base_Address / page_allocator_page_size_bytes);
-    mmio_allocation->size = (1 << 24) / page_allocator_page_size_bytes; // Just assume the MMIO is 2^24 bytes
-    mmio_allocation->next = NULL;
+    // page_allocation_info* mmio_allocation = malloc(sizeof(page_allocation_info));
+    // mmio_allocation->first_page = (MMIO_Base_Address / page_allocator_page_size_bytes);
+    // mmio_allocation->size = (1 << 24) / page_allocator_page_size_bytes; // Just assume the MMIO is 2^24 bytes
+    // mmio_allocation->next = NULL;
+    ptrdiff_t mmio_allocation_offset;
+    page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(*(void**)&MMIO_Base_Address, 1 << 24, 
+        &mmio_allocation_offset);
     table_sections[2].allocation = mmio_allocation;
     table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
@@ -182,10 +201,12 @@ static void initialize_virtual_address_translation()
     free(temporary_pud);
     free(temporary_pgd);
 
-    MMIO_Base_Address = 0xFFFF000080000000;
+    MMIO_Base_Address = 0xFFFF000080000000 + mmio_allocation_offset;
     set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
-    uart_puts("Remapped MMIO to 0xFFFF000080000000.\n");
+    uart_puts("Remapped MMIO to ");
+    uart_put_number_as_hex(MMIO_Base_Address);
+    uart_puts(".\n");
 
     initialize_central_block_memory_allocator((void*)0xFFFF0000C0000000, 1024 * 16, 5, &kernel_non_cachable_heap_allocator);
 }
