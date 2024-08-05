@@ -149,7 +149,7 @@ page_allocation_info* create_new_page_allocation(size_t size)
     return root;
 }
 
-page_allocation_info* create_new_page_allocation_at_continuous_physical_address(void* physical_address_start, size_t size)
+page_allocation_info* create_new_page_allocation_at_continuous_physical_address(void* physical_address_start, size_t size, ptrdiff_t* offset)
 {
     size_t physical_address = *(size_t*)&physical_address_start;
     size_t page_start = physical_address >> page_allocator_page_size_as_power_of_two;
@@ -189,6 +189,9 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
     allocation->first_page = page_start;
     allocation->size = required_pages;
     allocation->next = NULL;
+
+    if (offset != NULL)
+        *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
 
     uart_puts("Created page allocation ");
     uart_put_ptr(allocation);

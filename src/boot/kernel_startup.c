@@ -126,13 +126,29 @@ static void initialize_virtual_address_translation()
 
     if (!initialize_page_allocator())
         kernel_panic();
+
+    ptrdiff_t allocation_offset;
     
-    page_allocation_info* kernel_code_page_allocation = create_new_page_allocation_at_continuous_physical_address(mapping_ptr, kernel_code_size);
+    page_allocation_info* kernel_code_page_allocation = create_new_page_allocation_at_continuous_physical_address(mapping_ptr, kernel_code_size, 
+        &allocation_offset);
 
     if (kernel_code_page_allocation == NULL)
         kernel_panic();
 
-    page_allocation_info* kernel_heap_page_allocation = create_new_page_allocation_at_continuous_physical_address(void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 1 << 21);
+    if (allocation_offset != 0)
+    {
+        uart_puts("Failed to create kernel code allocation: offset != 0\n");
+        kernel_panic();
+    }
+
+    page_allocation_info* kernel_heap_page_allocation = create_new_page_allocation_at_continuous_physical_address(
+        void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 1 << 21, &allocation_offset);
+
+    if (allocation_offset != 0)
+    {
+        uart_puts("Failed to create kernel heap allocation: offset != 0\n");
+        kernel_panic();
+    }
 
     if (kernel_heap_page_allocation == NULL)
         kernel_panic();
