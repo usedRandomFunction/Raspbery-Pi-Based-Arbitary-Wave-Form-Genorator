@@ -25,7 +25,7 @@ extern char __end[]; // Linker will set this to point to the end of the program
 #define data_mem_barrier() 	asm volatile ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
 #endif
 
-#define VC_Address_to_arm(ptr) (void_ptr_bitwise_and(ptr, 0x3FFFFFFF))
+#define VC_address_to_arm(ptr) (void_ptr_bitwise_and(ptr, 0x3FFFFFFF))
 
 #define peripheral_entry()	data_sync_barrier()
 #define peripheral_exit()	data_mem_barrier()
