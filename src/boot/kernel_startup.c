@@ -12,7 +12,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-central_block_memory_allocator_header kernel_non_cachable_heap_allocator;
 central_block_memory_allocator_header kernel_heap_allocator;
 translation_table_info kernel_translation_table;
 
@@ -156,7 +155,7 @@ static void initialize_virtual_address_translation()
 
     uart_puts("Create kernel code and kernel heap, page allocations\n");
 
-    translation_table_section_info table_sections[4];
+    translation_table_section_info table_sections[3];
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
@@ -182,14 +181,6 @@ static void initialize_virtual_address_translation()
     table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[2].section_start = (void*)0x000080000000; // We dont include the FFFF prefix here
 
-    page_allocation_info* non_cachable_heap_allocation = create_new_page_allocation(1024 * 16); 
-    // We create a heap of size 16 Kib, ik that at the moment the page size 2 Mib but the small size is for latter,
-    // When the page size is smaller
-    table_sections[3].allocation = non_cachable_heap_allocation;
-    table_sections[3].lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_sections[3].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
-    table_sections[3].section_start = (void*)0x0000C0000000; // We dont include the FFFF prefix here
-
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
     
@@ -207,8 +198,6 @@ static void initialize_virtual_address_translation()
     uart_puts("Remapped MMIO to ");
     uart_put_number_as_hex(MMIO_Base_Address);
     uart_puts(".\n");
-
-    initialize_central_block_memory_allocator((void*)0xFFFF0000C0000000, 1024 * 16, 5, &kernel_non_cachable_heap_allocator);
 }
 
 void free(void* p)
@@ -250,40 +239,4 @@ void* aligned_alloc(size_t alignment, size_t size)
     }
     
     return central_block_memory_allocator_alloc_alligned(size, alignment, &kernel_heap_allocator);
-}
-
-void free_noncachable_memory(void* p)
-{
-    if (p == NULL)
-    {
-        uart_puts("kernel attempted to free NULL pointer");
-        kernel_panic();
-    }
-
-    central_block_memory_allocator_free(p, &kernel_non_cachable_heap_allocator);
-}
-
-void* aligned_alloc_noncachable(size_t alignment, size_t size)
-{
-    if (alignment != 0)
-    {
-        if (((alignment & (alignment - 1)) != 0))
-        {
-            uart_puts("\nUnable to allocat memory, only alight ments of a power of two");
-            return NULL;
-        }
-
-        for (int i = 0; i < sizeof(size_t)*8; i++)
-        {
-            if (alignment & 0b1)
-            {
-                alignment = i;
-                break;
-            }
-
-            alignment >>= 1;
-        }
-    }
-    
-    return central_block_memory_allocator_alloc_alligned(size, alignment, &kernel_non_cachable_heap_allocator);
 }
