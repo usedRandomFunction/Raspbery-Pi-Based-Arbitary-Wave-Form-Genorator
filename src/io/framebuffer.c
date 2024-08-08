@@ -151,7 +151,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 
     translation_table_section_info table_section;
     table_section.allocation = framebuffer_allocation;
-    table_section.lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_section.lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_section.upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_section.section_start = FRAMEBUFFER_VIRUTAL_ADDRESS_BASE; // We dont include the FFFF prefix here
     insert_translation_table_section(&kernel_translation_table, &table_section, true);
@@ -160,7 +160,11 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     s_framebuffer_pointer = void_ptr_offset_bytes(FRAMEBUFFER_VIRUTAL_ADDRESS_BASE, framebuffer_offset + KERNEL_MEMORY_PREFIX);
 
     
-    uart_puts("Successfully initialized frame buffer");
+    uart_puts("Successfully initialized frame buffer of size: ");
+    uart_putui(s_framebuffer_width);
+    uart_puts(" x ");
+    uart_putui(s_framebuffer_height);
+    uart_putc('\n');
 
     return true;
 }

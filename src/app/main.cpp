@@ -29,7 +29,11 @@ int main()
     {
         for (int x = 0 ; x < width; x++)
         {
-            set_framebuffer_pixel(x, y, (x / (float)width) * 255, (y / (float)height) * 255, (x * y) / (float)(height * width) * 255);
+            float red = x / (float)width;
+            float green = y / (float)height;
+            float blue = ((width - (float)x)*(width - (float)x) * ((float)height - y)*((float)height - y)) / ((width * width / 4.0f) * (height * height / 4.0f));
+
+            set_framebuffer_pixel(x, y, red * 255, green * 255, blue * 255);
         }
     }
 
