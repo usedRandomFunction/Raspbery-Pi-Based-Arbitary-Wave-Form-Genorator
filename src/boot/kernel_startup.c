@@ -59,6 +59,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	prepare_memory_manager();
     initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
+    print_translation_table(&kernel_translation_table);
 	uart_puts("Starting main function!\n");
 	int result = main();
 
@@ -197,7 +198,6 @@ static void initialize_virtual_address_translation()
     uart_puts("Remapped MMIO to ");
     uart_put_number_as_hex(MMIO_Base_Address);
     uart_puts(".\n");
-
 }
 
 void free(void* p)
