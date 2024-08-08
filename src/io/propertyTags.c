@@ -1,6 +1,7 @@
 #include "io/propertyTags.h"
 #include "io/mailbox.h"
 #include "io/uart.h"
+#include "lib/mmu.h"
 
 
 // https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
@@ -91,6 +92,8 @@ static void* s_prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer
     ptr->request_response_code = 0x00000000;
     ptr->size = true_buffer_size;
     memcpy(ptr + 1, buffer, buffer_size);
+
+    invalidate_data_cache_of_size(ptr, true_buffer_size);
 
     return ptr;
 }

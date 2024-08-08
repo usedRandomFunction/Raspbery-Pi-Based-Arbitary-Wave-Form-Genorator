@@ -40,6 +40,9 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
 // When updating PGD only_update_active_buffers_when_ready is ignored
 static bool s_fill_out_page_upper_directory(translation_table_info* table, bool only_update_active_buffers_when_ready);
 
+// Invalides all caches around the given translation talbe
+// @param table The table to work with
+static void s_invalid_caching_around_translation_table(translation_table_info* table);
 #pragma endregion
 
 
@@ -93,6 +96,8 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
         uart_puts("Failed to initialize translation table: failed to fill PUD\n");
         return false;
     }
+
+    s_invalid_caching_around_translation_table(table);
 
     return true;
 }
@@ -180,7 +185,7 @@ bool remake_translation_table_section(translation_table_info* table, int section
     }
 
     uart_puts("success!\n");
-    invalidate_caches();
+    s_invalid_caching_around_translation_table(table);
     invalidate_tlb();
 
     return true;
@@ -231,7 +236,7 @@ bool insert_translation_table_section(translation_table_info* table, translation
     // Now it fits, lets set up the buffers
 
     translation_table_page_middle_directory_info* page_middle_directorys = malloc(sizeof(translation_table_section_info) * table->number_of_sections + 1);
-    memclr(page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * table->number_of_sections + 1);
+    memclr(page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * (table->number_of_sections + 1));
 
     memcpy(page_middle_directorys, table->page_middle_directorys, sizeof(translation_table_page_middle_directory_info) * target_section_id);
     memcpy(page_middle_directorys + target_section_id + 1, table->page_middle_directorys + target_section_id, 
@@ -239,7 +244,7 @@ bool insert_translation_table_section(translation_table_info* table, translation
     free(table->page_middle_directorys);
     table->page_middle_directorys = page_middle_directorys;
 
-    translation_table_section_info* sections = malloc(sizeof(translation_table_section_info) * table->number_of_sections + 1);
+    translation_table_section_info* sections = malloc(sizeof(translation_table_section_info) * (table->number_of_sections + 1));
     memclr(sections, sizeof(translation_table_section_info) * table->number_of_sections + 1);
 
     memcpy(sections, table->sections, sizeof(translation_table_section_info) * target_section_id);
@@ -260,7 +265,9 @@ bool insert_translation_table_section(translation_table_info* table, translation
     s_fill_out_page_upper_directory(table, only_update_active_buffers_when_ready);
 
     uart_puts("Success!\n");
-
+    s_invalid_caching_around_translation_table(table);
+    invalidate_tlb();
+    
     return true;
 }
 
@@ -382,8 +389,6 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
 static bool s_fill_out_page_upper_directory(translation_table_info* table, bool only_update_active_buffers_when_ready)
 {
     uint64_t* pud_buffer = NULL;
-    translation_table_section_info* test = &table->sections[table->number_of_sections - 1];
-
 
     void* last_virtual_address = void_ptr_offset_bytes(table->sections[table->number_of_sections - 1].section_start,
         get_page_allocation_size(table->sections[table->number_of_sections - 1].allocation) - 1);
@@ -398,7 +403,6 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
         uart_puts("Failed to fill out page upper directory: out of address space\n");
         return false;
     }
-    test->lowwer_attributes &= 0xFFFFFFFF;
 
     if (table->page_upper_directory == NULL || only_update_active_buffers_when_ready == true || number_of_page_upper_directories != previous_number_of_page_upper_directories)
     {
@@ -459,4 +463,19 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
     memclr(table->page_global_directory + number_of_page_upper_directories, 4096 - (number_of_page_upper_directories * 8));
 
     return true;
+}
+
+static void s_invalid_caching_around_translation_table(translation_table_info* table)
+{
+    invalidate_data_cache_of_size(table->page_global_directory, 4096);
+    invalidate_data_cache_of_size(table->page_upper_directory, table->number_of_page_upper_directory_entrys * 4096);
+
+    for (int i = 0; i < table->number_of_sections; i++)
+    {
+        translation_table_page_middle_directory_info* pmd = &table->page_middle_directorys[i];
+        size_t section_size_GiB = (pmd->number_of_page_middle_directory_entrys >> 9) + 
+        ((pmd->number_of_page_middle_directory_entrys & ((1 << 9) - 1)) ? 1 : 0);
+
+        invalidate_data_cache_of_size(pmd->page_middle_directory, section_size_GiB * 4096);
+    }
 }
