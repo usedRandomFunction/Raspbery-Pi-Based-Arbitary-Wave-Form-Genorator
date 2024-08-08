@@ -78,14 +78,14 @@ void set_ttbr0_el1(void* ptr)
 
 void invalidate_tlb()
 {
-    asm volatile ("tlbi vmalle1is\n\t"  // Invalidate all TLB entries for EL1
-    "dsb ish\n\t"                       // Data Synchronization Barrier
+    asm volatile (
+    "tlbi vmalle1is\n\t"  // Invalidate all TLB entries for EL1
+    "dsb sy\n\t"                       // Data Synchronization Barrier
     "isb");                             // Instruction Synchronization Barrier
 }
 
 void enable_caches()
 {
-    invalidate_caches();
     size_t sctlr;
     asm volatile ("mrs %x0, sctlr_el1" : "=r" (sctlr));
 
@@ -106,8 +106,8 @@ void dissable_caches()
     size_t sctlr;
     asm volatile ("mrs %x0, sctlr_el1" : "=r" (sctlr));
 
-    sctlr &= ~(((size_t)1) << 2);                    // Reset the C bit (bit 2) to dissable data cache
-    sctlr &= ~(((size_t)1) << 12);                   // Reset the I bit (bit 12) to dissable instruction cache
+    sctlr &= ~(((size_t)1) << 2);       // Reset the C bit (bit 2) to dissable data cache
+    sctlr &= ~(((size_t)1) << 12);      // Reset the I bit (bit 12) to dissable instruction cache
 
     asm volatile ("msr sctlr_el1, x0\n\t"
     "isb"                               // Instruction Synchronization Barrier
@@ -118,11 +118,29 @@ void dissable_caches()
     invalidate_tlb();
 }
 
-void invalidate_caches()
+void invalidate_data_cache(void* VA_start, void* VA_end)
 {
-    asm volatile ("ic iallu\n\t"        // Invalidate all instruction caches to PoU
-    "dsb nsh\n\t"                       // Data Synchronization Barrier
-    "isb\n\t"                           // Instruction Synchronization Barrier
-    "dc ivac, xzr\n\t"                  // Invalidate all data caches to PoU
-    "dsb nsh");                         // Data Synchronization Barrier
+
+    uint64_t csselr_el1;
+    asm volatile ("mov x0, xzr\n\t"     // zero means get L1 data cache
+        "msr csselr_el1, x0\n\t"
+        "mrs %x0, csselr_el1" : "=r" (csselr_el1) : : "x0");
+
+    csselr_el1 &= 0x7;                  // Get The bytes per (cache) line
+    csselr_el1 += 4;
+
+    ptrdiff_t bytes_per_line = 1 << csselr_el1;
+
+    for (uint8_t* VA = (uint8_t*)VA_start; (void*)VA < VA_end; VA += bytes_per_line)
+    {
+        asm volatile ("dc civac, %0" : : "r" (VA));
+    }
+
+    asm volatile ("dsb sy\n\t"
+        "isb");
+}
+
+void invalidate_data_cache_of_size(void* VA_start, size_t size)
+{
+    invalidate_data_cache(VA_start, void_ptr_offset_bytes(VA_start, size));
 }

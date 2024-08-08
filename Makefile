@@ -26,9 +26,9 @@ CPP_SOURCES := $(shell find $(SRCDIR) -name '*.cpp')
 ASM_SOURCES := $(shell find $(SRCDIR) -name '*.s')
 
 # Object files
-C_OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(C_SOURCES))
-CPP_OBJECTS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(CPP_SOURCES))
-ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.o,$(ASM_SOURCES))
+C_OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.c.o,$(C_SOURCES))
+CPP_OBJECTS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.cpp.o,$(CPP_SOURCES))
+ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
 
 # Targets
 TARGET := $(BINDIR)/kernel.elf
@@ -39,17 +39,17 @@ $(TARGET): $(C_OBJECTS) $(CPP_OBJECTS) $(ASM_OBJECTS)
 	@echo !==== linking ====!
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+$(OBJDIR)/%.c.o: $(SRCDIR)/%.c
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+$(OBJDIR)/%.cpp.o: $(SRCDIR)/%.cpp
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.s
+$(OBJDIR)/%.s.o: $(SRCDIR)/%.s
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
 	$(CC) $(ASMFLAGS) -c -o $@ $<

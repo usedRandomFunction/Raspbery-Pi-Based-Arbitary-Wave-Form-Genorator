@@ -2,6 +2,7 @@
 #define MMU_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -36,8 +37,15 @@ void enable_caches();
 // Dissables both the data and instruction caches
 void dissable_caches();
 
-// Invalidates both the data and instruction caches
-void invalidate_caches();
+// Invalidates data cache with in the given range
+// @param VA_start The virtual address to start with
+// @param VA_end The virtual address to end with
+void invalidate_data_cache(void* VA_start, void* VA_end);
+
+// Invalidates data cache with in the given range
+// @param VA_start The virtual address to start with
+// @param size The nubmer of bytes to invalide
+void invalidate_data_cache_of_size(void* VA_start, size_t size);
 
 enum
 {
