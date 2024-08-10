@@ -19,135 +19,165 @@ static bool s_framebuffer_is_rgb; // True if RGB false if BGR
 bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 {
     s_framebuffer_bytes_per_line = 0;
-    s_framebuffer_pointer = (NULL);
+    s_framebuffer_pointer = NULL;
     s_framebuffer_is_rgb = false;
-    s_framebuffer_height = 0;
-    s_framebuffer_width = 0;
+    s_framebuffer_height = FRAMEBUFFER_HEIGHT;
+    s_framebuffer_width = FRAMEBUFFER_WIDTH;
 
     uart_puts("Initializing frame buffer!\n");
 
-    property_tag_set_physical_display_width_height set_physical_display_width_height; 
-    set_physical_display_width_height.header.buffersize = PROPERTY_TAG_SET_PHYSICAL_DISPLAY_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE;
-    set_physical_display_width_height.header.tagID = PROPERTY_TAG_ID_SET_PHYS_WIDTH_HEIGHT;
-    set_physical_display_width_height.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_physical_display_width_height.height = 600;
-    set_physical_display_width_height.width = 1024;
+    const uint32_t tag_buffer_size_bytes = sizeof(property_tag_set_physical_display_width_height) +
+        sizeof(property_tag_set_virtual_buffer_width_height) +
+        sizeof(property_tag_set_virtual_offset) +
+        sizeof(property_tag_set_depth) +
+        sizeof(property_tag_set_pixel_order) +
+        sizeof(property_tag_allocate_buffer) +
+        sizeof(property_tag_get_pitch);
+
+    uint8_t property_tags_to_send[tag_buffer_size_bytes]; // just set up the buffer
+    ptrdiff_t buffer_offset = 0;
+
+    // ================ Note =============== //
+    // If you change the order in this table //
+    // you noeed to update the return buffer //
+    //              table aswell             //
+    // ================ Note =============== //
+
+    property_tag_set_physical_display_width_height* set_physical_display_width_height = 
+        (property_tag_set_physical_display_width_height*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_physical_display_width_height);
+
+    property_tag_set_virtual_buffer_width_height* set_virtual_buffer_width_height = 
+        (property_tag_set_virtual_buffer_width_height*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_virtual_buffer_width_height);
+
+    property_tag_set_virtual_offset* set_virtual_offset = 
+        (property_tag_set_virtual_offset*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_virtual_offset);
+
+    property_tag_set_depth* set_depth = 
+        (property_tag_set_depth*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_depth);
+
+    property_tag_set_pixel_order* set_pixel_order = 
+        (property_tag_set_pixel_order*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_pixel_order);
+
+    property_tag_allocate_buffer* allocate_buffer = 
+        (property_tag_allocate_buffer*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_allocate_buffer);
+
+    property_tag_get_pitch* get_pitch = 
+        (property_tag_get_pitch*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_get_pitch);
+
+    // ================ Note =============== //
+    // If you change the order in this table //
+    // you noeed to update the return buffer //
+    //              table aswell             //
+    // ================ Note =============== //
+
+    set_physical_display_width_height->header.buffersize = PROPERTY_TAG_SET_PHYSICAL_DISPLAY_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE;
+    set_physical_display_width_height->header.tagID = PROPERTY_TAG_ID_SET_PHYS_WIDTH_HEIGHT;
+    set_physical_display_width_height->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    set_physical_display_width_height->height = s_framebuffer_height;
+    set_physical_display_width_height->width = s_framebuffer_width;
+
+    set_virtual_buffer_width_height->header.buffersize = PROPERTY_TAG_SET_VIRTUAL_BUFFER_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE;
+    set_virtual_buffer_width_height->header.tagID = PROPERTY_TAG_ID_SET_VIRT_WIDTH_HEIGHT;
+    set_virtual_buffer_width_height->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    set_virtual_buffer_width_height->height = s_framebuffer_height;
+    set_virtual_buffer_width_height->width = s_framebuffer_width;
+
+    set_virtual_offset->header.buffersize = PROPERTY_TAG_SET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE;
+    set_virtual_offset->header.tagID = PROPERTY_TAG_ID_SET_VIRTUAL_OFFSET;
+    set_virtual_offset->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    set_virtual_offset->X = 0;
+    set_virtual_offset->Y = 0;
+
+    set_depth->header.buffersize = PROPERTY_TAG_SET_DEPTH_REQUEST_RESPONSE_SIZE;
+    set_depth->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    set_depth->header.tagID = PROPERTY_TAG_ID_SET_DEPTH;
+    set_depth->bits_per_pixel = 32;
+
+    set_pixel_order->header.buffersize = PROPERTY_TAG_SET_PIXEL_ORDER_REQUEST_RESPONSE_SIZE;
+    set_pixel_order->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    set_pixel_order->header.tagID = PROPERTY_TAG_ID_SET_PIXEL_ORDER;
+    set_pixel_order->state = PROPERTY_TAG_PIXEL_ORDER_RGB;
+
+    allocate_buffer->header.buffersize = PROPERTY_TAG_ALLOCATE_BUFFER_REQUEST_RESPONSE_SIZE;
+    allocate_buffer->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    allocate_buffer->header.tagID = PROPERTY_TAG_ID_ALLOCATE_BUFFER;
+    allocate_buffer->alignment_in_bytes = 4096;
+
+    get_pitch->header.buffersize = PROPERTY_TAG_GET_PITCH_REQUEST_RESPONSE_SIZE;
+    get_pitch->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    get_pitch->header.tagID = PROPERTY_TAG_ID_GET_PITCH;
+
+    uint8_t* property_tag_return = (uint8_t*)get_property_tags((property_tag*)property_tags_to_send, tag_buffer_size_bytes, aligned_alloc, free);
+
+    if (property_tag_return == NULL)
+    {
+        uart_puts("Failed to initialize frame buffer: get_property_tags() failed!\n");
+        return false;
+    }
+
+
+    buffer_offset = 0;
+
+    
+    // ================ Note =============== //
+    // If you change the order in this table //
+    //    you noeed to update the request    //
+    //          buffer table aswell          //
+    // ================ Note =============== //
 
     property_tag_set_physical_display_width_height_responce* set_physical_display_width_height_responce = 
-        (property_tag_set_physical_display_width_height_responce*)get_property_tag((property_tag*)&set_physical_display_width_height, 
-        aligned_alloc_noncachable, free_noncachable_memory);
+        (property_tag_set_physical_display_width_height_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_physical_display_width_height_responce);
 
-    if (set_physical_display_width_height_responce == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: set physical display width height failed!\n");
-        return false;
-    }
+    property_tag_set_virtual_buffer_width_height_responce* set_virtual_buffer_width_height_responce = 
+        (property_tag_set_virtual_buffer_width_height_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_virtual_buffer_width_height_responce);
 
-    s_framebuffer_height = set_physical_display_width_height_responce->height;
-    s_framebuffer_width = set_physical_display_width_height_responce->width;
+    property_tag_set_virtual_offset_responce* set_virtual_offset_responce = 
+        (property_tag_set_virtual_offset_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_virtual_offset_responce);
 
-    free_noncachable_memory(set_physical_display_width_height_responce);
+    property_tag_set_depth_responce* set_depth_responceresponce = 
+        (property_tag_set_depth_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_depth_responce);
 
-    property_tag_set_virtual_offset set_virtual_offset;
-    set_virtual_offset.header.buffersize = PROPERTY_TAG_SET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE;
-    set_virtual_offset.header.tagID = PROPERTY_TAG_ID_SET_VIRTUAL_OFFSET;
-    set_virtual_offset.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_virtual_offset.X = 0;
-    set_virtual_offset.Y = 0;
+    property_tag_set_pixel_order_responce* set_pixel_order_responce = 
+        (property_tag_set_pixel_order_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_pixel_order_responce);
 
-    property_tag* throw_away_tag;
+    property_tag_allocate_buffer_responce* allocate_buffer_responce = 
+        (property_tag_allocate_buffer_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_allocate_buffer_responce);
 
-    throw_away_tag = get_property_tag((property_tag*)&set_virtual_offset, aligned_alloc_noncachable, free_noncachable_memory);
-    if (throw_away_tag == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: set virtual offset failed!\n");
-        return false;
-    }
+    property_tag_get_pitch_responce* get_pitch_responce = 
+        (property_tag_get_pitch_responce*) (property_tag_return + buffer_offset);
+    buffer_offset += sizeof(property_tag_get_pitch_responce);
 
-    free_noncachable_memory(throw_away_tag);
+    // ================ Note =============== //
+    // If you change the order in this table //
+    //    you noeed to update the request    //
+    //          buffer table aswell          //
+    // ================ Note =============== //
 
-    property_tag_set_virtual_buffer_width_height set_virtual_buffer_width_height;
-    set_virtual_buffer_width_height.header.buffersize = PROPERTY_TAG_SET_VIRTUAL_BUFFER_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE;
-    set_virtual_buffer_width_height.header.tagID = PROPERTY_TAG_ID_SET_VIRT_WIDTH_HEIGHT;
-    set_virtual_buffer_width_height.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_virtual_buffer_width_height.height = 7;
-    set_virtual_buffer_width_height.width = s_framebuffer_width;
 
-    throw_away_tag = get_property_tag((property_tag*)&set_virtual_buffer_width_height, aligned_alloc_noncachable, free_noncachable_memory);
-    if (throw_away_tag == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: set virtual buffer width height failed!\n");
-        return false;
-    }
-
-    free_noncachable_memory(throw_away_tag);
-
-    property_tag_set_depth set_depth;
-    set_depth.header.buffersize = PROPERTY_TAG_SET_DEPTH_REQUEST_RESPONSE_SIZE;
-    set_depth.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_depth.header.tagID = PROPERTY_TAG_ID_SET_DEPTH;
-    set_depth.bits_per_pixel = 32;
-
-    throw_away_tag = get_property_tag((property_tag*)&set_depth, aligned_alloc_noncachable, free_noncachable_memory);
-    if (throw_away_tag == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: set depth failed!\n");
-        return false;
-    }
-
-    free_noncachable_memory(throw_away_tag);
-
-    property_tag_set_pixel_order set_pixel_order;
-    set_pixel_order.header.buffersize = PROPERTY_TAG_SET_PIXEL_ORDER_REQUEST_RESPONSE_SIZE;
-    set_pixel_order.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_pixel_order.header.tagID = PROPERTY_TAG_ID_SET_PIXEL_ORDER;
-    set_pixel_order.state = PROPERTY_TAG_PIXEL_ORDER_RGB;
-
-    property_tag_set_pixel_order_responce* set_pixel_order_responce = (property_tag_set_pixel_order_responce*)
-        get_property_tag((property_tag*)&set_pixel_order, aligned_alloc_noncachable, free_noncachable_memory);
-    if (set_pixel_order_responce == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: set pixel order failed!\n");
-        return false;
-    }
 
     s_framebuffer_is_rgb = set_pixel_order_responce->state == PROPERTY_TAG_PIXEL_ORDER_RGB;
-
-    free_noncachable_memory(set_pixel_order_responce);
-
-    property_tag_allocate_buffer allocate_buffer;
-    allocate_buffer.header.buffersize = PROPERTY_TAG_ALLOCATE_BUFFER_REQUEST_RESPONSE_SIZE;
-    allocate_buffer.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    allocate_buffer.header.tagID = PROPERTY_TAG_ID_ALLOCATE_BUFFER;
-    allocate_buffer.alignment_in_bytes = 4096;
-
-    property_tag_allocate_buffer_responce* framebuffer = (property_tag_allocate_buffer_responce* )get_property_tag((property_tag*)&allocate_buffer, aligned_alloc_noncachable, free_noncachable_memory);
-    if (framebuffer == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: failed to allocate framebuffer!\n");
-        return false;
-    }
-
-    property_tag_get_pitch get_pitch;
-    get_pitch.header.buffersize = PROPERTY_TAG_GET_PITCH_REQUEST_RESPONSE_SIZE;
-    get_pitch.header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    get_pitch.header.tagID = PROPERTY_TAG_ID_GET_PITCH;
-
-    property_tag_get_pitch_responce* pitch_repsonce = (property_tag_get_pitch_responce*)get_property_tag((property_tag*)&get_pitch, aligned_alloc_noncachable, free_noncachable_memory);
-
-    if (pitch_repsonce == NULL)
-    {
-        uart_puts("Failed to initialize frame buffer: failed to get bytes per line!\n");
-        free_noncachable_memory(framebuffer);
-        return false;
-    }
-
-    s_framebuffer_bytes_per_line = pitch_repsonce->bytes_per_line;
+    s_framebuffer_height = set_physical_display_width_height_responce->height;
+    s_framebuffer_width = set_physical_display_width_height_responce->width;
+    s_framebuffer_bytes_per_line = get_pitch_responce->bytes_per_line;
 
     ptrdiff_t framebuffer_offset = 0;
 
     page_allocation_info* framebuffer_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(
-        VC_address_to_arm(*(void**)&framebuffer->base_address), framebuffer->size, &framebuffer_offset);
+        VC_address_to_arm(*(void**)&allocate_buffer_responce->base_address), allocate_buffer_responce->size, &framebuffer_offset);
+    free(property_tag_return);
 
     translation_table_section_info table_section;
     table_section.allocation = framebuffer_allocation;
@@ -155,7 +185,6 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     table_section.upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
     table_section.section_start = FRAMEBUFFER_VIRUTAL_ADDRESS_BASE; // We dont include the FFFF prefix here
     insert_translation_table_section(&kernel_translation_table, &table_section, true);
-    free_noncachable_memory(framebuffer);
 
     s_framebuffer_pointer = void_ptr_offset_bytes(FRAMEBUFFER_VIRUTAL_ADDRESS_BASE, framebuffer_offset + KERNEL_MEMORY_PREFIX);
 

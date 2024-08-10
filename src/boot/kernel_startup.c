@@ -170,12 +170,6 @@ static void initialize_virtual_address_translation()
     table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
 
     // MMIO section
-    // This looks bad becouse it is lamo
-    // Since the mmio memory wont be allocateable we have to fake it
-    // page_allocation_info* mmio_allocation = malloc(sizeof(page_allocation_info));
-    // mmio_allocation->first_page = (MMIO_Base_Address / page_allocator_page_size_bytes);
-    // mmio_allocation->size = (1 << 24) / page_allocator_page_size_bytes; // Just assume the MMIO is 2^24 bytes
-    // mmio_allocation->next = NULL;
     ptrdiff_t mmio_allocation_offset;
     page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(*(void**)&MMIO_Base_Address, 1 << 24, 
         &mmio_allocation_offset);

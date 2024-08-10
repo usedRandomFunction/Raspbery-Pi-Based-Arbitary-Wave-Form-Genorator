@@ -62,6 +62,9 @@ clean:
 	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel.elf
 	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel8.img
 
+lines_of_code:
+	wc -l `find ./src -type f` +  wc -l `find ./inc -type f`
+
 run_halt:
 	@echo !==== Running ====!
 	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -display none -serial stdio -s -S
