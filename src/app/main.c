@@ -1,3 +1,4 @@
+#include "io/pc_screen_font.h"
 #include "io/propertyTags.h"
 #include "io/framebuffer.h"
 #include "app/startup.h"
@@ -12,12 +13,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+extern pc_screen_font_header _binary_data_font_psf_start; 
 
-#if defined(__cplusplus)
-extern "C" /* Use C linkage for main. */
-#endif
 int main()
 {
+    current_font = &_binary_data_font_psf_start;
     // PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_ARM, "Arm", 1.2f);
     // PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_CORE, "Core", 1.3f);
     // PrintMaxiumClockSpeedAndSet(PROPERTY_TAG_CLOCK_ID_SDRAM, "SDRam", 1.2f);
@@ -29,24 +29,14 @@ int main()
     {
         for (int x = 0 ; x < width; x++)
         {
-            float red = x / (float)width;
-            float green = y / (float)height;
-            float blue = ((width - (float)x)*(width - (float)x) * ((float)height - y)*((float)height - y)) / ((width * width / 4.0f) * (height * height / 4.0f));
-
-            set_framebuffer_pixel(x, y, red * 255, green * 255, blue * 255);
+            set_framebuffer_pixel(x, y, 0, 0, 0);
         }
     }
 
+    int x = 0;
+    int y = 0;
+
+    pc_screen_font_darw("test\nNew line\\\nNot new line \\\\", &x, &y);
+
     return 0;
-}
-
-void* operator new(size_t size)
-{
-    void * p = malloc(size);
-    return p;
-}
-
-void operator delete(void * p)
-{
-    free(p);
 }

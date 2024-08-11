@@ -176,7 +176,7 @@ static void initialize_virtual_address_translation()
     table_sections[2].allocation = mmio_allocation;
     table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
-    table_sections[2].section_start = (void*)0x000080000000; // We dont include the FFFF prefix here
+    table_sections[2].section_start = MMIO_VIRUTAL_ADDRESS_BASE;
 
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
@@ -189,7 +189,7 @@ static void initialize_virtual_address_translation()
     free(temporary_pud);
     free(temporary_pgd);
 
-    MMIO_Base_Address = 0xFFFF000080000000 + mmio_allocation_offset;
+    MMIO_Base_Address = ((size_t)MMIO_VIRUTAL_ADDRESS_BASE) + 0xFFFF000000000000 + mmio_allocation_offset;
     set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
     uart_puts("Remapped MMIO to ");

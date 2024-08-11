@@ -1,0 +1,60 @@
+#include "io/pc_screen_font.h"
+
+#include "io/framebuffer.h"
+
+#include <stddef.h>
+
+pc_screen_font_header* current_font = NULL;
+
+void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y)
+{
+    pc_screen_font_darw_ex(str, x, y, 0, get_framebuffer_width(), true);
+}
+
+void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, bool are_special_characters_enabled)
+{
+    int bytesperline = (current_font->width+7)/8;
+    bool special_characters_enabled = are_special_characters_enabled;
+    
+    for ( ; *str != '\0' ; str++)
+    {
+        if ((*x + current_font->width) >= x_max ||
+            (*str == '\n' && special_characters_enabled))
+        {
+            *x = x_min;
+            *y += current_font->height;
+            continue;
+        }
+
+        if (*str == '\\' && special_characters_enabled)
+        {
+            special_characters_enabled = false;
+            continue;
+        }
+        else
+            special_characters_enabled = are_special_characters_enabled;
+
+        
+        int glyph_number = *((uint8_t*)str) < current_font->numglyph ? *((uint8_t*)str) : 0;
+        uint8_t* glyph = &current_font->glyphs + glyph_number * current_font->bytesperglyph;
+
+        for (int y_offset = 0 ; y_offset < current_font->height; y_offset++)
+        {
+            uint64_t current_line_glyph = *(uint64_t*)glyph;
+
+            for (int x_offset = 0 ; x_offset < current_font->width; x_offset++)
+            {
+                bool mask = ((current_line_glyph) & (1 << (8 -x_offset))) != 0;
+
+                if (mask)
+                    set_framebuffer_pixel(*x + x_offset, *y + y_offset, 225, 225, 225);
+                else
+                    set_framebuffer_pixel(*x + x_offset, *y + y_offset, 0, 0, 0);
+            }
+
+            glyph += bytesperline;
+        }
+
+        *x += current_font->width;
+    }
+}

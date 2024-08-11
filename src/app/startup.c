@@ -46,7 +46,7 @@ void PrintSystemSpecs()
     arm_memory_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
     arm_memory_tag.header.buffersize = PROPERTY_TAG_GET_ARM_MEMORY_REQUEST_RESPONSE_SIZE;
     
-    auto* arm_memory_tag_responce = (property_tag_get_arm_memory_responce*)get_property_tag((property_tag*)&arm_memory_tag, aligned_alloc, free);
+    property_tag_get_arm_memory_responce* arm_memory_tag_responce = (property_tag_get_arm_memory_responce*)get_property_tag((property_tag*)&arm_memory_tag, aligned_alloc, free);
     if (arm_memory_tag_responce != NULL)
     {
         uart_puts("Arm base address: ");
@@ -66,7 +66,7 @@ void PrintSystemSpecs()
     get_temperature.header.request = PROPERTY_TAG_PROCESS_REQUEST;
     get_temperature.temperature_id = 0;
 
-    auto* get_temperature_responce = (property_tag_get_temperature_responce*)get_property_tag((property_tag*)&get_temperature, aligned_alloc, free);
+    property_tag_get_temperature_responce* get_temperature_responce = (property_tag_get_temperature_responce*)get_property_tag((property_tag*)&get_temperature, aligned_alloc, free);
     if (get_temperature_responce != NULL)
     {
         uart_puts("Max safe SOC temp: ");
