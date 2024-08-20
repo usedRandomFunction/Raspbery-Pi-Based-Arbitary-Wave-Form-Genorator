@@ -7,6 +7,7 @@
 #include "io/framebuffer.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
+#include "io/printf.h"
 #include "lib/mmu.h"
 #include "io/uart.h"
 
@@ -47,15 +48,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	uart_init(115200);
 	#endif
 
-	uart_puts("Started system, board type: ");
-	uart_puts(get_board_name(boardType));
-
-	uart_puts("\nException level: ");
-    unsigned int reg = 0;
-    asm volatile ("mrs %x0, CurrentEL" : "=r" (reg));
-    uart_putui(reg >> 2);
-    uart_putc('\n');
-
+	printf("Started system, board type: %s\n", get_board_name(boardType));
 
 	prepare_memory_manager();
     initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
@@ -63,14 +56,16 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
     if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
         kernel_panic();
     
-	uart_puts("Starting main function!\n");
+	printf("Starting main function!\n");
 	int result = main();
 
-	uart_puts("Program ended with code: ");
-	uart_puti(result);
-	uart_puts("!\n");
+	printf("Program ended with code: %d!\n", result);
+
 	while (1)
-		uart_putc(uart_getc());
+    {
+        uart_getc();
+        printf("System halted please restart!");
+    }
 }
 
 static void prepare_memory_manager()
@@ -114,7 +109,7 @@ static void initialize_virtual_address_translation()
 
     set_ttbr1_el1(get_physical_address(temporary_pgd));
 
-    uart_puts("Enabled temporary transliation table\n");
+    printf("Enabled temporary transliation table\n");
     
     void* new_allocator_base_address = (void*) 0xFFFF000040000000;
     ptrdiff_t new_heap_location_offset = new_allocator_base_address - kernel_heap_allocator.controll_region_start;
@@ -125,7 +120,7 @@ static void initialize_virtual_address_translation()
     temporary_pud = (uint64_t*)void_ptr_offset_bytes(temporary_pud, new_heap_location_offset);
     temporary_pgd = (uint64_t*)void_ptr_offset_bytes(temporary_pgd, new_heap_location_offset);
 
-    uart_puts("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
+    printf("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
 
     if (!initialize_page_allocator())
         kernel_panic();
@@ -140,7 +135,7 @@ static void initialize_virtual_address_translation()
 
     if (allocation_offset != 0)
     {
-        uart_puts("Failed to create kernel code allocation: offset != 0\n");
+        printf("Failed to create kernel code allocation: offset != 0\n");
         kernel_panic();
     }
 
@@ -149,14 +144,14 @@ static void initialize_virtual_address_translation()
 
     if (allocation_offset != 0)
     {
-        uart_puts("Failed to create kernel heap allocation: offset != 0\n");
+        printf("Failed to create kernel heap allocation: offset != 0\n");
         kernel_panic();
     }
 
     if (kernel_heap_page_allocation == NULL)
         kernel_panic();
 
-    uart_puts("Create kernel code and kernel heap, page allocations\n");
+    printf("Create kernel code and kernel heap, page allocations\n");
 
     translation_table_section_info table_sections[3];
     memclr(table_sections, sizeof(table_sections));
@@ -183,7 +178,7 @@ static void initialize_virtual_address_translation()
     
     set_ttbr1_el1(get_physical_address(kernel_translation_table.page_global_directory));
 
-    uart_puts("Switched to permante translation_table.\n");
+    printf("Switched to permante translation_table.\n");
     free(temporary_kernel_code_pmd);
     free(temporary_kernel_heap_pmd);
     free(temporary_pud);
@@ -192,16 +187,14 @@ static void initialize_virtual_address_translation()
     MMIO_Base_Address = ((size_t)MMIO_VIRUTAL_ADDRESS_BASE) + 0xFFFF000000000000 + mmio_allocation_offset;
     set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
-    uart_puts("Remapped MMIO to ");
-    uart_put_number_as_hex(MMIO_Base_Address);
-    uart_puts(".\n");
+    printf("Remapped MMIO to %x\n", MMIO_Base_Address);
 }
 
 void free(void* p)
 {
     if (p == NULL)
     {
-        uart_puts("kernel attempted to free NULL pointer");
+        printf("kernel attempted to free NULL pointer");
         kernel_panic();
     }
 
@@ -219,7 +212,7 @@ void* aligned_alloc(size_t alignment, size_t size)
     {
         if (((alignment & (alignment - 1)) != 0))
         {
-            uart_puts("\nUnable to allocat memory, only alight ments of a power of two");
+            printf("\nUnable to allocat memory, only alight ments of a power of two");
             return NULL;
         }
 

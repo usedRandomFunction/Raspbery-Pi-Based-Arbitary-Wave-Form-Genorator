@@ -5,8 +5,8 @@
 #include "io/propertyTags.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
+#include "io/printf.h"
 #include "lib/mmu.h"
-#include "io/uart.h"
 
 extern translation_table_info kernel_translation_table;
 
@@ -24,7 +24,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     s_framebuffer_height = FRAMEBUFFER_HEIGHT;
     s_framebuffer_width = FRAMEBUFFER_WIDTH;
 
-    uart_puts("Initializing frame buffer!\n");
+    printf("Initializing frame buffer!\n");
 
     const uint32_t tag_buffer_size_bytes = sizeof(property_tag_set_physical_display_width_height) +
         sizeof(property_tag_set_virtual_buffer_width_height) +
@@ -118,7 +118,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 
     if (property_tag_return == NULL)
     {
-        uart_puts("Failed to initialize frame buffer: get_property_tags() failed!\n");
+        printf("Failed to initialize frame buffer: get_property_tags() failed!\n");
         return false;
     }
 
@@ -189,11 +189,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     s_framebuffer_pointer = void_ptr_offset_bytes(FRAMEBUFFER_VIRUTAL_ADDRESS_BASE, framebuffer_offset + KERNEL_MEMORY_PREFIX);
 
     
-    uart_puts("Successfully initialized frame buffer of size: ");
-    uart_putui(s_framebuffer_width);
-    uart_puts(" x ");
-    uart_putui(s_framebuffer_height);
-    uart_putc('\n');
+    printf("Successfully initialized frame buffer of size: %d x %d\n", s_framebuffer_width, s_framebuffer_height);
 
     return true;
 }

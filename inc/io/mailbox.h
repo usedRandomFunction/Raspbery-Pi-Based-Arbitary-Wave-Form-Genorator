@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "lib/memory.h"
-#include "io/uart.h"
+#include "io/printf.h"
 
 
 #ifdef __cplusplus
@@ -72,7 +72,7 @@ inline void mailbox_write_alliged_physcial_address(void* ptr, uint8_t channel)
     if (*(uint32_t*)&ptr & 0x0000000F != 0)
     #endif
     {
-        uart_puts("Failed to write to mailbox, address must fit into a 32 bit integer and be alligned to 16 bytes");
+        printf("Failed to write to mailbox, address must fit into a 32 bit integer and be alligned to 16 bytes");
         return;
     }
 
@@ -87,7 +87,7 @@ inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t c
     if (*(uint32_t*)&ptr & 0x0000000F != 0)
     #endif
     {
-        uart_puts("Failed to read from mailbox, address must fit into a 32 bit integer and be alligned to 16 bytes");
+        printf("Failed to read from mailbox, address must fit into a 32 bit integer and be alligned to 16 bytes");
         return 0;
     }
     

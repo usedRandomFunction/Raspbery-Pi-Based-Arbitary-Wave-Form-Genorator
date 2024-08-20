@@ -1,35 +1,16 @@
 #include "lib/arm_exceptions.h"
 
-#include "io/uart.h"
+#include "io/printf.h"
 
 __attribute__((noinline)) void kernel_panic()
 {
-	uart_puts("\nkernel panic!\nBegin function trace:\n");
+	printf("\nkernel panic!\nBegin function trace:\n");
 
-    uart_putc('0');
-    uart_puts(" : ");
-    uart_put_ptr(__builtin_return_address(0));
-    uart_putc('\n');
-
-    uart_putc('1');
-    uart_puts(" : ");
-    uart_put_ptr(__builtin_return_address(1));
-    uart_putc('\n');
-
-    uart_putc('2');
-    uart_puts(" : ");
-    uart_put_ptr(__builtin_return_address(2));
-    uart_putc('\n');
-
-    uart_putc('3');
-    uart_puts(" : ");
-    uart_put_ptr(__builtin_return_address(3));
-    uart_putc('\n');
-
-    uart_putc('4');
-    uart_puts(" : ");
-    uart_put_ptr(__builtin_return_address(4));
-    uart_putc('\n');
+    printf("0 : %x\n", __builtin_return_address(0));
+    printf("1 : %x\n", __builtin_return_address(1));
+    printf("2 : %x\n", __builtin_return_address(2));
+    printf("3 : %x\n", __builtin_return_address(3));
+    printf("4 : %x\n", __builtin_return_address(4));
 
 	asm volatile ("wfe");
 	while (1)
@@ -42,66 +23,62 @@ __attribute__((noinline)) void kernel_panic()
 
 void arm_exception_handler(unsigned long type) // TODO maby print x0-x30 for more usesfuly data
 {
-    uart_puts("arm exception detected!\n");
+    printf("arm exception detected!\n");
     // print out interruption type
     switch(type) {
-        case 0: uart_puts("\nSynchronous"); break;
-        case 1: uart_puts("\nIRQ"); break;
-        case 2: uart_puts("\nFIQ"); break;
-        case 3: uart_puts("\nSError"); break;
+        case 0: printf("\nSynchronous"); break;
+        case 1: printf("\nIRQ"); break;
+        case 2: printf("\nFIQ"); break;
+        case 3: printf("\nSError"); break;
     }
-    uart_puts(": ");
+    printf(": ");
 
     size_t reg;
     asm volatile ( "mrs %0, esr_el1" : "=r"(reg));
 
     // decode exception type (some, not all. See ARM DDI0487B_b chapter D10.2.28)
     switch(reg>>26) {
-        case 0b000000: uart_puts("Unknown"); break;
-        case 0b000001: uart_puts("Trapped WFI/WFE"); break;
-        case 0b001110: uart_puts("Illegal execution"); break;
-        case 0b010101: uart_puts("System call"); break;
-        case 0b100000: uart_puts("Instruction abort, lower EL"); break;
-        case 0b100001: uart_puts("Instruction abort, same EL"); break;
-        case 0b100010: uart_puts("Instruction alignment fault"); break;
-        case 0b100100: uart_puts("Data abort, lower EL"); break;
-        case 0b100101: uart_puts("Data abort, same EL"); break;
-        case 0b100110: uart_puts("Stack alignment fault"); break;
-        case 0b101100: uart_puts("Floating point"); break;
-        default: uart_puts("Unknown"); break;
+        case 0b000000: printf("Unknown"); break;
+        case 0b000001: printf("Trapped WFI/WFE"); break;
+        case 0b001110: printf("Illegal execution"); break;
+        case 0b010101: printf("System call"); break;
+        case 0b100000: printf("Instruction abort, lower EL"); break;
+        case 0b100001: printf("Instruction abort, same EL"); break;
+        case 0b100010: printf("Instruction alignment fault"); break;
+        case 0b100100: printf("Data abort, lower EL"); break;
+        case 0b100101: printf("Data abort, same EL"); break;
+        case 0b100110: printf("Stack alignment fault"); break;
+        case 0b101100: printf("Floating point"); break;
+        default: printf("Unknown"); break;
     }
     // decode data abort cause
     if(reg>>26==0b100100 || reg>>26==0b100101) {
-        uart_puts(", ");
+        printf(", ");
         switch((reg>>2)&0x3) {
-            case 0: uart_puts("Address size fault"); break;
-            case 1: uart_puts("Translation fault"); break;
-            case 2: uart_puts("Access flag fault"); break;
-            case 3: uart_puts("Permission fault"); break;
+            case 0: printf("Address size fault"); break;
+            case 1: printf("Translation fault"); break;
+            case 2: printf("Access flag fault"); break;
+            case 3: printf("Permission fault"); break;
         }
         switch(reg&0x3) {
-            case 0: uart_puts(" at level 0"); break;
-            case 1: uart_puts(" at level 1"); break;
-            case 2: uart_puts(" at level 2"); break;
-            case 3: uart_puts(" at level 3"); break;
+            case 0: printf(" at level 0"); break;
+            case 1: printf(" at level 1"); break;
+            case 2: printf(" at level 2"); break;
+            case 3: printf(" at level 3"); break;
         }
     }
     // dump registers
-    uart_puts(":\n  ESR_EL1 ");
-    uart_put_number_as_hex(reg);
+    asm volatile ( "mrs %0, esr_el1" : "=r"(reg));
+    printf(":\n  ESR_EL1 %x", reg);
 
     asm volatile ( "mrs %0, elr_el1" : "=r"(reg));
-    uart_puts(" ELR_EL1 (falt address) ");
-    uart_put_number_as_hex(reg);
+    printf(" ELR_EL1 (falt address) %x", reg);
 
     asm volatile ( "mrs %0, spsr_el1" : "=r"(reg));
-    uart_puts("\n SPSR_EL1 ");
-    uart_put_number_as_hex(reg);
+    printf("\n SPSR_EL1 %x", reg);
 
     asm volatile ( "mrs %0, far_el1" : "=r"(reg));
-    uart_puts(" FAR_EL1 ");
-    uart_put_number_as_hex(reg);
-    uart_puts("\n");
+    printf(" FAR_EL1 %x\n", reg);
 
     kernel_panic();
 }

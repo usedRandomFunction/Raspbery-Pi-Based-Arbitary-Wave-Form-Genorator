@@ -1,5 +1,5 @@
 #include "lib/preset_alloc.h"
-#include "io/uart.h"
+#include "io/printf.h"
 
 #include <stdbool.h>
 
@@ -35,7 +35,7 @@ void* preset_alloc_aligned_alloc(size_t alignment, size_t size)
         return buffer_B;
     }
 
-    uart_puts("preset_alloc failed!\n");
+    printf("preset_alloc failed!\n");
 }
 
 void preset_alloc_free(void* p)

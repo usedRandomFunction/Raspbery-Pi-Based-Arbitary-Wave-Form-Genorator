@@ -2,7 +2,7 @@
 #include "lib/arm_exceptions.h"
 #include "lib/string.h"
 #include "lib/memory.h"
-#include "io/uart.h"
+#include "io/printf.h"
 
 
 static uint_fast8_t get_nth_block_controll(uint_fast8_t* controll_region_start, size_t n);
@@ -73,26 +73,17 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
     hex_size_t(*((size_t*)&header), prefix + prefix_message_size - 1, 8);
     strcat(prefix, ": ");
 
-    uart_puts(prefix);
-    uart_puts("Allocator Started\n");
+    printf("%sAllocator Started\n", prefix);
 
-    uart_puts(prefix);
-    uart_puts("Controll Region uses: ");
-    uart_putui(controll_region_size_blocks << block_size_as_power_of_two);
-    uart_puts(" bytes\n");
+    printf("%sControll Region uses: %d bytes\n", prefix, controll_region_size_blocks << block_size_as_power_of_two);
 
-    uart_puts(prefix);
-    uart_puts("Allocatable Space: ");
-    uart_putf((header->number_of_total_blocks << block_size_as_power_of_two) / 1024.0f, 2);
-    uart_puts(" KiB of ");
-    uart_putf(region_size/ 1024.0f, 2);
-    uart_puts(" KiB \n");
+    printf("%sAllocatable Space: %d Kib of %d Kib\n",
+        prefix,
+        (header->number_of_total_blocks << block_size_as_power_of_two) / 1024,
+        region_size/ 1024);
 
 
-    uart_puts(prefix);
-    uart_puts("Total Blocks: ");
-    uart_putui(header->number_of_total_blocks);
-    uart_putc('\n');
+    printf("%sTotal Blocks: %d\n", prefix, header->number_of_total_blocks);
 
     // All set up
     // 𝕋𝕙𝕖𝕪'𝕣𝕖 𝕨𝕒𝕚𝕥𝕚𝕟𝕘 𝕗𝕠𝕣 𝕪𝕠𝕦 𝕘𝕠𝕣𝕕𝕠𝕟...𝕚𝕟 𝕥𝕙𝕖 𝕥𝕖𝕤𝕥 𝕔𝕙𝕒𝕞𝕓𝕖𝕣𝕣𝕣𝕣𝕣𝕣
@@ -100,12 +91,9 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
 
 void central_block_memory_allocator_free(void* ptr, central_block_memory_allocator_header* header)
 {
-    #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_ALLOC_FREE
-    uart_puts("\ncentral_block_memory_allocator_");
-    uart_put_ptr(header);
-    uart_puts(": Freeing ");
-    uart_put_ptr(ptr);
-    uart_putc('\n');
+    #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_ALLOC_FREE
+
+    printf("\ncentral_block_memory_allocator_%x: Freeing %x\n", header, (size_t)ptr);
     #endif
 
     const void* block_offset = (char*)ptr - (*(size_t*)&(header->allocation_region_start));
@@ -114,12 +102,10 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
 
     if (blockID >= header->number_of_total_blocks) // Is block does not exist, do free it
     {
-        #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_IF_FAILED_FREE
-        uart_puts("\ncentral_block_memory_allocator_");
-        uart_put_ptr(header);
-        uart_puts(": Failed to free block ");
-        uart_put_ptr(ptr);
-        uart_puts(", block does not exist!\n");
+        #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_IF_FAILED_FREE
+        printf("\ncentral_block_memory_allocator_%x: Failed to free block %x, block does not exist!\n",
+            header,
+            ptr);
         #endif
 
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED
@@ -131,12 +117,10 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
 
     if (get_nth_block_controll(header->controll_region_start, blockID) != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_START)
     {
-        #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_IF_FAILED_FREE
-        uart_puts("\ncentral_block_memory_allocator_");
-        uart_put_ptr(header);
-        uart_puts(": Failed to free block ");
-        uart_put_ptr(ptr);
-        uart_puts(", controll word != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_START\n");
+        #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_IF_FAILED_FREE
+        printf("\ncentral_block_memory_allocator_%x: Failed to free block %x, controll word != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_START\n",
+            header,
+            ptr);
         #endif
 
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED
@@ -166,14 +150,9 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     size_t allignment_check_offset = 0;
     size_t alligment_check_value = 0;
 
-    #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_ALLOC_FREE
-    uart_puts("\ncentral_block_memory_allocator_");
-    uart_put_ptr(header);
-    uart_puts(": allocating block <2^");
-    uart_putui(allignment_as_power_of_two);
-    uart_puts(", ");
-    uart_put_number_as_hex_without_leading_zeros(size);
-    uart_puts(">\n");
+    #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_ALLOC_FREE
+    printf("\ncentral_block_memory_allocator_%x: allocating block <2^%d, %x>\n",
+        header, allignment_as_power_of_two, size);
     #endif
 
     if (allignment_as_power_of_two == 0 || allignment_as_power_of_two <= header->block_size_as_power_of_two)
@@ -248,14 +227,10 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
 
     if (nblocks != required_blocks)
     {
-        #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_IF_FAILED_ALLOC
-        uart_puts("\ncentral_block_memory_allocator_");
-        uart_put_ptr(header);
-        uart_puts(": Failed to allocate block [");
-        uart_put_number_as_hex_without_leading_zeros(size);
-        uart_puts(", ");
-        uart_putui(allignment_as_power_of_two);
-        uart_puts("]\n");
+        #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_IF_FAILED_ALLOC
+        printf("\ncentral_block_memory_allocator_%x: Failed to allocate block [%x, %d]\n",
+            header, size, allignment_as_power_of_two);
+
         #endif
 
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED
@@ -285,10 +260,8 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     }
 
     void* return_value = void_ptr_offset_bytes(header->allocation_region_start, start_block << header->block_size_as_power_of_two);
-    #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_UART_PUT_ALLOC_FREE
-    uart_puts("returned: ");
-    uart_put_ptr(return_value);
-    uart_putc('\n');
+    #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_ALLOC_FREE
+    printf("returned: %x\n", (size_t)return_value);
     #endif
 
     return return_value;

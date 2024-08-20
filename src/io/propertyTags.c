@@ -1,6 +1,6 @@
 #include "io/propertyTags.h"
 #include "io/mailbox.h"
-#include "io/uart.h"
+#include "io/printf.h"
 #include "lib/mmu.h"
 
 
@@ -25,16 +25,14 @@ void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIG
 
     if (*(uint32_t*)&physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
     {  
-        uart_puts("\nFailed to write proptery tag: ");
+        printf("\nFailed to write proptery tag: ");
         if (*(uint32_t*)&physical_address != returnValue)
         {
-            uart_puts("address != returnValue\n return address: ");
-            uart_put_number_as_hex(returnValue); uart_putc('\n');
+            printf("address != returnValue\n return address: %x\n", returnValue);
         }
         else
         {
-            uart_puts("reponce code: ");
-            uart_put_number_as_hex(ptr->request_response_code); uart_putc('\n');
+            printf("reponce code: %x\n", ptr->request_response_code);
         }
 
         return;
@@ -52,16 +50,14 @@ property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALL
 
     if (*(uint32_t*)&physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
     {  
-        uart_puts("\nFailed to write proptery tag: ");
+        printf("\nFailed to write proptery tag: ");
         if (*(uint32_t*)&physical_address != returnValue)
         {
-            uart_puts("address != returnValue\n return address: ");
-            uart_put_number_as_hex(returnValue); uart_putc('\n');
+            printf("address != returnValue\n return address: %x\n", returnValue);
         }
         else
         {
-            uart_puts("reponce code: ");
-            uart_put_number_as_hex(ptr->request_response_code); uart_putc('\n');
+            printf("reponce code: %x\n", ptr->request_response_code);
         }
 
         return NULL;

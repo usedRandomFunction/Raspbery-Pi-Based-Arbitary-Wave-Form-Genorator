@@ -2,7 +2,7 @@
 
 #include "lib/arm_exceptions.h"
 #include "lib/memory.h"
-#include "io/uart.h"
+#include "io/printf.h"
 
 
 void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint16_t upper_attributes, uint16_t lower_attributes, bool block_table_bit)
@@ -12,8 +12,7 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
 
     if (pointer_address_as_number & 0xFFFF000000000FFF)
     {
-        uart_puts("write_page_descriptor: failed!\npointer_address has bits set outside of [47:12]!\n");
-        uart_put_ptr(pointer_address);
+        printf("write_page_descriptor: failed!\npointer_address has bits set outside of [47:12]!\n%x\n", pointer_address);
         kernel_panic();
     }
 
@@ -30,34 +29,31 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
 void print_page_descriptor(uint64_t* descriptor_address)
 {
     uint64_t descriptor = *descriptor_address;
-    uart_puts("Page table entry: ");
-    uart_put_ptr(get_physical_address(descriptor_address));
-    uart_puts(": \n    valid: ");
+    printf("Page table entry: %x: \n    valid: ", get_physical_address(descriptor_address));
+
     if (descriptor & 0b1)
     {
-        uart_puts("true\n    type: ");
+        printf("true\n    type: ");
     }
     else
     {
-        uart_puts("false\n");
+        printf("false\n");
         return;
     }
 
     if (descriptor & 0b10)
     {
-        uart_puts("table entry\n    pointer: ");
+        printf("table entry\n");
     }
     else
     {
-        uart_puts("page address\n    pointer: ");
+        printf("page address\n");
     }
 
-    uart_put_number_as_hex(descriptor & 0xFFFFFFFFF000);
-    uart_puts("\n    lower attributes: ");
-    uart_put_number_as_hex_without_leading_zeros((descriptor >> 2) & 0b111111111);
-    uart_puts("\n    upper attributes: ");
-    uart_put_number_as_hex_without_leading_zeros((descriptor >> 48) & 0x3FFFFF);
-    uart_putc('\n');
+    printf("    pointer: %x\n    lower attributes: %x\n    upper attributes: %x\n", 
+        descriptor & 0xFFFFFFFFF000,
+        (descriptor >> 2) & 0b111111111,
+        (descriptor >> 48) & 0x3FFFFF);
 }
 
 void set_ttbr1_el1(void* ptr)

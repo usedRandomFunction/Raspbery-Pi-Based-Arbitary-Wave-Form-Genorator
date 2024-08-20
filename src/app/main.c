@@ -15,6 +15,8 @@
 
 extern pc_screen_font_header _binary_data_font_psf_start; 
 
+#include "io/printf.h"
+
 int main()
 {
     current_font = &_binary_data_font_psf_start;
@@ -36,7 +38,10 @@ int main()
     int x = 0;
     int y = 0;
 
-    pc_screen_font_darw("test\nNew line\\\nNot new line \\\\", &x, &y);
+
+    printf("hello world, %x", KERNEL_MEMORY_PREFIX);
+
+    // pc_screen_font_darw(test, &x, &y);
 
     return 0;
 }
