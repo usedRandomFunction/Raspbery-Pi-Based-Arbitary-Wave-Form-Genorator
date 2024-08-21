@@ -4,19 +4,25 @@
 #include "lib/arm_exceptions.h"
 #include "lib/page_allocator.h"
 #include "io/memoryMappedIO.h"
+#include "io/pc_screen_font.h"
+#include "io/framebuffer.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
+#include "io/putchar.h"
+#include "io/printf.h"
 #include "lib/mmu.h"
 #include "io/uart.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 
+extern pc_screen_font_header _binary_data_font_psf_start;
 central_block_memory_allocator_header kernel_heap_allocator;
 translation_table_info kernel_translation_table;
 
-static void initialize_virtual_address_translation();
-static void prepare_memory_manager();
+static void s_initialize_virtual_address_translation();
+static void s_prepare_memory_manager();
+static void s_init_defult_values();
 
 int main(); // The main system Function
  
@@ -39,6 +45,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 {
 	int boardType = get_board_type();
 	set_mmio_base(boardType);
+    s_init_defult_values();
 
 	#ifdef UART_BAUD_RATE
 	uart_init(UART_BAUD_RATE);
@@ -46,31 +53,35 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	uart_init(115200);
 	#endif
 
-	uart_puts("Started system, board type: ");
-	uart_puts(get_board_name(boardType));
+	printf("Started system, board type: %s\n", get_board_name(boardType));
 
-	uart_puts("\nException level: ");
-    unsigned int reg = 0;
-    asm volatile ("mrs %x0, CurrentEL" : "=r" (reg));
-    uart_putui(reg >> 2);
-    uart_putc('\n');
+	s_prepare_memory_manager();
+    s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
-
-	prepare_memory_manager();
-    initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
-
-    print_translation_table(&kernel_translation_table);
-	uart_puts("Starting main function!\n");
+    if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
+        kernel_panic();
+    
+	printf("Starting main function!\n");
 	int result = main();
 
-	uart_puts("Program ended with code: ");
-	uart_puti(result);
-	uart_puts("!\n");
+	printf("Program ended with code: %d!\n", result);
+
 	while (1)
-		uart_putc(uart_getc());
+    {
+        uart_getc();
+        printf("System halted please restart!");
+    }
 }
 
-static void prepare_memory_manager()
+static void s_init_defult_values()
+{
+    uart_initall_init_has_occured = false;
+    is_frambuffer_initialized = false;
+    current_font = &_binary_data_font_psf_start;
+    putchar_init_values();
+}
+
+static void s_prepare_memory_manager()
 {
     size_t allocator_space = PROGRAM_END_ADDRESS_SIZE_T;
     size_t mannagedSpace = 2 * 1024 * 1024; // As this is the smallest page size we will use all of it
@@ -83,7 +94,7 @@ static void prepare_memory_manager()
     initialize_central_block_memory_allocator(*(void**)&allocator_space, mannagedSpace, 5, &kernel_heap_allocator);
 }
 
-static void initialize_virtual_address_translation() 
+static void s_initialize_virtual_address_translation() 
 {
     // Since the memory allocator is suposted to live at 0xFFFF000040000000 and the tables live in the heap we need to 
     // tempoaryly set up that address in the mmu
@@ -111,7 +122,7 @@ static void initialize_virtual_address_translation()
 
     set_ttbr1_el1(get_physical_address(temporary_pgd));
 
-    uart_puts("Enabled temporary transliation table\n");
+    printf("Enabled temporary transliation table\n");
     
     void* new_allocator_base_address = (void*) 0xFFFF000040000000;
     ptrdiff_t new_heap_location_offset = new_allocator_base_address - kernel_heap_allocator.controll_region_start;
@@ -122,7 +133,7 @@ static void initialize_virtual_address_translation()
     temporary_pud = (uint64_t*)void_ptr_offset_bytes(temporary_pud, new_heap_location_offset);
     temporary_pgd = (uint64_t*)void_ptr_offset_bytes(temporary_pgd, new_heap_location_offset);
 
-    uart_puts("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
+    printf("Remapped memory allocator to virutal address 0xFFFF000040000000\n");
 
     if (!initialize_page_allocator())
         kernel_panic();
@@ -137,7 +148,7 @@ static void initialize_virtual_address_translation()
 
     if (allocation_offset != 0)
     {
-        uart_puts("Failed to create kernel code allocation: offset != 0\n");
+        printf("Failed to create kernel code allocation: offset != 0\n");
         kernel_panic();
     }
 
@@ -146,14 +157,14 @@ static void initialize_virtual_address_translation()
 
     if (allocation_offset != 0)
     {
-        uart_puts("Failed to create kernel heap allocation: offset != 0\n");
+        printf("Failed to create kernel heap allocation: offset != 0\n");
         kernel_panic();
     }
 
     if (kernel_heap_page_allocation == NULL)
         kernel_panic();
 
-    uart_puts("Create kernel code and kernel heap, page allocations\n");
+    printf("Create kernel code and kernel heap, page allocations\n");
 
     translation_table_section_info table_sections[3];
     memclr(table_sections, sizeof(table_sections));
@@ -167,44 +178,36 @@ static void initialize_virtual_address_translation()
     table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
 
     // MMIO section
-    // This looks bad becouse it is lamo
-    // Since the mmio memory wont be allocateable we have to fake it
-    // page_allocation_info* mmio_allocation = malloc(sizeof(page_allocation_info));
-    // mmio_allocation->first_page = (MMIO_Base_Address / page_allocator_page_size_bytes);
-    // mmio_allocation->size = (1 << 24) / page_allocator_page_size_bytes; // Just assume the MMIO is 2^24 bytes
-    // mmio_allocation->next = NULL;
     ptrdiff_t mmio_allocation_offset;
     page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(*(void**)&MMIO_Base_Address, 1 << 24, 
         &mmio_allocation_offset);
     table_sections[2].allocation = mmio_allocation;
     table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
-    table_sections[2].section_start = (void*)0x000080000000; // We dont include the FFFF prefix here
+    table_sections[2].section_start = MMIO_VIRUTAL_ADDRESS_BASE;
 
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
     
     set_ttbr1_el1(get_physical_address(kernel_translation_table.page_global_directory));
 
-    uart_puts("Switched to permante translation_table.\n");
+    printf("Switched to permante translation_table.\n");
     free(temporary_kernel_code_pmd);
     free(temporary_kernel_heap_pmd);
     free(temporary_pud);
     free(temporary_pgd);
 
-    MMIO_Base_Address = 0xFFFF000080000000 + mmio_allocation_offset;
+    MMIO_Base_Address = ((size_t)MMIO_VIRUTAL_ADDRESS_BASE) + 0xFFFF000000000000 + mmio_allocation_offset;
     set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
-    uart_puts("Remapped MMIO to ");
-    uart_put_number_as_hex(MMIO_Base_Address);
-    uart_puts(".\n");
+    printf("Remapped MMIO to %x\n", MMIO_Base_Address);
 }
 
 void free(void* p)
 {
     if (p == NULL)
     {
-        uart_puts("kernel attempted to free NULL pointer");
+        printf("kernel attempted to free NULL pointer");
         kernel_panic();
     }
 
@@ -222,7 +225,7 @@ void* aligned_alloc(size_t alignment, size_t size)
     {
         if (((alignment & (alignment - 1)) != 0))
         {
-            uart_puts("\nUnable to allocat memory, only alight ments of a power of two");
+            printf("\nUnable to allocat memory, only alight ments of a power of two");
             return NULL;
         }
 

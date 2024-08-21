@@ -1,10 +1,10 @@
 # Directories
 SRCDIR := src
 BINDIR := bin
+DATADIR := data
 OBJDIR := $(BINDIR)/obj
 
 # Compiler and linker options
-# COMPILERPREFIX = aarch64-linux-gnu-
 COMPILERPREFIX = aarch64-elf-
 CC := $(COMPILERPREFIX)gcc
 CXX := $(COMPILERPREFIX)g++
@@ -17,50 +17,50 @@ DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
 CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Werror $(C_DEFINITIONS) -include inc/kconfig.h -g
-CXXFLAGS := -ffreestanding -nostartfiles  -std=c++17 -c -Iinc $(OPATMANISER_SETTING) -Werror -fno-exceptions -fno-rtti $(C_DEFINITIONS) -include inc/kconfig.h $(DEBUGFLAGS)
 LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS)
 
 # Source files
 C_SOURCES := $(shell find $(SRCDIR) -name '*.c')
-CPP_SOURCES := $(shell find $(SRCDIR) -name '*.cpp')
 ASM_SOURCES := $(shell find $(SRCDIR) -name '*.s')
+DATA_SOURCES := $(shell find $(DATADIR) -type f)
 
 # Object files
 C_OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.c.o,$(C_SOURCES))
-CPP_OBJECTS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.cpp.o,$(CPP_SOURCES))
 ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
+DATA_OBJECTS := $(patsubst $(DATADIR)/%, $(OBJDIR)/%.o, $(DATA_SOURCES))
 
 # Targets
 TARGET := $(BINDIR)/kernel.elf
 
-all: $(TARGET) image
+all: $(TARGET)
 
-$(TARGET): $(C_OBJECTS) $(CPP_OBJECTS) $(ASM_OBJECTS)
+$(TARGET): $(C_OBJECTS) $(CPP_OBJECTS) $(ASM_OBJECTS) $(DATA_OBJECTS)
 	@echo !==== linking ====!
 	$(LD) -o $@ $^ $(LDFLAGS)
+	@echo !==== Image Genoration ====!
+	aarch64-elf-objcopy $(BINDIR)/kernel.elf -O binary $(BINDIR)/kernel8.img
 
 $(OBJDIR)/%.c.o: $(SRCDIR)/%.c
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJDIR)/%.cpp.o: $(SRCDIR)/%.cpp
-	@echo !==== Compiling $^ ====!
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
 $(OBJDIR)/%.s.o: $(SRCDIR)/%.s
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
 	$(CC) $(ASMFLAGS) -c -o $@ $<
 
-image:
-	@echo !==== Image Genoration ====!
-	aarch64-elf-objcopy $(BINDIR)/kernel.elf -O binary $(BINDIR)/kernel8.img
+$(OBJDIR)/%.o: $(DATADIR)/%
+	@echo !==== Embeding $^ ====!
+	@mkdir -p $(dir $@)
+	aarch64-elf-ld -r -b binary -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel.elf
 	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel8.img
+
+lines_of_code:
+	wc -l `find ./src -type f` +  wc -l `find ./inc -type f`
 
 run_halt:
 	@echo !==== Running ====!

@@ -3,7 +3,7 @@
 #include "io/propertyTags.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
-#include "io/uart.h"
+#include "io/printf.h"
 
 #pragma region static_functions
 
@@ -56,7 +56,7 @@ bool initialize_page_allocator()
 
     if (memory_tag_responce == false)
     {
-        uart_puts("Failed to initialize page allocator: failed to get arm memory size!\n");
+        printf("Failed to initialize page allocator: failed to get arm memory size!\n");
         return false;
     }
 
@@ -69,17 +69,14 @@ bool initialize_page_allocator()
 
     if (s_page_availability == NULL)
     {
-        uart_puts("Failed to initialize page allocator: failed to allocate page availability table!\n");
+        printf("Failed to initialize page allocator: failed to allocate page availability table!\n");
         return false;
     }
 
     memclr(s_page_availability, required_bytes);
 
-    uart_puts("initialized page allocator with ");
-    uart_putui(s_total_number_of_pages);
-    uart_puts(" pages (");
-    uart_putui((s_total_number_of_pages << page_allocator_page_size_as_power_of_two) / 1024 / 1024);
-    uart_puts(" Mib)\n");
+    printf("initialized page allocator with %d pages(%d Mib)\n", (long)s_total_number_of_pages, 
+        (s_total_number_of_pages << page_allocator_page_size_as_power_of_two) / 1024 / 1024);
 
     return true;
 }
@@ -91,7 +88,7 @@ page_allocation_info* create_new_page_allocation(size_t size)
     page_allocation_info* root =  malloc(sizeof(page_allocation_info));
     if (root == NULL)
     {
-        uart_puts("Failed to create page alloaction: malloc failed!\n");
+        printf("Failed to create page alloaction: malloc failed!\n");
         return NULL;
     }
 
@@ -112,7 +109,7 @@ page_allocation_info* create_new_page_allocation(size_t size)
             page_allocation_info* new_alloc =  malloc(sizeof(page_allocation_info));
             if (new_alloc == NULL)
             {
-                uart_puts("Failed to create page alloaction: malloc failed!\n");
+                printf("Failed to create page alloaction: malloc failed!\n");
                 destroy_page_allocation(root);
                 return NULL;
             }
@@ -139,18 +136,15 @@ page_allocation_info* create_new_page_allocation(size_t size)
 
     if (pages_left != 0)
     {
-        uart_puts("Failed to create page alloaction: out of memory!\n");
+        printf("Failed to create page alloaction: out of memory!\n");
         destroy_page_allocation(root);
         return NULL;
     }
 
     s_total_allocated_pages += required_pages;
 
-    uart_puts("Created page allocation ");
-    uart_put_ptr(root);
-    uart_puts(" with size: ");
-    uart_putui((required_pages << page_allocator_page_size_as_power_of_two) / 1024);
-    uart_puts(" kib\n");
+    printf("Created page allocation %x with size: %d kib\n", (size_t)root, 
+        (required_pages << page_allocator_page_size_as_power_of_two) / 1024);
 
     return root;
 }
@@ -176,7 +170,7 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
 
     if (area_is_empty == false)
     {
-        uart_puts("Failed to create page alloaction: region is in use!\n");
+        printf("Failed to create page alloaction: region is in use!\n");
         return NULL;
     }
 
@@ -187,7 +181,7 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
     
     if (allocation == NULL)
     {
-        uart_puts("Failed to create page alloaction: malloc failed!\n");
+        printf("Failed to create page alloaction: malloc failed!\n");
         return NULL;
     }
 
@@ -199,14 +193,10 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
     if (offset != NULL)
         *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
 
-    uart_puts("Created continuous physical page allocation ");
-    uart_put_ptr(allocation);
-    uart_puts(" with size: ");
-    uart_putui((required_pages << page_allocator_page_size_as_power_of_two) / 1024);
-    uart_puts(" kib\n");
-    uart_puts("starting at: ");
-    uart_put_number_as_hex(page_start << page_allocator_page_size_as_power_of_two);
-    uart_putc('\n');
+    printf("Created continuous physical page allocation %x with size: %d kib\nstarting at: %x\n",
+        allocation,
+        (required_pages << page_allocator_page_size_as_power_of_two) / 1024,
+        page_start << page_allocator_page_size_as_power_of_two);
 
     return allocation;
 }
@@ -228,14 +218,10 @@ page_allocation_info* create_new_page_allocation_for_unmanaged_continuous_physic
     if (offset != NULL)
         *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
 
-    uart_puts("Created continuous (unmanaged) physical page allocation ");
-    uart_put_ptr(allocation);
-    uart_puts(" with size: ");
-    uart_putui((required_pages << page_allocator_page_size_as_power_of_two) / 1024);
-    uart_puts(" kib\n");
-    uart_puts("starting at: ");
-    uart_put_number_as_hex(page_start << page_allocator_page_size_as_power_of_two);
-    uart_putc('\n');
+    printf("Created continuous (unmanaged) physical page allocation %x with size: %d kib\nstarting at: %x\n",
+        allocation,
+        (required_pages << page_allocator_page_size_as_power_of_two) / 1024,
+        page_start << page_allocator_page_size_as_power_of_two);
 
     return allocation;
 }
@@ -268,9 +254,7 @@ bool resize_page_allocation(page_allocation_info* allocation, size_t new_size)
 
 void destroy_page_allocation(page_allocation_info* allocation)
 {
-    uart_puts("Destorying page: allocation ");
-    uart_put_ptr(allocation);
-    uart_putc('\n');
+    printf("Destorying page: allocation %x\n", allocation);
 
     while (allocation != NULL)
     {
@@ -319,20 +303,16 @@ static void s_set_page_availability(uint32_t page, bool is_allocated)
 static bool s_grow_page_allocation(page_allocation_info* allocation, size_t new_size, size_t current_size)
 {
     uint32_t size_dif = new_size - current_size;
-    uart_puts("Expanding page allocation: ");
-    uart_put_ptr(allocation);
-    uart_puts(" by ");
-    uart_putui((size_dif) / 1024);
-    uart_puts(" kib (");
-    uart_putui((new_size) / 1024);
-    uart_puts(" kib total)\nCreating extention allocation\n");
+    printf("Expanding page allocation: %x by %d kib (%d kib total)\nCreating extention allocation\n",
+        allocation,
+        (size_dif) / 1024,
+        (new_size) / 1024);
 
     page_allocation_info* extention_allocation = create_new_page_allocation(size_dif);
 
     if (extention_allocation == NULL)
     {
-        uart_puts("Failed to expand page allocation: ");
-        uart_put_ptr(allocation); uart_putc('\n');
+        printf("Failed to expand page allocation: %x", allocation);
 
         return false;
     }
@@ -348,7 +328,7 @@ static bool s_grow_page_allocation(page_allocation_info* allocation, size_t new_
     {   // It is not that edge case never mind
         last_allocation_section->next = extention_allocation;
 
-        uart_puts("Success!\n");
+        printf("Success!\n");
         return true;
     }
     // It *is* that edge case, so we merge them
@@ -364,13 +344,10 @@ static bool s_shrink_page_allocation(page_allocation_info* allocation, size_t ne
     size_t size_dif = current_size - new_size;
     uint32_t required_pages = (uint32_t)(new_size >> page_allocator_page_size_as_power_of_two);
     required_pages += (new_size & (page_allocator_page_size_bytes - 1) ? 1 : 0); // Devide round up
-    uart_puts("Shinking page allocation: ");
-    uart_put_ptr(allocation);
-    uart_puts(" by ");
-    uart_putui((size_dif) / 1024);
-    uart_puts(" kib (to ");
-    uart_putui((new_size) / 1024);
-    uart_puts(" kib)\n");
+    printf("Shinking page allocation: %x by %d kib (to %d kib)\n",
+        allocation,
+        (size_dif) / 1024,
+        (new_size) / 1024);
 
     page_allocation_info* to_shink = allocation;
 
@@ -388,13 +365,13 @@ static bool s_shrink_page_allocation(page_allocation_info* allocation, size_t ne
 
     if (current_pages < required_pages || pages_to_free == 0)
     {
-        uart_puts("Failed to shink allocation, allocation is smaller to expected!\n");
+        printf("Failed to shink allocation, allocation is smaller to expected!\n");
         return false;
     }
 
     if (to_shink->next != NULL)
     {
-        uart_puts("Deleting allocation section after cut off.");
+        printf("Deleting allocation section after cut off.");
         destroy_page_allocation(to_shink);
     }
 
@@ -406,6 +383,6 @@ static bool s_shrink_page_allocation(page_allocation_info* allocation, size_t ne
         s_set_page_availability(first_page_to_free + i, true);
     }
 
-    uart_puts("Success!\n");
+    printf("Success!\n");
     return true;
 }
