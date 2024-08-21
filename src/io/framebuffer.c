@@ -8,6 +8,8 @@
 #include "io/printf.h"
 #include "lib/mmu.h"
 
+bool is_frambuffer_initialized = false;
+
 extern translation_table_info kernel_translation_table;
 
 static uint32_t s_framebuffer_bytes_per_line;
@@ -188,6 +190,10 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 
     s_framebuffer_pointer = void_ptr_offset_bytes(FRAMEBUFFER_VIRUTAL_ADDRESS_BASE, framebuffer_offset + KERNEL_MEMORY_PREFIX);
 
+    is_frambuffer_initialized = true;
+
+    // Blank the screen
+    framebuffer_fill_rect(0, 0, get_framebuffer_width(), get_framebuffer_height(), 0, 0, 0);
     
     printf("Successfully initialized frame buffer of size: %d x %d\n", s_framebuffer_width, s_framebuffer_height);
 
@@ -214,6 +220,32 @@ void set_framebuffer_pixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t
         s_framebuffer_pointer[offset + 2] = r;
     }
     s_framebuffer_pointer[offset + 1] = g;
+}
+
+void framebuffer_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y, uint32_t copy_area_size_x, uint32_t copy_area_size_y, uint32_t paste_area_start_x, uint32_t paste_area_start_y)
+{
+    for (int y_offset = 0; y_offset < copy_area_size_y; y_offset++)
+    {
+        uint32_t copy_offset_start = (copy_area_start_x) * 4 + 
+            (copy_area_start_y + y_offset) * s_framebuffer_bytes_per_line;
+        
+        uint32_t paste_offset_start = (paste_area_start_x) * 4 + 
+            (paste_area_start_y + y_offset) * s_framebuffer_bytes_per_line;
+
+        memcpy(s_framebuffer_pointer + paste_offset_start, s_framebuffer_pointer + copy_offset_start, copy_area_size_x * 4);
+    }
+}
+
+
+void framebuffer_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint8_t r, uint8_t g, uint8_t b)
+{
+    for (int y = y0 ; y < y1; y++)
+    {
+        for (int x = x0 ; x < x1; x++)
+        {
+            set_framebuffer_pixel(x, y, r, g, b);
+        }
+    }
 }
 
 uint32_t get_framebuffer_height()

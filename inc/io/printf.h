@@ -24,6 +24,10 @@
  */
 
 // Moddifyed to include sprintf_s and reguler printf() (useing putchar())
+
+#ifndef PRINTF_H
+#define PRINTF_H
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -35,3 +39,5 @@ unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args);
 
 unsigned int sprintf_s(char *dst, size_t size_of_Buffer, char* fmt, ...);
 unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, char* fmt, __builtin_va_list args);
+
+#endif

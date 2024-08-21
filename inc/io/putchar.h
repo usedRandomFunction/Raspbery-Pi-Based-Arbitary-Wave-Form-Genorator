@@ -8,4 +8,6 @@
 // @return EOF if failed
 int putchar(int ch);
 
+void putchar_init_values();
+
 #endif

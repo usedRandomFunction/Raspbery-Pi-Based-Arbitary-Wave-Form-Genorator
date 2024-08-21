@@ -4,9 +4,11 @@
 #include "lib/arm_exceptions.h"
 #include "lib/page_allocator.h"
 #include "io/memoryMappedIO.h"
+#include "io/pc_screen_font.h"
 #include "io/framebuffer.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
+#include "io/putchar.h"
 #include "io/printf.h"
 #include "lib/mmu.h"
 #include "io/uart.h"
@@ -14,11 +16,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+extern pc_screen_font_header _binary_data_font_psf_start;
 central_block_memory_allocator_header kernel_heap_allocator;
 translation_table_info kernel_translation_table;
 
-static void initialize_virtual_address_translation();
-static void prepare_memory_manager();
+static void s_initialize_virtual_address_translation();
+static void s_prepare_memory_manager();
+static void s_init_defult_values();
 
 int main(); // The main system Function
  
@@ -41,6 +45,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 {
 	int boardType = get_board_type();
 	set_mmio_base(boardType);
+    s_init_defult_values();
 
 	#ifdef UART_BAUD_RATE
 	uart_init(UART_BAUD_RATE);
@@ -50,8 +55,8 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 
 	printf("Started system, board type: %s\n", get_board_name(boardType));
 
-	prepare_memory_manager();
-    initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
+	s_prepare_memory_manager();
+    s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
     if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
         kernel_panic();
@@ -68,7 +73,15 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
     }
 }
 
-static void prepare_memory_manager()
+static void s_init_defult_values()
+{
+    uart_initall_init_has_occured = false;
+    is_frambuffer_initialized = false;
+    current_font = &_binary_data_font_psf_start;
+    putchar_init_values();
+}
+
+static void s_prepare_memory_manager()
 {
     size_t allocator_space = PROGRAM_END_ADDRESS_SIZE_T;
     size_t mannagedSpace = 2 * 1024 * 1024; // As this is the smallest page size we will use all of it
@@ -81,7 +94,7 @@ static void prepare_memory_manager()
     initialize_central_block_memory_allocator(*(void**)&allocator_space, mannagedSpace, 5, &kernel_heap_allocator);
 }
 
-static void initialize_virtual_address_translation() 
+static void s_initialize_virtual_address_translation() 
 {
     // Since the memory allocator is suposted to live at 0xFFFF000040000000 and the tables live in the heap we need to 
     // tempoaryly set up that address in the mmu

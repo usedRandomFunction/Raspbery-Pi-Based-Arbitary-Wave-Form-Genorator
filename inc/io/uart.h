@@ -1,12 +1,15 @@
 #ifndef UART_H
 #define UART_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern bool uart_initall_init_has_occured;
 
 // Inintallizes a UART on pin 14, 15
 // @param baudrate The baudrate of the uart
