@@ -26,10 +26,7 @@ int main()
     for (int i = 0; i < 100; i++)
     {
         printf("hello world, %d\n", i);
-        for (size_t j = 0; j < 500; j++)
-        {
-            delay(100000);
-        }
+        delay_milliseconds(100);
     }
 
     return 0;
