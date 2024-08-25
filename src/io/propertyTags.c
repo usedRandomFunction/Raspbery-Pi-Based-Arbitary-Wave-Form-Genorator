@@ -19,14 +19,14 @@ static void* s_prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer
 void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     property_tag_buffer_header* ptr = s_prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
-    void* physical_address = get_physical_address(ptr);
+    size_t physical_address = (size_t)get_physical_address(ptr);
     
-    uint32_t returnValue = mailbox_write_read_physcial_alliged_address(physical_address, 8);
+    uint32_t returnValue = mailbox_write_read_physcial_alliged_address((void*)physical_address, 8);
 
-    if (*(uint32_t*)&physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
+    if ((uint32_t)physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
     {  
         printf("\nFailed to write proptery tag: ");
-        if (*(uint32_t*)&physical_address != returnValue)
+        if ((uint32_t)physical_address != returnValue)
         {
             printf("address != returnValue\n return address: %x\n", returnValue);
         }
@@ -44,14 +44,14 @@ void write_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIG
 property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     property_tag_buffer_header* ptr = s_prepare_property_tag_buffer(buffer, buffer_size, _malloc, _free);
-    void* physical_address = get_physical_address(ptr);
+    size_t physical_address = (size_t)get_physical_address(ptr);
     
-    uint32_t returnValue = mailbox_write_read_physcial_alliged_address(physical_address, 8);
+    uint32_t returnValue = mailbox_write_read_physcial_alliged_address((void*)physical_address, 8);
 
-    if (*(uint32_t*)&physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
+    if ((uint32_t)physical_address != returnValue || ptr->request_response_code != PROPERTY_TAG_REQUEST_SUCCESSFUL)
     {  
         printf("\nFailed to write proptery tag: ");
-        if (*(uint32_t*)&physical_address != returnValue)
+        if ((uint32_t)physical_address != returnValue)
         {
             printf("address != returnValue\n return address: %x\n", returnValue);
         }
@@ -74,7 +74,7 @@ property_tag* get_property_tags(property_tag* buffer, uint32_t buffer_size, MALL
 static void* s_prepare_property_tag_buffer(property_tag* buffer, uint32_t buffer_size, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free)
 {
     size_t true_buffer_size = buffer_size + sizeof(property_tag_buffer_header);
-    size_t buffer_end_tag_offset = true_buffer_size;
+    // size_t buffer_end_tag_offset = true_buffer_size;
     true_buffer_size += sizeof(uint32_t); // For end tag
 
     if (true_buffer_size & (4 - 1)) // Is not multiple of 4

@@ -41,7 +41,7 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
 
     // The start of the alloc region should be alligned to block_size
     void* alloc_region_start = void_ptr_offset_bytes(mem_start, controll_region_size_bytes);
-    size_t alloc_region_start_alignment_error = (*(size_t*)&alloc_region_start) & (block_size - 1);
+    size_t alloc_region_start_alignment_error = (size_t)alloc_region_start & (block_size - 1);
 
     if (alloc_region_start_alignment_error != 0)
     {
@@ -70,7 +70,7 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
     const int prefix_message_size = 34;
     char prefix[prefix_message_size + 8 + 3]; 
     strcpy("central_block_memory_allocator_0x", &prefix[0]);
-    hex_size_t(*((size_t*)&header), prefix + prefix_message_size - 1, 8);
+    hex_size_t((size_t)header, prefix + prefix_message_size - 1, 8);
     strcat(prefix, ": ");
 
     printf("%sAllocator Started\n", prefix);
@@ -96,8 +96,8 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
     printf("\ncentral_block_memory_allocator_%x: Freeing %x\n", header, (size_t)ptr);
     #endif
 
-    const void* block_offset = (char*)ptr - (*(size_t*)&(header->allocation_region_start));
-    size_t blockID = (*(size_t*)&(block_offset)) >> header->block_size_as_power_of_two;
+    const void* block_offset = (char*)ptr - (size_t)header->allocation_region_start;
+    size_t blockID = (size_t)(block_offset) >> header->block_size_as_power_of_two;
     // Dives the pointer by 2^block_size_as_power_of_two (rounds down)
 
     if (blockID >= header->number_of_total_blocks) // Is block does not exist, do free it
@@ -166,7 +166,7 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     }
     else
     {
-        size_t allocation_region_start = *(size_t*)&(header->allocation_region_start);
+        size_t allocation_region_start = (size_t)header->allocation_region_start;
         if (allocation_region_start % (1 << allignment_as_power_of_two) != 0)
         {
             size_t offset = allocation_region_start % (1 << allignment_as_power_of_two);
@@ -190,12 +190,12 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
 
     for (size_t block = allignment_check_offset; block < header->number_of_total_blocks; block++)
     {
-        if (allignment_as_power_of_two != 0 && (block - allignment_check_offset) & alligment_check_value !=0)
+        if (allignment_as_power_of_two != 0 && ((block - allignment_check_offset) & alligment_check_value) != 0)
         {
             block -= allignment_check_offset;
             size_t new_block = block >> allignment_as_power_of_two;
 
-            if (block & ((1 << allignment_as_power_of_two) - 1) != 0) // Round up
+            if ((block & ((1 << allignment_as_power_of_two) - 1)) != 0) // Round up
                 new_block++;
 
             new_block <<= allignment_as_power_of_two;

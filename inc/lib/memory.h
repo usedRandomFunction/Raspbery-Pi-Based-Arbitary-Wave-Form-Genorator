@@ -79,8 +79,9 @@ inline void* void_ptr_offset_bytes(void* ptr, ptrdiff_t offset)
 
 inline void* void_ptr_bitwise_and(void* ptr, size_t mask)
 {
-    size_t new_ptr = *((size_t*)&ptr) & mask;
-    return  *((void**)&new_ptr);
+    size_t new_ptr = (size_t)ptr;
+    new_ptr &= mask;
+    return  (void*)new_ptr;
 }
 
 inline void* get_physical_address(void* virtual_ptr)
@@ -100,7 +101,7 @@ inline void* get_physical_address(void* virtual_ptr)
     }
 
     // Extract the physical address from PAR_EL1
-    return (void*)((par_el1 & 0xFFFFFFFFF000) + ((*(size_t*)&virtual_ptr) & 0xFFF));
+    return (void*)((par_el1 & 0xFFFFFFFFF000) + (((size_t)virtual_ptr) & 0xFFF));
 }
 #ifdef __cplusplus
 }

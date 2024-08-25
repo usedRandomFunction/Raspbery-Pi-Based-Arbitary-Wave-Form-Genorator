@@ -7,7 +7,7 @@
 
 void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint16_t upper_attributes, uint16_t lower_attributes, bool block_table_bit)
 {
-    size_t pointer_address_as_number = *((size_t*)&pointer_address);
+    size_t pointer_address_as_number = (size_t)pointer_address;
     uint64_t descriptor = 0b1; // Enable the valid bit
 
     if (pointer_address_as_number & 0xFFFF000000000FFF)

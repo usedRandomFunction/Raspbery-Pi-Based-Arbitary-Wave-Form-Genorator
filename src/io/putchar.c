@@ -17,7 +17,7 @@ int putchar(int ch)
         char buffer[2];
         buffer[0] = (char)ch;
         buffer[1] = 0;
-        pc_screen_font_darw(buffer, &console_output_x, &console_output_y);
+        pc_screen_font_darw(buffer, &console_output_x, &console_output_y); // TODO switch a draw char function
 
         if (console_output_y > CONSOLE_MAX_HEIGHT)  
         {

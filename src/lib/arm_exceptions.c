@@ -7,10 +7,10 @@ __attribute__((noinline)) void kernel_panic()
 	printf("\nkernel panic!\nBegin function trace:\n");
 
     printf("0 : %x\n", __builtin_return_address(0));
-    printf("1 : %x\n", __builtin_return_address(1));
-    printf("2 : %x\n", __builtin_return_address(2));
-    printf("3 : %x\n", __builtin_return_address(3));
-    printf("4 : %x\n", __builtin_return_address(4));
+    // printf("1 : %x\n", __builtin_return_address(1));
+    // printf("2 : %x\n", __builtin_return_address(2));
+    // printf("3 : %x\n", __builtin_return_address(3));
+    // printf("4 : %x\n", __builtin_return_address(4));
 
 	asm volatile ("wfe");
 	while (1)

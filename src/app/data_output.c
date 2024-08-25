@@ -37,7 +37,6 @@ void write_one_channel_8_bit_samples(uint64_t* buffer_start, uint64_t* buffer_en
     const uint32_t latch_pin = 1 << 16;
     const uint32_t clock_mask = 1 << 17;
     const uint32_t data_mask = 1 << 18 | 1 << 19;
-    const uint32_t mask_all = UINT32_MAX;
 
     uint64_t* ptr = buffer_start;
     uint64_t current_data = 0;

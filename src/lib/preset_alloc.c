@@ -23,19 +23,21 @@ void preset_alloc_set_buffers(void* A, size_t len_A, void* B, size_t len_B)
 void* preset_alloc_aligned_alloc(size_t alignment, size_t size)
 {
     if (buffer_A_Used == false &&
-        size == buffer_A_Length && (alignment == 0 || (*(size_t*)&buffer_A % alignment == 0)))
+        size == buffer_A_Length && (alignment == 0 || ((size_t)buffer_A % alignment == 0)))
     {
         buffer_A_Used = true;
         return buffer_A;
     }
     else if (buffer_B_Used == false &&
-        size == buffer_B_Length && (alignment == 0 || (*(size_t*)&buffer_B % alignment == 0)))
+        size == buffer_B_Length && (alignment == 0 || ((size_t)buffer_B % alignment == 0)))
     {
         buffer_B_Used = true;
         return buffer_B;
     }
 
     printf("preset_alloc failed!\n");
+
+    return NULL;
 }
 
 void preset_alloc_free(void* p)

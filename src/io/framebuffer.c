@@ -138,16 +138,19 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
         (property_tag_set_physical_display_width_height_responce*) (property_tag_return + buffer_offset);
     buffer_offset += sizeof(property_tag_set_physical_display_width_height_responce);
 
-    property_tag_set_virtual_buffer_width_height_responce* set_virtual_buffer_width_height_responce = 
-        (property_tag_set_virtual_buffer_width_height_responce*) (property_tag_return + buffer_offset);
+    // Commented out to make gcc happy (unused variable)
+    // property_tag_set_virtual_buffer_width_height_responce* set_virtual_buffer_width_height_responce = 
+    //  (property_tag_set_virtual_buffer_width_height_responce*) (property_tag_return + buffer_offset);
     buffer_offset += sizeof(property_tag_set_virtual_buffer_width_height_responce);
 
-    property_tag_set_virtual_offset_responce* set_virtual_offset_responce = 
-        (property_tag_set_virtual_offset_responce*) (property_tag_return + buffer_offset);
+    // Commented out to make gcc happy (unused variable)
+    // property_tag_set_virtual_offset_responce* set_virtual_offset_responce = 
+    //  (property_tag_set_virtual_offset_responce*) (property_tag_return + buffer_offset);
     buffer_offset += sizeof(property_tag_set_virtual_offset_responce);
 
-    property_tag_set_depth_responce* set_depth_responceresponce = 
-        (property_tag_set_depth_responce*) (property_tag_return + buffer_offset);
+    // Commented out to make gcc happy (unused variable)
+    // property_tag_set_depth_responce* set_depth_responceresponce = 
+    //  (property_tag_set_depth_responce*) (property_tag_return + buffer_offset);
     buffer_offset += sizeof(property_tag_set_depth_responce);
 
     property_tag_set_pixel_order_responce* set_pixel_order_responce = 
@@ -177,8 +180,10 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 
     ptrdiff_t framebuffer_offset = 0;
 
+    size_t base_address_as_int = (size_t)allocate_buffer_responce->base_address; // Do like this to make GCC happy
+
     page_allocation_info* framebuffer_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(
-        VC_address_to_arm(*(void**)&allocate_buffer_responce->base_address), allocate_buffer_responce->size, &framebuffer_offset);
+        VC_address_to_arm((void*)base_address_as_int), allocate_buffer_responce->size, &framebuffer_offset);
     free(property_tag_return);
 
     translation_table_section_info table_section;

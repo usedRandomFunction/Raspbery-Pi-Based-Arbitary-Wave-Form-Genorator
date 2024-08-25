@@ -64,7 +64,7 @@ bool initialize_page_allocator()
     free(memory_tag_responce);
     s_total_number_of_pages = arm_memory_size >> page_allocator_page_size_as_power_of_two;
 
-    size_t required_bytes = s_total_number_of_pages >> 3 + (s_total_number_of_pages & 0x7 ? 1 : 0); // Devide by 8 round up
+    size_t required_bytes = (s_total_number_of_pages >> 3) + (s_total_number_of_pages & 0x7 ? 1 : 0); // Devide by 8 round up
     s_page_availability = malloc(required_bytes);
 
     if (s_page_availability == NULL)
@@ -151,7 +151,7 @@ page_allocation_info* create_new_page_allocation(size_t size)
 
 page_allocation_info* create_new_page_allocation_at_continuous_physical_address(void* physical_address_start, size_t size, ptrdiff_t* offset)
 {
-    size_t physical_address = *(size_t*)&physical_address_start;
+    size_t physical_address = (size_t)physical_address_start;
     size_t page_start = physical_address >> page_allocator_page_size_as_power_of_two;
     size += physical_address % page_allocator_page_size_bytes;
     size_t required_pages = size >> page_allocator_page_size_as_power_of_two;
@@ -203,7 +203,7 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
 
 page_allocation_info* create_new_page_allocation_for_unmanaged_continuous_physical_address(void* physical_address_start, size_t size, ptrdiff_t* offset)
 {
-    size_t physical_address = *(size_t*)&physical_address_start;
+    size_t physical_address = (size_t)physical_address_start;
     size_t page_start = physical_address >> page_allocator_page_size_as_power_of_two;
     size += physical_address % page_allocator_page_size_bytes;
 

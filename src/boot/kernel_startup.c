@@ -59,7 +59,9 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
     s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
     if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
+    {
         kernel_panic();
+    }
     
 	printf("Starting main function!\n");
 	int result = main();
@@ -91,7 +93,7 @@ static void s_prepare_memory_manager()
         allocator_space++;
         allocator_space <<= 21;         // Bitwise round up
     }
-    initialize_central_block_memory_allocator(*(void**)&allocator_space, mannagedSpace, 5, &kernel_heap_allocator);
+    initialize_central_block_memory_allocator((void*)allocator_space, mannagedSpace, 5, &kernel_heap_allocator);
 }
 
 static void s_initialize_virtual_address_translation() 
@@ -179,7 +181,7 @@ static void s_initialize_virtual_address_translation()
 
     // MMIO section
     ptrdiff_t mmio_allocation_offset;
-    page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(*(void**)&MMIO_Base_Address, 1 << 24, 
+    page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address((void*)MMIO_Base_Address, 1 << 24, 
         &mmio_allocation_offset);
     table_sections[2].allocation = mmio_allocation;
     table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;

@@ -195,8 +195,8 @@ bool insert_translation_table_section(translation_table_info* table, translation
 
         size_t section_size = get_page_allocation_size(section->allocation);
 
-        size_t next_section_start = *((size_t*)&table->sections[i].section_start);
-        size_t section_end = *((size_t*)&section->section_start) + section_size;
+        size_t next_section_start = (size_t)table->sections[i].section_start;
+        size_t section_end = (size_t)section->section_start + section_size;
 
         if (next_section_start < section_end)
         {
@@ -209,9 +209,9 @@ bool insert_translation_table_section(translation_table_info* table, translation
     }
     // Now we know where its going, we can check if it can fit there
     size_t last_section_size = get_page_allocation_size(table->sections[target_section_id - 1].allocation);
-    size_t last_section_end = *((size_t*)&table->sections[target_section_id - 1].section_start) + last_section_size;
+    size_t last_section_end = (size_t)table->sections[target_section_id - 1].section_start + last_section_size;
 
-    if (last_section_end > *((size_t*)&section->section_start))
+    if (last_section_end > (size_t)section->section_start)
     {
         printf("Failed to insert section, virtual address clashes with section: %d,\n", target_section_id - 1);
         return false;
@@ -280,7 +280,7 @@ void destory_translation_table(translation_table_info* table)
 static bool s_vailidate_section(translation_table_section_info* section)
 {
     // Check if the section is alligned to 2^30 bytes (1 GiB)
-    if ((*(size_t*)&section->section_start) & ((1 << 30) - 1) != 0)
+    if (((size_t)section->section_start & ((1 << 30) - 1)) != 0)
         return false;
 
     return true;
@@ -294,7 +294,7 @@ static bool s_check_sections_for_page_clashing(translation_table_section_info* s
 
     for (int i = 0; i < number_of_sections - 1; i++)
     {
-        if ((*(size_t*)&(sections + i)->section_start) + get_page_allocation_size(sections[i].allocation) > (*(size_t*)&(sections + i + 1)->section_start))
+        if ((size_t*)(sections + i)->section_start + get_page_allocation_size(sections[i].allocation) > (size_t*)(sections + i + 1)->section_start)
         {
             printf("page clash between: %d and %d.\n", i, i + 1);
             return false;
@@ -372,7 +372,7 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
 
     void* last_virtual_address = void_ptr_offset_bytes(table->sections[table->number_of_sections - 1].section_start,
         get_page_allocation_size(table->sections[table->number_of_sections - 1].allocation) - 1);
-    uint32_t last_pud_index = (uint32_t)((*(size_t*)&last_virtual_address) >>  30);
+    uint32_t last_pud_index = (uint32_t)((size_t)last_virtual_address >>  30);
     uint32_t previous_number_of_page_upper_directories = table->number_of_page_upper_directory_entrys - 1;
     previous_number_of_page_upper_directories = (previous_number_of_page_upper_directories >> 8) + ((previous_number_of_page_upper_directories & ((1 << 8) - 1)) ? 1 : 0);
     uint32_t number_of_page_upper_directories = (last_pud_index >> 8) + ((last_pud_index & ((1 << 8) - 1)) ? 1 : 0);
@@ -410,7 +410,7 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
         
 
         void* section_first_virtual_address = table->sections[i].section_start;
-        uint32_t section_first_pud_index = (uint32_t)((*(size_t*)&section_first_virtual_address) >> 30);
+        uint32_t section_first_pud_index = (uint32_t)((size_t)section_first_virtual_address >> 30);
 
         for (uint32_t j = 0; j < section_pud_size; j++)
         {
