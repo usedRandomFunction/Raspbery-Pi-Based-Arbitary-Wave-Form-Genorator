@@ -1,17 +1,17 @@
-// #include "io/uart.h"
+#include "io/uart.h"
 
-// #include "lib/string.h"
-// #include "lib/alloc.h"
-// #include "lib/math.h"
+#include "lib/string.h"
+#include "lib/alloc.h"
+#include "lib/math.h"
 
-// #ifndef __INTELLISENSE__ // To make VSCODE shut up
-// // #ifdef __GNUC__
-// // #define alloca(x) __builtin_alloca((x))
-// // #else
-// // #error failed to wind alloca
-// // #endif
-
+#ifndef __INTELLISENSE__ // To make VSCODE shut up
+// #ifdef __GNUC__
+// #define alloca(x) __builtin_alloca((x))
+// #else
+// #error failed to wind alloca
 // #endif
+
+#endif
 
 // void uart_puti(int integer)
 // {
@@ -88,20 +88,20 @@
 // 	uart_puts(buffer);
 // }
 
-// void uart_puts(const char* str)
-// {
-// 	for (size_t i = 0; str[i] != '\0'; i ++)
-// 		uart_putc((unsigned char)str[i]);
-// }
+void uart_puts(const char* str)
+{
+	for (size_t i = 0; str[i] != '\0'; i ++)
+		uart_putc((unsigned char)str[i]);
+}
 
-// void uart_put_hexdigit(uint8_t digit)
-// {
-// 	if (digit > 9)
-// 		digit += 0x7;
-// 	digit += 0x30;
+void uart_put_hexdigit(uint8_t digit)
+{
+	if (digit > 9)
+		digit += 0x7;
+	digit += 0x30;
 
-// 	uart_putc(digit);
-// }
+	uart_putc(digit);
+}
 
 // void uart_puts_reversed(const char* str)
 // {
@@ -119,43 +119,43 @@
 // 		uart_putc((unsigned char)ptr[i]);
 // }
 
-// void uart_put_memory_dump_formated(void* ptr, size_t size)
-// {	
-// 	for (int i = sizeof(size_t) * (4 * 2) - 4; i >= 0; i -= 4)
-// 		uart_putc(' ');
-// 	uart_puts(" 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
-// 	size_t ptr_as_number = *(size_t*)&ptr;
-// 	size_t ptr_alligned_16 = (ptr_as_number << 4) >> 4;
-// 	size_t ptr_offset = ptr_as_number & 0xF;
-// 	if (ptr_offset != 0)
-// 	{
-// 		uart_putc('\n');
-// 		for (int i = sizeof(size_t) * (4 * 2) - 4; i >= 0; i -= 4)
-// 			uart_put_hexdigit((ptr_alligned_16 >> i) & 0xF);
+void uart_put_memory_dump_formated(void* ptr, size_t size)
+{	
+	for (int i = sizeof(size_t) * (4 * 2) - 4; i >= 0; i -= 4)
+		uart_putc(' ');
+	uart_puts(" 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
+	size_t ptr_as_number = (size_t)ptr;
+	size_t ptr_alligned_16 = (ptr_as_number << 4) >> 4;
+	size_t ptr_offset = ptr_as_number & 0xF;
+	if (ptr_offset != 0)
+	{
+		uart_putc('\n');
+		for (int i = sizeof(size_t) * (4 * 2) - 4; i >= 0; i -= 4)
+			uart_put_hexdigit((ptr_alligned_16 >> i) & 0xF);
 
-// 		for (int i = 0; i < 1 + ptr_offset * 3; i++)
-// 			uart_putc(' ');
-// 	}
+		for (int i = 0; i < 1 + ptr_offset * 3; i++)
+			uart_putc(' ');
+	}
 	
-// 	for ( ; size > 0; size--, ptr++)
-// 	{
-// 		ptr_as_number = *(size_t*)&ptr;
-// 		if ((ptr_as_number & 0xF) == 0)
-// 		{
-// 			uart_putc('\n');
-// 			ptr_alligned_16 = (ptr_as_number << 4) >> 4;
-// 			for (int i = sizeof(size_t) * (4 * 2) - 4; i >= 0; i -= 4)
-// 				uart_put_hexdigit((ptr_alligned_16 >> i) & 0xF);
-// 			uart_putc(' ');
-// 		}
+	for ( ; size > 0; size--, ptr++)
+	{
+		ptr_as_number = (size_t)ptr;
+		if ((ptr_as_number & 0xF) == 0)
+		{
+			uart_putc('\n');
+			ptr_alligned_16 = (ptr_as_number << 4) >> 4;
+			for (int i = sizeof(size_t) * (4 * 2) - 4; i >= 0; i -= 4)
+				uart_put_hexdigit((ptr_alligned_16 >> i) & 0xF);
+			uart_putc(' ');
+		}
 
-// 		uart_put_hexdigit(*((uint8_t*)ptr) >> 4);
-// 		uart_put_hexdigit(*((uint8_t*)ptr) & 0xF);
-// 		uart_putc(' ');
-// 	}
+		uart_put_hexdigit(*((uint8_t*)ptr) >> 4);
+		uart_put_hexdigit(*((uint8_t*)ptr) & 0xF);
+		uart_putc(' ');
+	}
 
-// 	uart_putc('\n');
-// }
+	uart_putc('\n');
+}
 
 // void uart_put_number_as_hex(size_t number)
 // {

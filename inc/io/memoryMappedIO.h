@@ -111,94 +111,95 @@ inline volatile uint32_t* get_mmio_pointer(size_t reg)
 enum
 {
     // The offsets for reach register.
-    GPIO_BASE = 0x200000,
+    GPIO_BASE           = 0x200000,
     
     // GPIO Function Select
-    GPFSEL0 = (GPIO_BASE + 0x00),
-    GPFSEL1 = (GPIO_BASE + 0x04),
-    GPFSEL2 = (GPIO_BASE + 0x08),
-    GPFSEL3 = (GPIO_BASE + 0x0C),
-    GPFSEL4 = (GPIO_BASE + 0x10),
-    GPFSEL5 = (GPIO_BASE + 0x14),
+    GPFSEL0             = (GPIO_BASE + 0x00),
+    GPFSEL1             = (GPIO_BASE + 0x04),
+    GPFSEL2             = (GPIO_BASE + 0x08),
+    GPFSEL3             = (GPIO_BASE + 0x0C),
+    GPFSEL4             = (GPIO_BASE + 0x10),
+    GPFSEL5             = (GPIO_BASE + 0x14),
 
     // GPIO Output set
-    GPSET0 = (GPIO_BASE + 0x1C),
-    GPSET1 = (GPIO_BASE + 0x20),
+    GPSET0              = (GPIO_BASE + 0x1C),
+    GPSET1              = (GPIO_BASE + 0x20),
 
     // GPIO Output clear
-    GPCLR0 = (GPIO_BASE + 0x28),
-    GPCLR1 = (GPIO_BASE + 0x2C),
+    GPCLR0              = (GPIO_BASE + 0x28),
+    GPCLR1              = (GPIO_BASE + 0x2C),
 
     // GPIO Pin level
-    GPLEV0 = (GPIO_BASE + 0x34),
-    GPLEV1 = (GPIO_BASE + 0x38),
+    GPLEV0              = (GPIO_BASE + 0x34),
+    GPLEV1              = (GPIO_BASE + 0x38),
 
     // GPIO Pin Event Detect Status
-    GPEDS0 = (GPIO_BASE + 0x40),
-    GPEDS1 = (GPIO_BASE + 0x44),
+    GPEDS0              = (GPIO_BASE + 0x40),
+    GPEDS1              = (GPIO_BASE + 0x44),
 
     // GPIO Pin Rising Edge Detect Enable
-    GPREN0 = (GPIO_BASE + 0x4C),
-    GPREN1 = (GPIO_BASE + 0x50),
+    GPREN0              = (GPIO_BASE + 0x4C),
+    GPREN1              = (GPIO_BASE + 0x50),
 
     // GPIO Pin Falling Edge Detect Enable
-    GPFEN0 = (GPIO_BASE + 0x58),
-    GPFEN1 = (GPIO_BASE + 0x5C),
+    GPFEN0              = (GPIO_BASE + 0x58),
+    GPFEN1              = (GPIO_BASE + 0x5C),
 
     // GPIO Pin High Detect Enable
-    GPHEN0 = (GPIO_BASE + 0x64),
-    GPHEN1 = (GPIO_BASE + 0x68),
+    GPHEN0              = (GPIO_BASE + 0x64),
+    GPHEN1              = (GPIO_BASE + 0x68),
 
     // GPIO Pin Low Detect Enable
-    GPLEN0 = (GPIO_BASE + 0x70),
-    GPLEN1 = (GPIO_BASE + 0x74),
+    GPLEN0              = (GPIO_BASE + 0x70),
+    GPLEN1              = (GPIO_BASE + 0x74),
 
 
     // GPIO Pin Async. Rising Edge Detect
-    GPAREN0 = (GPIO_BASE + 0x7C),
-    GPAREN1 = (GPIO_BASE + 0x80),
+    GPAREN0             = (GPIO_BASE + 0x7C),
+    GPAREN1             = (GPIO_BASE + 0x80),
 
     // GPIO Pin Async. Falling Edge Detect
-    GPAFEN0 = (GPIO_BASE + 0x88),
-    GPAFEN1 = (GPIO_BASE + 0x8C),
+    GPAFEN0             = (GPIO_BASE + 0x88),
+    GPAFEN1             = (GPIO_BASE + 0x8C),
 
     // Controls actuation of pull up/down to ALL GPIO pins.
-    GPPUD = (GPIO_BASE + 0x94),
+    GPPUD               = (GPIO_BASE + 0x94),
  
     // Controls actuation of pull up/down for specific GPIO pin.
-    GPPUDCLK0 = (GPIO_BASE + 0x98),
+    GPPUDCLK0           = (GPIO_BASE + 0x98),
+    GPPUDCLK1           = (GPIO_BASE + 0x9C),
  
     // The base address for UART.
-    UART0_BASE = (GPIO_BASE + 0x1000), // for raspi4 0xFE201000, raspi2 & 3 0x3F201000, and 0x20201000 for raspi1
+    UART0_BASE          = (GPIO_BASE + 0x1000), // for raspi4 0xFE201000, raspi2 & 3 0x3F201000, and 0x20201000 for raspi1
     
     // The offsets for reach register for the UART.
-    UART0_DR     = (UART0_BASE + 0x00),
-    UART0_RSRECR = (UART0_BASE + 0x04),
-    UART0_FR     = (UART0_BASE + 0x18),
-    UART0_ILPR   = (UART0_BASE + 0x20),
-    UART0_IBRD   = (UART0_BASE + 0x24),
-    UART0_FBRD   = (UART0_BASE + 0x28),
-    UART0_LCRH   = (UART0_BASE + 0x2C),
-    UART0_CR     = (UART0_BASE + 0x30),
-    UART0_IFLS   = (UART0_BASE + 0x34),
-    UART0_IMSC   = (UART0_BASE + 0x38),
-    UART0_RIS    = (UART0_BASE + 0x3C),
-    UART0_MIS    = (UART0_BASE + 0x40),
-    UART0_ICR    = (UART0_BASE + 0x44),
-    UART0_DMACR  = (UART0_BASE + 0x48),
-    UART0_ITCR   = (UART0_BASE + 0x80),
-    UART0_ITIP   = (UART0_BASE + 0x84),
-    UART0_ITOP   = (UART0_BASE + 0x88),
-    UART0_TDR    = (UART0_BASE + 0x8C),
+    UART0_DR            = (UART0_BASE + 0x00),
+    UART0_RSRECR        = (UART0_BASE + 0x04),
+    UART0_FR            = (UART0_BASE + 0x18),
+    UART0_ILPR          = (UART0_BASE + 0x20),
+    UART0_IBRD          = (UART0_BASE + 0x24),
+    UART0_FBRD          = (UART0_BASE + 0x28),
+    UART0_LCRH          = (UART0_BASE + 0x2C),
+    UART0_CR            = (UART0_BASE + 0x30),
+    UART0_IFLS          = (UART0_BASE + 0x34),
+    UART0_IMSC          = (UART0_BASE + 0x38),
+    UART0_RIS           = (UART0_BASE + 0x3C),
+    UART0_MIS           = (UART0_BASE + 0x40),
+    UART0_ICR           = (UART0_BASE + 0x44),
+    UART0_DMACR         = (UART0_BASE + 0x48),
+    UART0_ITCR          = (UART0_BASE + 0x80),
+    UART0_ITIP          = (UART0_BASE + 0x84),
+    UART0_ITOP          = (UART0_BASE + 0x88),
+    UART0_TDR           = (UART0_BASE + 0x8C),
  
-    // The offsets for Mailbox registers
-    MBOX_BASE    = 0xB880,
-    MBOX_READ    = (MBOX_BASE + 0x00),
-    MBOX_STATUS  = (MBOX_BASE + 0x18),
-    MBOX_WRITE   = (MBOX_BASE + 0x20),
+    // Mailbox Registers
+    MBOX_BASE           = 0xB880,
+    MBOX_READ           = (MBOX_BASE + 0x00),
+    MBOX_STATUS         = (MBOX_BASE + 0x18),
+    MBOX_WRITE          = (MBOX_BASE + 0x20),
 
     // Auxiliary Peripheral Registers
-    AUX_Base = 0x215000,
+    AUX_Base            = 0x215000,
     AUX_IRQ             = (AUX_Base + 0x00),
     AUX_ENABLES         = (AUX_Base + 0x04),
     AUX_MU_IO_REG       = (AUX_Base + 0x40),
@@ -223,6 +224,25 @@ enum
     AUX_SPI1_IO_REG     = (AUX_Base + 0xD0),
     AUX_SPI1_PEEK_REG   = (AUX_Base + 0xD4),
 
+    // Embedded MultiMediaCard  Registers
+    EMMC_BASE           = 0x00300000,
+    EMMC_ARG2           = (EMMC_BASE + 0x00),
+    EMMC_BLKSIZECNT     = (EMMC_BASE + 0x04),
+    EMMC_ARG1           = (EMMC_BASE + 0x08),
+    EMMC_CMDTM          = (EMMC_BASE + 0x0C),
+    EMMC_RESP0          = (EMMC_BASE + 0x10),
+    EMMC_RESP1          = (EMMC_BASE + 0x14),
+    EMMC_RESP2          = (EMMC_BASE + 0x18),
+    EMMC_RESP3          = (EMMC_BASE + 0x1C),
+    EMMC_DATA           = (EMMC_BASE + 0x20),
+    EMMC_STATUS         = (EMMC_BASE + 0x24),
+    EMMC_CONTROL0       = (EMMC_BASE + 0x28),
+    EMMC_CONTROL1       = (EMMC_BASE + 0x2C),
+    EMMC_INTERRUPT      = (EMMC_BASE + 0x30),
+    EMMC_INT_MASK       = (EMMC_BASE + 0x34),
+    EMMC_INT_EN         = (EMMC_BASE + 0x38),
+    EMMC_CONTROL2       = (EMMC_BASE + 0x3C),
+    EMMC_SLOTISR_VER    = (EMMC_BASE + 0xFC),
 };
 
 #ifdef __cplusplus
