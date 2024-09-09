@@ -123,8 +123,8 @@ int sd_init()
 
     mmio_write_bitwise_or(GPHEN1, 1 << 15);
 
-    gpio_function_select(48, GPFSEL_Output);
-    gpio_function_select(49, GPFSEL_Output);
+    gpio_function_select(48, GPFSEL_Alternate3);
+    gpio_function_select(49, GPFSEL_Alternate3);
 
     mmio_write(GPPUD, 2);
     wait_cycles(150);
@@ -133,10 +133,10 @@ int sd_init()
     mmio_write(GPPUD, 0);
     mmio_write(GPPUDCLK1, 0);
 
-    gpio_function_select(50, GPFSEL_Output);
-    gpio_function_select(51, GPFSEL_Output);
-    gpio_function_select(52, GPFSEL_Output);
-    gpio_function_select(53, GPFSEL_Output);
+    gpio_function_select(50, GPFSEL_Alternate3);
+    gpio_function_select(51, GPFSEL_Alternate3);
+    gpio_function_select(52, GPFSEL_Alternate3);
+    gpio_function_select(53, GPFSEL_Alternate3);
 
     mmio_write(GPPUD, 2);
     wait_cycles(150);
@@ -546,7 +546,7 @@ int sd_readblock(uint32_t lba, uint8_t* buf, uint32_t num)
         return 0;
     
     #ifdef SD_VERBOSE_LOGGING
-    printf("sd_readblock lba %x, n = %x\n", lba, num);
+    printf("Reading block %x (lba), n = %x from SD\n", lba, num);
     #endif
     
     if(s_sd_status(SR_DAT_INHIBIT)) 
