@@ -2,6 +2,22 @@
 
 #include "io/uart.h"
 
+int memcmp(const void* ptr1, const void* ptr2, size_t n)
+{
+    const uint8_t* buf_A = ptr1;
+    const uint8_t* buf_B = ptr2;
+
+    while (n--)
+    {
+        int diff = *buf_B++ - *buf_A++;
+        
+        if (diff != 0)
+            return diff;
+    }
+
+    return 0;
+}
+
 void* memcpy(void* dst, const void* src, size_t n)
 {
     char *d = dst;

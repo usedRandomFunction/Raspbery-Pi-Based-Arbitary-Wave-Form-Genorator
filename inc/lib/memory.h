@@ -35,6 +35,13 @@ typedef void (*FREE_PTR)(void*);
 typedef void* (*MALLOC_PTR)(size_t);
 typedef void* (*MALLOC_ALIGNED_PTR)(size_t, size_t);
 
+// Compares ptr 1 to pt2
+// @param ptr1 first Bufer to compare
+// @param ptr2 second Buffer to compare
+// @param n Number of bytes to  comapre
+// @return < 0 If the first byte that doesn't mach follows *ptr2 < *ptr1 (8 bit) amd > 0 for the opisit, 0 if equal
+int memcmp(const void* ptr1, const void* ptr2, size_t n);
+
 // Copys n bytes from src to dst
 // @param dst The destination buffer
 // @param src The soruce buffer

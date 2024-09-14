@@ -12,6 +12,7 @@
 #include "io/printf.h"
 #include "lib/mmu.h"
 #include "io/uart.h"
+#include "io/sd.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -60,6 +61,12 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 
     if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
     {
+        kernel_panic();
+    }
+
+    if (initialize_sd() !=  SD_OK)
+    {
+        printf("Initialize SD failed!\n");
         kernel_panic();
     }
     

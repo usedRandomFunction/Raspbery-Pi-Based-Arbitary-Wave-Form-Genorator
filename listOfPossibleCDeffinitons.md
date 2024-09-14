@@ -17,3 +17,10 @@
 | CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED | If defined a central_block_memory_allocator
 || will trigger a kernel panic if it fails
 | PAGE_ALLOCATOR_PAGE_SIZE_AS_POWER_OF_TWO | Sets the size of pages to be used by the page allocator 
+| UART_BASE_CLOCK_FREQUENCY | Sets the base clock freqency of the UART
+| FRAMEBUFFER_HEIGHT | Sets the height of the frame buffer
+| FRAMEBUFFER_WIDTH | Sets the width of the frame buffer 
+| CONSOLE_MAX_HEIGHT | Max y valye of the console (in pixels)
+| SD_VERBOSE_LOGGING | Enable verbose logging for the SD functions if defined
+| MMIO_VIRUTAL_ADDRESS_BASE | Sets the base virtual addreess for the MMIO (must be a void*)
+| FRAMEBUFFER_VIRUTAL_ADDRESS_BASE | Sets the base virtual addreess for the framebuffer (must be a void*)

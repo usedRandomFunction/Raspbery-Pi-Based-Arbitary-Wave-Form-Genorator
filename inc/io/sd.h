@@ -16,7 +16,7 @@ enum
 
 // Initializes the emmc for the sd card
 // @return SD_OK if success
-int sd_init();
+int initialize_sd();
 
 // Reads blocks form the SD card
 // @param lba The locigal block address to read

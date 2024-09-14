@@ -107,7 +107,7 @@ static int s_sd_status(uint32_t mask);
 // @return 0 if ok
 static int s_sd_int(uint32_t mask);
 
-int sd_init()
+int initialize_sd()
 {
     int return_value = SD_OK;
     printf("Initializing sd card\n");
@@ -202,7 +202,7 @@ int sd_init()
 
     for (int i = 0; i < 6; i++)
     {
-        wait_cycles(400);
+        wait_cycles(2000);
         r = s_sd_command(CMD_SEND_OP_COND, ACMD41_ARG_HC);
 
         #ifdef SD_VERBOSE_LOGGING
@@ -253,7 +253,9 @@ int sd_init()
 
     s_sd_rca = s_sd_command(CMD_SEND_REL_ADDR, 0);
 
+    #ifdef SD_VERBOSE_LOGGING
     printf("EMMC: CMD_SEND_REL_ADDR returned %x\n", s_sd_rca);
+    #endif
 
     if (s_sd_err)
         return s_sd_err;
@@ -301,6 +303,7 @@ int sd_init()
         mmio_write_bitwise_or(EMMC_CONTROL0, C0_HCTL_DWITDH);
     }
     // add software flag
+    #ifdef SD_VERBOSE_LOGGING
     printf("EMMC: supports ");
     if(s_sd_scr[0] & SCR_SUPP_SET_BLKCNT)
         printf("SET_BLKCNT ");
@@ -309,8 +312,11 @@ int sd_init()
         printf("CCS ");
 
     putchar('\n');
+    #endif
     s_sd_scr[0]&=~SCR_SUPP_CCS;
     s_sd_scr[0]|=ccs;
+
+    printf("SD card Initialized\n");
 
     return return_value;
 }
@@ -369,7 +375,9 @@ int s_sd_set_freqency(uint32_t frequency)
         shift=0;
     }
 
+    #ifdef SD_VERBOSE_LOGGING
     printf("EMMC: sd_clk divisor: %x, shift: %x\n", divisor, shift);
+    #endif
 
     uint32_t h = 0;
 
@@ -434,6 +442,7 @@ static int s_sd_command(uint32_t code, uint32_t arg)
     #ifdef SD_VERBOSE_LOGGING
     printf("EMMC: Sending command %x arg %x\n", code, arg);
     #endif
+    delay_microseconds(5000);
 
     mmio_write(EMMC_INTERRUPT, mmio_read(EMMC_INTERRUPT)); // Im not sure why but we need to do this
     mmio_write(EMMC_ARG1, arg);
