@@ -198,6 +198,13 @@ enum
     MBOX_STATUS         = (MBOX_BASE + 0x18),
     MBOX_WRITE          = (MBOX_BASE + 0x20),
 
+    // Hardwere random
+    RNG_BASE            = 0x104000, 
+    RNG_CTRL            = (RNG_BASE + 0x00),
+    RNG_STATUS          = (RNG_BASE + 0x04),
+    RNG_DATA            = (RNG_BASE + 0x08),
+    RNG_INT_MASK        = (RNG_BASE + 0x10),
+
     // Auxiliary Peripheral Registers
     AUX_Base            = 0x215000,
     AUX_IRQ             = (AUX_Base + 0x00),
@@ -224,7 +231,7 @@ enum
     AUX_SPI1_IO_REG     = (AUX_Base + 0xD0),
     AUX_SPI1_PEEK_REG   = (AUX_Base + 0xD4),
 
-    // Embedded MultiMediaCard  Registers
+    // Embedded MultiMediaCard  Registers'
     EMMC_BASE           = 0x00300000,
     EMMC_ARG2           = (EMMC_BASE + 0x00),
     EMMC_BLKSIZECNT     = (EMMC_BASE + 0x04),

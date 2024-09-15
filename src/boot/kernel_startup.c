@@ -9,6 +9,7 @@
 #include "lib/memory.h"
 #include "lib/alloc.h"
 #include "io/putchar.h"
+#include "lib/random.h"
 #include "io/printf.h"
 #include "lib/mmu.h"
 #include "io/uart.h"
@@ -69,6 +70,8 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         printf("Initialize SD failed!\n");
         kernel_panic();
     }
+
+    initialize_random();
     
 	printf("Starting main function!\n");
 	int result = main();
