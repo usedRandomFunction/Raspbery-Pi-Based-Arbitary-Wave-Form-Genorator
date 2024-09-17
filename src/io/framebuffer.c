@@ -31,6 +31,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     const uint32_t tag_buffer_size_bytes = sizeof(property_tag_set_physical_display_width_height) +
         sizeof(property_tag_set_virtual_buffer_width_height) +
         sizeof(property_tag_set_virtual_offset) +
+        sizeof(property_tag_set_overscan) +
         sizeof(property_tag_set_depth) +
         sizeof(property_tag_set_pixel_order) +
         sizeof(property_tag_allocate_buffer) +
@@ -56,6 +57,10 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     property_tag_set_virtual_offset* set_virtual_offset = 
         (property_tag_set_virtual_offset*) (property_tags_to_send + buffer_offset);
     buffer_offset += sizeof(property_tag_set_virtual_offset);
+
+    property_tag_set_overscan* set_overscan =
+        (property_tag_set_overscan*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_overscan);
 
     property_tag_set_depth* set_depth = 
         (property_tag_set_depth*) (property_tags_to_send + buffer_offset);
@@ -96,6 +101,14 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     set_virtual_offset->header.request = PROPERTY_TAG_PROCESS_REQUEST;
     set_virtual_offset->X = 0;
     set_virtual_offset->Y = 0;
+
+    set_overscan->header.buffersize = PROPERTY_TAG_SET_OVERSCAN_REQUEST_RESPONSE_SIZE;
+    set_overscan->header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    set_overscan->header.tagID = PROPERTY_TAG_ID_SET_OVERSCAN;
+    set_overscan->bottom = 0;
+    set_overscan->right = 0;
+    set_overscan->left = 0;
+    set_overscan->top = 0;
 
     set_depth->header.buffersize = PROPERTY_TAG_SET_DEPTH_REQUEST_RESPONSE_SIZE;
     set_depth->header.request = PROPERTY_TAG_PROCESS_REQUEST;
@@ -147,6 +160,10 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     // property_tag_set_virtual_offset_responce* set_virtual_offset_responce = 
     //  (property_tag_set_virtual_offset_responce*) (property_tag_return + buffer_offset);
     buffer_offset += sizeof(property_tag_set_virtual_offset_responce);
+
+    property_tag_set_overscan_responce* set_overscan_responce =
+        (property_tag_set_overscan_responce*) (property_tags_to_send + buffer_offset);
+    buffer_offset += sizeof(property_tag_set_overscan_responce);
 
     // Commented out to make gcc happy (unused variable)
     // property_tag_set_depth_responce* set_depth_responceresponce = 
@@ -200,7 +217,13 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     // Blank the screen
     framebuffer_fill_rect(0, 0, get_framebuffer_width(), get_framebuffer_height(), 0, 0, 0);
     
-    printf("Successfully initialized frame buffer of size: %d x %d\n", s_framebuffer_width, s_framebuffer_height);
+    printf("Successfully initialized frame buffer of size: %d x %d\nwith overscan of %d, %d, %d, %d (Top, bottom, left, right)\n", 
+        s_framebuffer_width, 
+        s_framebuffer_height, 
+        set_overscan_responce->top,
+        set_overscan_responce->bottom,
+        set_overscan_responce->left,
+        set_overscan_responce->right);
 
     return true;
 }

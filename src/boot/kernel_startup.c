@@ -56,7 +56,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	#endif
 
 	printf("Started system, board type: %s\n", get_board_name(boardType));
-
+    
 	s_prepare_memory_manager();
     s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
 
@@ -81,7 +81,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	while (1)
     {
         uart_getc();
-        printf("System halted please restart!");
+        printf("System halted please restart!\n");
     }
 }
 
