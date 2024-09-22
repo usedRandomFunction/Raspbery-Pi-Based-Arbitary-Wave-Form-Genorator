@@ -546,7 +546,7 @@ int s_sd_int(uint32_t mask)
     return 0;
 }
 
-int sd_readblock(uint32_t lba, uint8_t* buf, uint32_t num)
+int sd_readblock(uint32_t lba, void* buf, uint32_t num)
 {
     uint32_t return_value = 0;
     uint32_t count = 0;

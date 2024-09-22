@@ -23,7 +23,7 @@ int initialize_sd();
 // @param buf The memory to read into
 // @param num The nubmer of blocks to read
 // @return Number of bytes read, 0 on failer
-int sd_readblock(uint32_t lba, uint8_t* buf, uint32_t num);
+int sd_readblock(uint32_t lba, void* buf, uint32_t num);
 
 #ifdef __cplusplus
 }

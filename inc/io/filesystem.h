@@ -86,10 +86,12 @@ enum
 
 struct fat32_fs // Used by the kernel to store info about a fat 32 file system
 {
+    uint8_t  number_of_file_allocation_tables;
     uint8_t  number_of_sectors_per_cluster;
     uint32_t first_fat_sector;
+    uint32_t sectors_per_fat;
     uint32_t root_cluster;
-    uint32_t root_sector;
+    uint32_t data_sector;
     
 };
 

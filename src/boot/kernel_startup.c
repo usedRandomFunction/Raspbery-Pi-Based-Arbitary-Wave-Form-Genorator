@@ -6,6 +6,8 @@
 #include "io/memoryMappedIO.h"
 #include "io/pc_screen_font.h"
 #include "io/framebuffer.h"
+#include "io/file_access.h"
+#include "io/filesystem.h"
 #include "lib/memory.h"
 #include "lib/alloc.h"
 #include "io/putchar.h"
@@ -21,6 +23,7 @@
 extern pc_screen_font_header _binary_data_font_psf_start;
 central_block_memory_allocator_header kernel_heap_allocator;
 translation_table_info kernel_translation_table;
+fat32_fs* root_file_system;
 
 static void s_initialize_virtual_address_translation();
 static void s_prepare_memory_manager();
@@ -70,6 +73,14 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         printf("Initialize SD failed!\n");
         kernel_panic();
     }
+
+    root_file_system = initialize_filesystem_from_media();
+    if (root_file_system == NULL)
+    {
+        printf("Failed to initialize root fs!\n");
+        kernel_panic();
+    }
+    initialize_file_access();
 
     initialize_random();
     
@@ -219,7 +230,7 @@ void free(void* p)
 {
     if (p == NULL)
     {
-        printf("kernel attempted to free NULL pointer");
+        printf("kernel attempted to free NULL pointer\nCaller: %x", __builtin_return_address(0));
         kernel_panic();
     }
 

@@ -32,7 +32,36 @@ char hex_digiet(uint8_t digit)
 	return digit;
 }
 
-#include "io/uart.h"
+size_t djb2_hash(const char *str)
+{
+    size_t hash = 5381;
+    int c;
+
+    while ((c = (uint8_t)*str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+size_t djb2_hash_uppercase(const char *str)
+{
+    size_t hash = 5381;
+    int c;
+
+    while ((c = (uint8_t)toupper(*str++)))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+char toupper(char ch)
+{
+    if (ch >= 0x61 && ch <= 0x7A)
+        return ch - 0x20;
+    
+    return ch;
+}
+// #include "io/uart.h"
 
 uint8_t hex_size_t(size_t number, char* str, uint8_t max_digits)
 {

@@ -67,7 +67,7 @@ fat32_fs* initialize_filesystem_from_media()
     bios_parameter_block* bpb = malloc(512);
     extened_boot_record_FAT32* ebr = (extened_boot_record_FAT32*)void_ptr_offset_bytes(bpb, sizeof(bios_parameter_block));
 
-    if (sd_readblock(partition.lba_of_partition_start, (uint8_t*)bpb, 1) == 0)
+    if (sd_readblock(partition.lba_of_partition_start, bpb, 1) == 0)
     {
         free(bpb);
         return NULL;
@@ -82,10 +82,12 @@ fat32_fs* initialize_filesystem_from_media()
 
     fat32_fs* fs = malloc(sizeof(fat32_fs)); 
 
+    fs->number_of_file_allocation_tables = bpb->number_of_file_allocation_tables;
     fs->number_of_sectors_per_cluster = bpb->number_of_sectors_per_cluster;
     fs->first_fat_sector = bpb->number_of_reserved_sectors + partition.lba_of_partition_start;
+    fs->sectors_per_fat = ebr->sectors_per_file_allocation_table;
     fs->root_cluster = ebr->cluster_number_of_root_directory;
-    fs->root_sector = bpb->number_of_reserved_sectors + bpb->number_of_file_allocation_tables * ebr->sectors_per_file_allocation_table + partition.lba_of_partition_start;
+    fs->data_sector = bpb->number_of_reserved_sectors + bpb->number_of_file_allocation_tables * ebr->sectors_per_file_allocation_table + partition.lba_of_partition_start;
 
     free(bpb);
 
@@ -95,7 +97,7 @@ fat32_fs* initialize_filesystem_from_media()
 bool s_find_parition_from_mbr(master_boot_record_partition_table_entry* entry, bool* found_multiple)
 {
     master_boot_record* mbr = malloc(512);
-    if (sd_readblock(0, (uint8_t*)mbr, 1) == 0)
+    if (sd_readblock(0, mbr, 1) == 0)
         return false;
 
     printf("searching for partition, disk id: %x\n", mbr->disk_id);

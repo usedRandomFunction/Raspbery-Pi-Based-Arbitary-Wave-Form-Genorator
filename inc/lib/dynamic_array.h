@@ -37,4 +37,26 @@ bool resize_dynamic_array(size_t new_size, dynamic_array* header);
 // @return false if failed to allocate buffer
 bool remove_dynamic_array_entry(size_t index, dynamic_array* header);
 
+typedef bool (*less_then_function)(void*,void*);
+typedef bool (*equal_to_function)(void*,void*);
+
+// Preforms a binary shearch on the given array but if failed gives the index it would be inserted into
+// @param header Pointer to the dynamic_array struct
+// @param entry The entry to shearch for
+// @param succss Pointer to bool, set to true if found, false if reutrning cloesest
+// @param less_then Returns true if A < B 
+// @param equal_to Returns true if A = B 
+// @return The index or (index to insert to) of entry
+size_t dynamic_array_find_closest_binary_shearch(dynamic_array* header, void* entry, bool* success, 
+    less_then_function less_then, equal_to_function equal_to);
+
+// Preforms a binary shearch on the given array
+// @param header Pointer to the dynamic_array struct
+// @param entry The entry to shearch for
+// @param less_then Returns true if A < B 
+// @param equal_to Returns true if A = B 
+// @return The index or -1 if failed
+size_t dynamic_array_binary_shearch(dynamic_array* header, void* entry, 
+    less_then_function less_then, equal_to_function equal_to);
+
 #endif

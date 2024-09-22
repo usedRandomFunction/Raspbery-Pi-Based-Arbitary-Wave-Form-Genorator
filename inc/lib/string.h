@@ -25,6 +25,23 @@ void strcpy(const char* src, char* dst);
 // @param dst the string that gets appened to
 void strcat(char* dst, const char* src);
 
+// Take from http://www.cse.yorku.ca/~oz/hash.html
+// Simple hash function
+// @param str String to hash
+// @return hash
+size_t djb2_hash(const char *str);
+
+// Take from http://www.cse.yorku.ca/~oz/hash.html
+// Simple hash function but convvects the string to upper case first
+// @param str String to hash
+// @return hash
+size_t djb2_hash_uppercase(const char *str);
+
+// Converts the given character to upper case
+// @param ch Character to convert
+// @return ch but upper case
+char toupper(char ch);
+
 // @param digit the digit to convert
 // @return A single hexdigiet [0, F]
 char hex_digiet(uint8_t digit);
