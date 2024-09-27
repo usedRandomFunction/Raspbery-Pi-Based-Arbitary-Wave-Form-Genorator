@@ -1,3 +1,4 @@
+.section .text
 .global test_el0
 test_el0:
     mov x0, #0x00
@@ -9,6 +10,13 @@ test_el0:
     eret
 
 el0_entry:
-    mov x8, 1
+    adrp    x0, .str
+    add     x0, x0, :lo12:.str
+    mov x8, 0
     svc #0
+
+
+.section .rodata
+.str:
+    .string "string\0"
     

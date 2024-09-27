@@ -33,7 +33,7 @@
 /**
  * minimal sprintf implementation
  */
-unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, char* fmt, __builtin_va_list args)
+unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __builtin_va_list args)
 {
     long int arg;
     int len, sign, i;
@@ -150,7 +150,7 @@ s_put:      buffer_size_check;
 /**
  * minimal sprintf implementation
  */
-unsigned int vprintf(char* fmt, __builtin_va_list args)
+unsigned int vprintf(const char* fmt, __builtin_va_list args)
 {
     int bytes_written = 0;
     long int arg;
@@ -271,26 +271,26 @@ put:        bytes_written++;
 /**
  * Variable length arguments
  */
-unsigned int sprintf_s(char *dst, size_t size_of_buffer , char* fmt, ...)
+unsigned int sprintf_s(char *dst, size_t size_of_buffer, const char* fmt, ...)
 {
     __builtin_va_list args;
     __builtin_va_start(args, fmt);
     return vsprintf_s(dst, size_of_buffer, fmt, args);
 }
 
-unsigned int sprintf(char *dst, char* fmt, ...)
+unsigned int sprintf(char *dst, const char* fmt, ...)
 {
     __builtin_va_list args;
     __builtin_va_start(args, fmt);
     return vsprintf_s(dst, SIZE_MAX, fmt, args);
 }
 
-unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args)
+unsigned int vsprintf(char *dst, const char* fmt, __builtin_va_list args)
 {
     return vsprintf_s(dst, SIZE_MAX, fmt, args);
 }
 
-unsigned int printf(char* fmt, ...)
+unsigned int printf(const char* fmt, ...)
 {
     __builtin_va_list args;
     __builtin_va_start(args, fmt);

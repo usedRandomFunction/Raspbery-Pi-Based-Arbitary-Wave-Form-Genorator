@@ -31,13 +31,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-unsigned int printf(char* fmt, ...);
-unsigned int vprintf(char* fmt, __builtin_va_list args);
+unsigned int printf(const char* fmt, ...);
+unsigned int vprintf(const char* fmt, __builtin_va_list args);
 
-unsigned int sprintf(char *dst, char* fmt, ...);
-unsigned int vsprintf(char *dst, char* fmt, __builtin_va_list args);
+unsigned int sprintf(char *dst, const char* fmt, ...);
+unsigned int vsprintf(char *dst, const char* fmt, __builtin_va_list args);
 
-unsigned int sprintf_s(char *dst, size_t size_of_Buffer, char* fmt, ...);
-unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, char* fmt, __builtin_va_list args);
+unsigned int sprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, ...);
+unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __builtin_va_list args);
 
 #endif

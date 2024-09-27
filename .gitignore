@@ -4,3 +4,4 @@ debug/
 ArbitaryWaveFormGenorator.code-workspace
 bootloader.py
 .vscode/
+kernal/bin
