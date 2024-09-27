@@ -7,7 +7,6 @@ OBJDIR := $(BINDIR)/obj
 # Compiler and linker options
 COMPILERPREFIX = aarch64-elf-
 CC := $(COMPILERPREFIX)gcc
-CXX := $(COMPILERPREFIX)g++
 LD := $(COMPILERPREFIX)ld
 C_DEFINITIONS := -DAARCH64
 
@@ -16,7 +15,7 @@ OPATMANISER_SETTING = -O2
 DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) -include inc/kconfig.h -g
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) -include inc/kconfig.h
 LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS)
 
 # Source files
@@ -34,7 +33,7 @@ TARGET := $(BINDIR)/kernel.elf
 
 all: $(TARGET)
 
-$(TARGET): $(C_OBJECTS) $(CPP_OBJECTS) $(ASM_OBJECTS) $(DATA_OBJECTS)
+$(TARGET): $(C_OBJECTS) $(ASM_OBJECTS) $(DATA_OBJECTS)
 	@echo !==== linking ====!
 	$(LD) -o $@ $^ $(LDFLAGS)
 	@echo !==== Image Genoration ====!
