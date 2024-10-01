@@ -194,7 +194,9 @@ static void s_initialize_virtual_address_translation()
 
     table_sections[0].allocation = kernel_code_page_allocation;
     table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
+    table_sections[0].upper_attributes = 0;
     table_sections[0].section_start = (void*)0x000000000000; // We dont include the FFFF prefix here
+    
     table_sections[1].allocation = kernel_heap_page_allocation;
     table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
     table_sections[1].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
@@ -212,7 +214,7 @@ static void s_initialize_virtual_address_translation()
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
         kernel_panic();
     
-    set_ttbr1_el1(get_physical_address(kernel_translation_table.page_global_directory));
+    set_ttbr1_el1(kernel_translation_table.page_global_directory);
 
     printf("Switched to permante translation_table.\n");
     free(temporary_kernel_code_pmd);

@@ -21,11 +21,11 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
 void print_page_descriptor(uint64_t* descriptor_address);
 
 // Writes to the ttbr1_el1 register
-// @param ptr thr new page table address (must be physcial address)
+// @param ptr thr new page table address
 void set_ttbr1_el1(void* ptr);
 
 // Writes to the ttbr0_el1 register
-// @param ptr thr new page table address (must be physcial address)
+// @param ptr thr new page table address
 void set_ttbr0_el1(void* ptr);
 
 // Invalidates the translation lookaside buffer

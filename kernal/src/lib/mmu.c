@@ -60,7 +60,7 @@ void set_ttbr1_el1(void* ptr)
 {
     asm volatile ("msr ttbr1_el1, %0"
 	:
-	: "r" (ptr));
+	: "r" (get_physical_address(ptr)));
     invalidate_tlb();
 }
 
@@ -68,7 +68,7 @@ void set_ttbr0_el1(void* ptr)
 {   
     asm volatile ("msr ttbr0_el1, %0"
 	:
-	: "r" (ptr));
+	: "r" (get_physical_address(ptr)));
     invalidate_tlb();
 }   
 
