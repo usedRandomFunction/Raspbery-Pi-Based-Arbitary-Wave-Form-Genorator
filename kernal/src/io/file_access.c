@@ -110,7 +110,7 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
     size_t size_of_current_entry_name = 1;
     bool is_filling_extention = false;
     bool is_looking_for_file = true;
-    int extention_offset = 0;
+    int extention_offset = 3;
 
     memset(name_buffer, 11, (uint8_t)' ');
 
@@ -128,7 +128,7 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
             continue;
         }
 
-        if ((is_filling_extention == false && i >= 8) || (extention_offset == 3 && path[i + 1] != '\0'))
+        if ((is_filling_extention == false && i >= 8) || (extention_offset == 0 && path[i + 1] != '\0'))
         {
             printf("Erorr: Long file name is not supported!\n");
             return -1;
@@ -140,7 +140,7 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
             continue;
         }
         
-        name_buffer[10 - extention_offset++] = toupper(path[i]);
+        name_buffer[11 - extention_offset--] = toupper(path[i]);
     }
 
     if (is_looking_for_file && is_filling_extention)
@@ -154,8 +154,11 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
 
 fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, uint32_t* fat_buffer, fat_directory_entry* dirrectory_cluster)
 {
+    // char name_buffer[12]; // dont delete these debug lines (even if commented out), bc then you will need them
     char name_buffer[11];
     int32_t name_offset = s_format_file_name_8_3_standered(path, name_buffer);
+    // name_buffer[11] = 0;
+    // printf("Name To Check: %s\n", name_buffer);
     
     if (name_offset == -1) // Failed / invalid name / Is LFN
         return NULL;
@@ -193,6 +196,16 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
 
         for (int i = 0 ; i < ((512 * root_file_system->number_of_sectors_per_cluster) / sizeof(fat_directory_entry)); i++)
         {
+            // Dont delete these debug lines (even if commented out), bc then you will need them
+            // char buf[12];
+            // buf[11] = '\0';
+            // memcpy(buf, dirrectory_cluster[i].file_name, 11);
+
+            // if (buf[0] != 0xE5 && buf[0] != '\0')
+            // {
+            //     printf("%s:%x\n", buf, (size_t)buf[0]);
+            // }
+
             if (memcmp(name_buffer, dirrectory_cluster[i].file_name, 11) != 0)
                 continue;
 
@@ -307,8 +320,9 @@ size_t read(int fd, void* buf, size_t n)
 
     uint32_t last_fat_sector = UINT32_MAX;
     uint32_t* fat_buffer = malloc(512);
+    uint32_t number_of_clusters_to_skip = number_of_middle_clusters + (number_of_bytes_to_read_from_last_clsuter == 0) ? 0 : 1;
 
-    do
+    for ( ; number_of_middle_clusters > 0; number_of_clusters_to_skip--)
     {
         uint32_t fat_sector = root_file_system->first_fat_sector + (file->metadata.current_cluster_number / (512 / 4));
         uint32_t fat_offset = (file->metadata.current_cluster_number % (512 / 4));
@@ -353,11 +367,7 @@ size_t read(int fd, void* buf, size_t n)
         }
         file->metadata.current_offset += clsuter_size;
         buffer += clsuter_size;
-        
-
-        number_of_middle_clusters--;
     }
-    while ( number_of_middle_clusters > 0);
 
     free(fat_buffer);
 
