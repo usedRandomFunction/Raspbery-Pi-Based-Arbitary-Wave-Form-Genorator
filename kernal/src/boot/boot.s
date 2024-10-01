@@ -140,7 +140,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
 	msr	    mair_el1, x0
 
     ldr     x2, =kernel_main
-    mov	    x0, #SCTLR_MMU_ENABLED_WITH_CACHE			
+    ldr	    x0, =(SCTLR_MMU_ENABLED_WITH_CACHE)		
 	msr	    sctlr_el1, x0
 
     

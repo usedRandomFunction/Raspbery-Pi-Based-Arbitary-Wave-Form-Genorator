@@ -58,5 +58,5 @@
 .equ TCR_TG0_4K,			                (0 << 14)
 .equ TCR_TG1_4K,			                (2 << 30)
 .equ TCR_VALUE,			                    (TCR_T0SZ | TCR_T1SZ | TCR_TG0_4K | TCR_TG1_4K)
-.equ SCTLR_MMU_ENABLED,                     (1 << 0)
-.equ SCTLR_MMU_ENABLED_WITH_CACHE,          ((1 << 0) | (1 << 12) | (1 << 2))
+.equ SCTLR_MMU_ENABLED,                     ((1 << 0) | (3 << 28) | (3 << 22) | (1 << 20) | (1 << 11))
+.equ SCTLR_MMU_ENABLED_WITH_CACHE,          ((1 << 0) | (1 << 12) | (1 << 2) | (3 << 28) | (3 << 22) | (1 << 20) | (1 << 11))

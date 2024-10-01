@@ -205,8 +205,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 
     translation_table_section_info table_section;
     table_section.allocation = framebuffer_allocation;
-    table_section.lowwer_attributes = MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_section.upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
+    table_section.attributes = MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER;
     table_section.section_start = FRAMEBUFFER_VIRUTAL_ADDRESS_BASE; // We dont include the FFFF prefix here
     insert_translation_table_section(&kernel_translation_table, &table_section, true);
 

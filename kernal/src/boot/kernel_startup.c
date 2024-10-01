@@ -131,17 +131,17 @@ static void s_initialize_virtual_address_translation()
     uint64_t* temporary_kernel_heap_pmd = (uint64_t*)aligned_alloc(4096, 8 );
     
     void* mapping_ptr = get_physical_address(PROGRAM_START_ADDRESS_POINTER);
-    write_page_descriptor(temporary_pgd, get_physical_address(temporary_pud), 0x0, 0x0, true);
-    write_page_descriptor(temporary_pud, get_physical_address(temporary_kernel_code_pmd), 0x0, 0x0, true);
-    write_page_descriptor(temporary_pud + 1, get_physical_address(temporary_kernel_heap_pmd), 0x0, 0x0, true);
+    write_page_descriptor(temporary_pgd, get_physical_address(temporary_pud), 0x0, true);
+    write_page_descriptor(temporary_pud, get_physical_address(temporary_kernel_code_pmd), 0x0, true);
+    write_page_descriptor(temporary_pud + 1, get_physical_address(temporary_kernel_heap_pmd), 0x0, true);
 
     // Both of these are being (temporay set) as non-cache able memory
     for (int i = 0; i < (int)kernel_minium_sections; i++)
-        write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 0x0, 
-        MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
+        write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 
+        MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT, false);
 
     write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 
-    MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER, MMU_LOWER_ATTRIBUTES_NON_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT, false);
+    MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT, false);
 
     set_ttbr1_el1(get_physical_address(temporary_pgd));
 
@@ -193,13 +193,11 @@ static void s_initialize_virtual_address_translation()
     memclr(table_sections, sizeof(table_sections));
 
     table_sections[0].allocation = kernel_code_page_allocation;
-    table_sections[0].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_sections[0].upper_attributes = 0;
+    table_sections[0].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT;
     table_sections[0].section_start = (void*)0x000000000000; // We dont include the FFFF prefix here
     
     table_sections[1].allocation = kernel_heap_page_allocation;
-    table_sections[1].lowwer_attributes = MMU_LOWER_ATTRIBUTES_CACHABLE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_sections[1].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
+    table_sections[1].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[1].section_start = (void*)0x000040000000; // We dont include the FFFF prefix here
 
     // MMIO section
@@ -207,8 +205,7 @@ static void s_initialize_virtual_address_translation()
     page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address((void*)MMIO_Base_Address, 1 << 24, 
         &mmio_allocation_offset);
     table_sections[2].allocation = mmio_allocation;
-    table_sections[2].lowwer_attributes = MMU_LOWER_ATTRIBUTES_nGnRnE | MMU_LOWER_ATTRIBUTES_ACCESS_BIT;
-    table_sections[2].upper_attributes = MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER;
+    table_sections[2].attributes = MMU_ATTRIBUTES_nGnRnE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER;
     table_sections[2].section_start = MMIO_VIRUTAL_ADDRESS_BASE;
 
     if (!initialize_translation_table(&kernel_translation_table, table_sections, sizeof(table_sections) / sizeof(table_sections[0])))

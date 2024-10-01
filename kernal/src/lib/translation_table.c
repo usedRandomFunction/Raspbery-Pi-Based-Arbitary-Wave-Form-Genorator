@@ -347,8 +347,7 @@ static uint32_t s_fill_out_page_middle_directory(translation_table_section_info*
             write_page_descriptor(pmd_buffer + pmd_buffer_index,    // PMD entry pointer
                 (void*)(((size_t)(allocation->first_page) + i) 
                 << page_allocator_page_size_as_power_of_two),       // Page pointer
-                section->upper_attributes,                          // Upper attibutes
-                section->lowwer_attributes,                         // Lowwer attibutes)
+                section->attributes,                                // Upper attibutes
                 false);                                             // We're not pointer to a pte here
         }
 
@@ -418,8 +417,7 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
                 pud_buffer + section_first_pud_index + j,  // PUD entry
                 get_physical_address(table->page_middle_directorys[i].page_middle_directory),        
                                                                             // Address of PMD entry
-                0x0,                                                        // No upper attributes
-                0x0,                                                        // No lowwer attributes
+                0x0,                                                        // No attributes
                 true);                                                      // Points to page table entry
         }
     }
@@ -434,9 +432,8 @@ static bool s_fill_out_page_upper_directory(translation_table_info* table, bool 
     for (int i = 0; i < number_of_page_upper_directories; i++)
     {
         write_page_descriptor(table->page_global_directory + i,             // Write to PGD
-            get_physical_address(pud_buffer + 4096 * i),   // Address of PUD first entry
-            0x0,                                                            // No upper attributes
-            0x0,                                                            // No lowwer attributes
+            get_physical_address(pud_buffer + 4096 * i),                    // Address of PUD first entry
+            0x0,                                                            // No attributes
             true);                                                          // Points to page table entry
     }
 
