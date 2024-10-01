@@ -14,8 +14,8 @@ extern "C" {
 struct translation_table_section_info
 {
     page_allocation_info* allocation;
-    uint16_t upper_attributes;
-    uint16_t lowwer_attributes;
+    uint64_t upper_attributes;
+    uint64_t lowwer_attributes;
     void* section_start;
 };
 

@@ -15,7 +15,7 @@ extern "C" {
 // @param upper_attributes Attributes for the descriptor
 // @param lower_attributes Attributes for the descriptor
 // @param block_table_bit If set to true entry points to other table entry if false entry points to page address
-void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint16_t upper_attributes, uint16_t lower_attributes, bool block_table_bit);
+void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint64_t upper_attributes, uint64_t lower_attributes, bool block_table_bit);
 
 // Prints the given descriptor to the UART
 void print_page_descriptor(uint64_t* descriptor_address);
@@ -49,13 +49,13 @@ void invalidate_data_cache_of_size(void* VA_start, size_t size);
 
 enum
 {
-    MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1<< 8,
-    MMU_LOWER_ATTRIBUTES_nGnRnE = 0,                            // Non-Gathering, Non-Reordering, No Early write acknowledgement
-    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 1,                      // Non-cacheable attribute
-    MMU_LOWER_ATTRIBUTES_CACHABLE = 2,                          // Cacheable read write
+    MMU_LOWER_ATTRIBUTES_ACCESS_BIT = 0b1<< 10,
+    MMU_LOWER_ATTRIBUTES_nGnRnE = 0 << 2,                       // Non-Gathering, Non-Reordering, No Early write acknowledgement
+    MMU_LOWER_ATTRIBUTES_NON_CACHABLE = 1 << 2,                 // Non-cacheable attribute
+    MMU_LOWER_ATTRIBUTES_CACHABLE = 2 << 2,                     // Cacheable read write
 
-    MMU_UPPER_ATTRIBUTES_PRIVILEGED_EXECUTE_NEVER = 1 << 5,     // Privileged Execute Never
-    MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER  = 1 << 6                // Execute Never
+    MMU_UPPER_ATTRIBUTES_PRIVILEGED_EXECUTE_NEVER = 1ULL << 53,    // Privileged Execute Never
+    MMU_UPPER_ATTRIBUTES_EXECUTE_NEVER  = 1ULL << 54               // Execute Never
 };
 
 #ifdef __cplusplus

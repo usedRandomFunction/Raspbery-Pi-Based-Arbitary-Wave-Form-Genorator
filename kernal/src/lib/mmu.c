@@ -5,7 +5,7 @@
 #include "io/printf.h"
 
 
-void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint16_t upper_attributes, uint16_t lower_attributes, bool block_table_bit)
+void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint64_t upper_attributes, uint64_t lower_attributes, bool block_table_bit)
 {
     size_t pointer_address_as_number = (size_t)pointer_address;
     uint64_t descriptor = 0b1; // Enable the valid bit
@@ -19,9 +19,9 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
     if (block_table_bit == true)
         descriptor |= 0b10;
 
-    descriptor |= (uint64_t)(lower_attributes & 0b111111111) << 2;
+    descriptor |= (uint64_t)(lower_attributes & 0b11111111100);
     descriptor |= (uint64_t)pointer_address_as_number;
-    descriptor |= (uint64_t)((upper_attributes & 0x3FFFFF)) << 48;
+    descriptor |= (uint64_t)(upper_attributes & 0x3FFFFF0000000000); 
 
     *descriptor_address = descriptor;
 }
