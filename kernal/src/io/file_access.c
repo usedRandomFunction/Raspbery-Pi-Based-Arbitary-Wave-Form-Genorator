@@ -322,7 +322,7 @@ size_t read(int fd, void* buf, size_t n)
     uint32_t* fat_buffer = malloc(512);
     uint32_t number_of_clusters_to_skip = number_of_middle_clusters + (number_of_bytes_to_read_from_last_clsuter == 0) ? 0 : 1;
 
-    for ( ; number_of_middle_clusters > 0; number_of_clusters_to_skip--)
+    for ( ; number_of_clusters_to_skip > 0; number_of_clusters_to_skip--)
     {
         uint32_t fat_sector = root_file_system->first_fat_sector + (file->metadata.current_cluster_number / (512 / 4));
         uint32_t fat_offset = (file->metadata.current_cluster_number % (512 / 4));
@@ -353,20 +353,26 @@ size_t read(int fd, void* buf, size_t n)
             return -1;
         }
         file->metadata.current_cluster_number = new_cluster_number;
-        cluster_lba = root_file_system->data_sector;
-        cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
 
-        if (sd_readblock(cluster_lba, buffer, root_file_system->number_of_sectors_per_cluster) != clsuter_size)
+        if (number_of_middle_clusters > 0)
         {
-            printf("Erorr: Failed to read SD!\n");
-            if (file_temporay_buffer != NULL)
-                free(file_temporay_buffer);
-            free (fat_buffer);
+            cluster_lba = root_file_system->data_sector;
+            cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
 
-            return -1;
+            if (sd_readblock(cluster_lba, buffer, root_file_system->number_of_sectors_per_cluster) != clsuter_size)
+            {
+                printf("Erorr: Failed to read SD!\n");
+                if (file_temporay_buffer != NULL)
+                    free(file_temporay_buffer);
+                free (fat_buffer);
+
+                return -1;
+            }
+            file->metadata.current_offset += clsuter_size;
+            buffer += clsuter_size;
+            
+            number_of_middle_clusters--;
         }
-        file->metadata.current_offset += clsuter_size;
-        buffer += clsuter_size;
     }
 
     free(fat_buffer);

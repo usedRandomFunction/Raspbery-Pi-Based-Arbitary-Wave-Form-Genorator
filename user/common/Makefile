@@ -53,8 +53,7 @@ $(OBJDIR)/%.o: $(DATADIR)/%
 	aarch64-elf-ld -r -b binary -o $@ $<
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel.elf
-	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel8.img
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET)
 
 lines_of_code:
 	wc -l `find ./src -type f` +  wc -l `find ./inc -type f`

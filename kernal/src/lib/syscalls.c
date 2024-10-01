@@ -3,7 +3,7 @@
 
 void system_call_print(const char* str)
 {
-    printf("%s", str);
+    printf(str);
 }
 
 void system_call_exit(int i)

@@ -1,24 +1,18 @@
-ENTRY(_start)
+ENTRY(main)
 
 SECTIONS
 {
-    . = 0x200000;
+    . = 0x40000000;
 
-    .stack (NOLOAD) : {
-        . = . + 32K;
-    }
-    _stack_top = .;
-
-    . = ALIGN(2097152);
     .text : { *(.text .text.* .gnu.linkonce.t*) }
 
-    . = ALIGN(2097152);
+    . = ALIGN(0x40000000);
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     
-    . = ALIGN(2097152);
+    . = ALIGN(0x40000000);
     .data : { *(.data .data.* .gnu.linkonce.d*) }
 
-    . = ALIGN(2097152);
+    . = ALIGN(0x40000000);
     .bss (NOLOAD) : {
         __bss_start = .;
         *(.bss .bss.*)

@@ -15,7 +15,7 @@ OPATMANISER_SETTING = -O2
 DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) -include inc/kconfig.h
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) -include inc/kconfig.h $(DEBUGFLAGS)
 LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS)
 
 # Source files
@@ -104,11 +104,11 @@ mount_disk:
 	@echo !==== Mounting disk image ====!
 	@mkdir -p $(BINDIR)/mount_dir
 	losetup -o1048576 /dev/loop0 $(BINDIR)/diskimage.img
-	mount -tvfat /dev/loop0 $(BINDIR)/mount_dir
+	mount -tvfat -o uid=1000,gid=1000 /dev/loop0 $(BINDIR)/mount_dir
 
 umount_disk:
 	@echo !==== Unmounting disk image ====!
-	umount /dev/loop0
+	-umount /dev/loop0
 	losetup -d /dev/loop0
 
 .PHONY: all clean

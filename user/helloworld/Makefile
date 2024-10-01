@@ -16,7 +16,7 @@ OPATMANISER_SETTING = -O2
 DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc -I$(COMMONDIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
+CFLAGS := -ffreestanding -std=gnu99 -c -Iinc -I$(COMMONDIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
 LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS) -L$(COMMONDIR)/bin -lcommon
 
 # Source files
@@ -54,8 +54,7 @@ $(OBJDIR)/%.o: $(DATADIR)/%
 	aarch64-elf-ld -r -b binary -o $@ $<
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel.elf
-	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel8.img
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET)
 
 lines_of_code:
 	wc -l `find ./src -type f` +  wc -l `find ./inc -type f`

@@ -87,7 +87,6 @@ enter_from_syscall:
 	stp	x24, x25, [sp, #16 * 12]
 	stp	x26, x27, [sp, #16 * 13]
 	stp	x28, x29, [sp, #16 * 14]
-	mrs	x21, sp_el0
     ret
 
 exit_syscall:
