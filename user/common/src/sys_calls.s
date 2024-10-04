@@ -10,3 +10,8 @@ sys_call_print:
 sys_call_exit:
     mov w8, 1
     svc #0
+
+.global sys_call_putchar
+sys_call_putchar:
+    mov w8, 2
+    svc #0
