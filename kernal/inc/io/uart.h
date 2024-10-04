@@ -5,9 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 extern bool uart_initall_init_has_occured;
 
@@ -90,8 +88,6 @@ void uart_put_memory_dump_formated(void* ptr, size_t size);
 //     uart_put_number_as_hex_without_leading_zeros(*(size_t*)&ptr);
 // }
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

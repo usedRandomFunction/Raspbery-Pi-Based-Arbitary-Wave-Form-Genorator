@@ -58,8 +58,6 @@ uint8_t hex_size_t(size_t number, char* str, uint8_t max_digits);
 // @return the number of digits written
 uint8_t hex_size_t_with_out_leading_zeros(size_t number, char* str, uint8_t max_digits);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

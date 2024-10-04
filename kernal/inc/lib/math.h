@@ -13,9 +13,7 @@
 #define rotate_left(result, value, shift) asm ("ror %0, %1, %2" : "=r" (result) : "r" (value), "r" (64 - shift));
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // Calcautes base to the power of exp
 // @param base The base of the power
@@ -38,8 +36,6 @@ double cos(double x);
 // @param x Angle in radians
 double sin(double x);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

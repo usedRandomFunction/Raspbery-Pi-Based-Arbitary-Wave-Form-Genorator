@@ -4,9 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 extern bool is_frambuffer_initialized;
 
@@ -51,8 +49,6 @@ uint32_t get_framebuffer_height();
 // @returns frame buffer width in pixels
 uint32_t get_framebuffer_width();
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

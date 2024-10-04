@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 enum 
 {
@@ -25,8 +23,6 @@ int initialize_sd();
 // @return Number of bytes read, 0 on failer
 int sd_readblock(uint32_t lba, void* buf, uint32_t num);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

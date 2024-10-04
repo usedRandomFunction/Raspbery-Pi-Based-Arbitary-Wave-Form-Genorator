@@ -1,9 +1,7 @@
 #ifndef ALLOC_H
 #define ALLOC_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #ifdef __GNUC__
 #define alloca(x) __builtin_alloca((x))
@@ -38,8 +36,6 @@ void free_noncachable_memory(void* p);
 // @note Return is guaranteed to be in noncachable memory
 void* aligned_alloc_noncachable(size_t alignment, size_t size);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

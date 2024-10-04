@@ -6,9 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // Selects the functionallity of the given GPIO pin
 // @param pin The pin to set
@@ -36,8 +34,6 @@ enum
     GPFSEL_Alternate5 = 0b010,
 };
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

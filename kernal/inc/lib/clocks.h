@@ -1,9 +1,7 @@
 #ifndef CLOCKS_H
 #define CLOCKS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #include "lib/memory.h"
 
@@ -43,8 +41,6 @@ uint32_t set_clock_rate(uint32_t clock_id, uint32_t rate);
 // @return The frequency in hertz that it was set to, or zero if failed
 uint32_t set_clock_rate_given_alloc_functions(uint32_t clock_id, uint32_t rate, MALLOC_ALIGNED_PTR _malloc, FREE_PTR _free);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

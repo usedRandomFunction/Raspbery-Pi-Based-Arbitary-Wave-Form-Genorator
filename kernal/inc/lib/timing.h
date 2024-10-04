@@ -1,8 +1,6 @@
 #ifndef TIMING_H
 #define TIMING_H
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #include <stddef.h>
 #include <stdint.h>
@@ -26,8 +24,6 @@ void delay_microseconds(size_t microseconds);
 // halts the system for given number of milliseconds
 // @param milliseconds The delay time
 void delay_milliseconds(size_t milliseconds);
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

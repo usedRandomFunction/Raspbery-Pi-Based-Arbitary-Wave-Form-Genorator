@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // Adds an entry to the buffer
 void write_buffer_one_channle_8_bit_samples(uint64_t* buffer_start, uint8_t sample, uint64_t offset);
@@ -15,9 +13,7 @@ void write_one_channel_8_bit_samples(uint64_t* buffer_start, uint64_t* buffer_en
 
 
 
-#ifdef __cplusplus
-}
-#endif
+
 
 
 #endif

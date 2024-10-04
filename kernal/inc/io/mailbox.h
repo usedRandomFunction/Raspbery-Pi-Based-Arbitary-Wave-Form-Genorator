@@ -8,9 +8,7 @@
 #include "io/printf.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // Emptys the mailbox
 void mailbox_flush();
@@ -99,8 +97,6 @@ inline uint32_t mailbox_write_read_physcial_alliged_address(void* ptr, uint8_t c
     return mailbox_write_read((uint32_t)ptr_as_int, channel);
 }
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

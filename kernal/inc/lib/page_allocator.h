@@ -8,9 +8,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 struct page_allocation_info
 {
@@ -79,8 +77,6 @@ uint32_t get_total_allocated_pages();
 // @return Number of free pages
 uint32_t get_total_free_pages();
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

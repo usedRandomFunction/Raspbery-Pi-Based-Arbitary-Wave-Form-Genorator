@@ -6,9 +6,7 @@
 // Since the property tag functions use alloc these functions exist just to
 // Let the property tags be used before the heap is made
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // Used to set the two buffers
 // The idea is that alloca is used, in the parrent function and 
@@ -28,9 +26,7 @@ void* preset_alloc_aligned_alloc(size_t alignment, size_t size);
 // @param p Pointer to free
 void preset_alloc_free(void* p);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 
 #endif

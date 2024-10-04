@@ -4,9 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 extern volatile size_t MMIO_Base_Address;
 
@@ -252,8 +250,6 @@ enum
     EMMC_SLOTISR_VER    = (EMMC_BASE + 0xFC),
 };
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

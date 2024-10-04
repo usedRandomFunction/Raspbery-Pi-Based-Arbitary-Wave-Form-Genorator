@@ -4,9 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // The memory space is divided into two regions, controll and allocation
 // The allocation region is devided in to blocks of 2^block_size_as_power_of_two bytes
@@ -94,7 +92,5 @@ inline void* central_block_memory_allocator_alloc(size_t size, central_block_mem
 
 
 
-#ifdef __cplusplus
-}
-#endif
+
 #endif

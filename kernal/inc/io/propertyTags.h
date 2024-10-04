@@ -6,9 +6,7 @@
 #include <stdint.h>
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #pragma pack(4)
 
@@ -414,8 +412,6 @@ enum
     PROPERTY_TAG_ALPHA_MODE_IGNORED = 2,
 };
     
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

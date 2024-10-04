@@ -4,9 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 struct pc_screen_font_header{
     uint32_t magic;
@@ -39,9 +37,7 @@ void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y);
 // @param are_special_characters_enabled, enables or dissables special characters i.e '\n'
 void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, bool are_special_characters_enabled);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 
 #endif

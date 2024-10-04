@@ -7,9 +7,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 struct translation_table_section_info
 {
@@ -90,8 +88,6 @@ size_t get_translation_table_memory_mannaged(translation_table_info* table);
 // @param table The table to delete
 void destory_translation_table(translation_table_info* table);
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

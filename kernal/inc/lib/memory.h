@@ -4,9 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 extern char _start[]; // Linker will set this to point to the start of the program
 extern char __end[]; // Linker will set this to point to the end of the program
@@ -110,8 +108,6 @@ inline void* get_physical_address(void* virtual_ptr)
     // Extract the physical address from PAR_EL1
     return (void*)((par_el1 & 0xFFFFFFFFF000) + (((size_t)virtual_ptr) & 0xFFF));
 }
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif

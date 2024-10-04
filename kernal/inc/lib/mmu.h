@@ -5,9 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 // Writes a page table entry
 // @param descriptor_address A pointer to the address to write to
@@ -60,8 +58,6 @@ enum
     MMU_ATTRIBUTES_EXECUTE_NEVER  = 1ULL << 54               // Execute Never
 };
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif
