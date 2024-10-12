@@ -37,6 +37,12 @@ size_t djb2_hash(const char *str);
 // @return hash
 size_t djb2_hash_uppercase(const char *str);
 
+// Take from http://www.cse.yorku.ca/~oz/hash.html
+// Simple hash function but for non-null terminated strings
+// @param str String to hash
+// @return hash
+size_t djb2_hash_of_size(const char *str, size_t n);
+
 // Converts the given character to upper case
 // @param ch Character to convert
 // @return ch but upper case

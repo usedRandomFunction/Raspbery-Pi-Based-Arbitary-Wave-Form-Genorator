@@ -37,6 +37,11 @@ bool resize_dynamic_array(size_t new_size, dynamic_array* header);
 // @return false if failed to allocate buffer
 bool remove_dynamic_array_entry(size_t index, dynamic_array* header);
 
+// Deletes the array
+// @param header The array to delete
+void delete_dynamic_array(dynamic_array* header);
+
+
 typedef bool (*less_then_function)(void*,void*);
 typedef bool (*equal_to_function)(void*,void*);
 

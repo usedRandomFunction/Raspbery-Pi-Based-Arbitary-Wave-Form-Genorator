@@ -22,15 +22,18 @@ bool initialize_monolithic_user_program(user_program_info* program, void* progra
     table_sections[0].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EL0_ACCESS;
     table_sections[0].section_start = program_start;
 
-    table_sections[1].allocation = create_new_page_allocation(required_stack);
-    table_sections[1].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_EL0_ACCESS;
-    table_sections[1].section_start = program_stack;
+    if (required_size != 0)
+    {
+        table_sections[1].allocation = create_new_page_allocation(required_stack);
+        table_sections[1].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_EL0_ACCESS;
+        table_sections[1].section_start = program_stack;
+    }
 
     size_t stack_size = get_page_allocation_size(table_sections[1].allocation);
     program->stack_end = void_ptr_offset_bytes(program_start, stack_size);
 
     
-    if (!initialize_translation_table(&(program->table), table_sections, sizeof(table_sections) / sizeof(table_sections[0])))
+    if (!initialize_translation_table(&(program->table), table_sections, required_size == 0 ? 1 : 2))
     {
         destroy_page_allocation(table_sections[0].allocation);
         destroy_page_allocation(table_sections[1].allocation);

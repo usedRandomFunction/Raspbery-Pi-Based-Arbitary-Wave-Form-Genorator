@@ -54,6 +54,20 @@ size_t djb2_hash_uppercase(const char *str)
     return hash;
 }
 
+size_t djb2_hash_of_size(const char *str, size_t n)
+{
+    size_t hash = 5381;
+    int c;
+
+    while (n--)
+    {
+        c = (uint8_t)*str++;
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
+}
+
 char toupper(char ch)
 {
     if (ch >= 0x61 && ch <= 0x7A)
