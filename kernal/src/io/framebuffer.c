@@ -4,7 +4,6 @@
 #include "lib/page_allocator.h"
 #include "io/propertyTags.h"
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "io/printf.h"
 #include "lib/mmu.h"
 

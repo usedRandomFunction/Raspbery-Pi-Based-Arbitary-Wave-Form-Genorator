@@ -1,7 +1,6 @@
 #include "lib/dynamic_array.h"
 
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "lib/math.h"
 
 bool initialize_dynamic_array(size_t size_of_entry, size_t n, dynamic_array* header)

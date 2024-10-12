@@ -1,5 +1,6 @@
 #include "io/propertyTags.h"
 #include "io/mailbox.h"
+#include "lib/memory.h"
 #include "io/printf.h"
 #include "lib/mmu.h"
 

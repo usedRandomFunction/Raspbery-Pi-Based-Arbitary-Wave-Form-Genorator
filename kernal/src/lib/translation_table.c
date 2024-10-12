@@ -1,7 +1,6 @@
 #include "lib/translation_table.h"
 
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "io/putchar.h"
 #include "io/printf.h"
 #include "lib/mmu.h"

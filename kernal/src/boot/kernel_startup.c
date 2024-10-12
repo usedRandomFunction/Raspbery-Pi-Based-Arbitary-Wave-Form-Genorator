@@ -9,7 +9,6 @@
 #include "io/file_access.h"
 #include "io/filesystem.h"
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "io/putchar.h"
 #include "lib/random.h"
 #include "io/printf.h"

@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "lib/alloc.h"
 
 
 extern char _start[]; // Linker will set this to point to the start of the program

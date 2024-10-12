@@ -3,7 +3,6 @@
 #include "lib/timing.h"
 #include "io/putchar.h"
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "io/printf.h"
 #include "io/mbr.h"
 #include "io/sd.h"

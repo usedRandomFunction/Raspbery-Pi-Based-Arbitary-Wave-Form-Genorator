@@ -4,7 +4,6 @@
 #include "io/filesystem.h"
 #include "lib/string.h"
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "lib/math.h"
 #include "io/printf.h"
 #include "io/sd.h"

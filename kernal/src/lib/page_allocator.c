@@ -2,7 +2,6 @@
 
 #include "io/propertyTags.h"
 #include "lib/memory.h"
-#include "lib/alloc.h"
 #include "io/printf.h"
 
 #pragma region static_functions
