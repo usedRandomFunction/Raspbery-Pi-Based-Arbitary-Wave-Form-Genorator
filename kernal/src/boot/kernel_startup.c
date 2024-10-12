@@ -237,11 +237,23 @@ void free(void* p)
 
 void* malloc(size_t size)
 {
+    if (size == 0)
+    {
+        printf("kernel attempted to allocate zero bytes\nCaller: %x", __builtin_return_address(0));
+        kernel_panic();
+    }
+
     return central_block_memory_allocator_alloc(size, &kernel_heap_allocator);
 }
 
 void* aligned_alloc(size_t alignment, size_t size)
 {
+    if (size == 0)
+    {
+        printf("kernel attempted to allocate zero bytes\nCaller: %x", __builtin_return_address(0));
+        kernel_panic();
+    }
+
     if (alignment != 0)
     {
         if (((alignment & (alignment - 1)) != 0))
