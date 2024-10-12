@@ -26,6 +26,11 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
             continue;
         }
 
+        if (*str == '\r' && special_characters_enabled)
+        {
+            *x = x_min;
+        }
+
         if (*str == '\\' && special_characters_enabled)
         {
             special_characters_enabled = false;
