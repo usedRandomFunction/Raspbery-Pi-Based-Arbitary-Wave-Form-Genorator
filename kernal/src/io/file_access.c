@@ -31,6 +31,7 @@ typedef struct fd_hash_table_entry fd_hash_table_entry;
 static dynamic_array s_fd_hash_table;
 extern fat32_fs* root_file_system;
 
+// Used by binary search function
 static bool s_less_then_fd_table_entry(void* A, void* B);
 static bool s_equal_to_fd_table_entry(void* A, void* B);
 
@@ -71,8 +72,8 @@ int open(const char* path, int flags)
 
     int file_discriptor = (int)djb2_hash_uppercase(path);
     
-    if (file_discriptor < 0)
-        file_discriptor = -file_discriptor;
+    if (file_discriptor == -1)
+        file_discriptor -= 1;
 
     fd_hash_table_entry uesd_for_shearch;
     uesd_for_shearch.hash = file_discriptor;
