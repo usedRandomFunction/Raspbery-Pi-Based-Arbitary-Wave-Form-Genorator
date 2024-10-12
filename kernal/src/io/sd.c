@@ -147,7 +147,7 @@ int initialize_sd()
 
     s_sd_hv = (mmio_read(EMMC_SLOTISR_VER) & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
 
-    printf("EMMC: gpio set up, sd_hc = %x\nEMMC: Reseting SD\n", s_sd_hv);
+    printf("EMMC: GPIO set up, sd_hc = %x\nEMMC: Reseting SD\n", s_sd_hv);
 
     mmio_write(EMMC_CONTROL0, 0);
     mmio_write_bitwise_or(EMMC_CONTROL1, C1_SRST_HC);
@@ -168,7 +168,7 @@ int initialize_sd()
         printf("EMMC: ERRs_sd_statusOR: failed to reset EMMC\n");
         return SD_ERR;
     }
-    printf("EMMC: reset OK\n");
+    printf("EMMC: Reset OK\n");
 
     mmio_write_bitwise_or(EMMC_CONTROL1, C1_CLK_INTLEN | C1_TOUNIT_MAX);
     delay_microseconds(10);
