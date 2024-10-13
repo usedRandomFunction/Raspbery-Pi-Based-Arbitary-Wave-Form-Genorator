@@ -152,9 +152,12 @@ static bool s_load_monolithic_user_program_from_disk(user_program_info* program,
     void* ttbr0 = get_ttbr0_el1();
     switch_to_addess_space_to_program(program);
 
+    monolithic_page_size = get_page_allocation_size(program->translation_table.sections[1].allocation);
     size_t bytes_read = read(image, (void*)program_address, image_size);
     memclr((void*)(program_address + image_size), monolithic_page_size - image_size);
+    memclr(program->stack_start, program->stack_end - program->stack_start);
     set_ttbr0_el1(ttbr0);
+
     close(image);
 
     if (bytes_read == -1)
