@@ -17,13 +17,17 @@ size_t strlen(const char* str);
 
 // Copys the the src string untill '\0' is reached
 // @param src The string to copy
+// @param dest_size the size of the destination buffer
 // @param dst The destination to copy to
-void strcpy(const char* src, char* dst);
+// @return Zero on success or non-zero on failer
+int strcpy_s(const char* src, size_t dest_size, char* dst);
 
 // Appends src to dst
 // @param src The string to copy
+// @param dest_size the size of the destination buffer
 // @param dst the string that gets appened to
-void strcat(char* dst, const char* src);
+// @return Zero on success or non-zero on failer
+int strcat_s(char* dst, size_t dest_size, const char* src);
 
 // Take from http://www.cse.yorku.ca/~oz/hash.html
 // Simple hash function

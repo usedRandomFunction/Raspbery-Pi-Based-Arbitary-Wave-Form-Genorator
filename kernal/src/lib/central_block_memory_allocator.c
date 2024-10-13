@@ -69,9 +69,9 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
     
     const int prefix_message_size = 34;
     char prefix[prefix_message_size + 8 + 3]; 
-    strcpy("central_block_memory_allocator_0x", &prefix[0]);
+    strcpy_s("central_block_memory_allocator_0x", prefix_message_size + 8 + 3, &prefix[0]);
     hex_size_t((size_t)header, prefix + prefix_message_size - 1, 8);
-    strcat(prefix, ": ");
+    strcat_s(prefix, prefix_message_size + 8 + 3, ": ");
 
     printf("%sAllocator Started\n", prefix);
 

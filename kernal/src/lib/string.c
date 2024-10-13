@@ -10,17 +10,25 @@ size_t strlen(const char *str)
     return (s - str);
 }
 
-void strcpy(const char* src, char* dst)
+int strcpy_s(const char* src, size_t dest_size, char* dst)
 {
+    char* end = dst + dest_size;
     for ( ; *src != '\0'; src++, dst++)
+    {
+        if (dst == end)
+            return -1;
+
         *dst = *src;
+    }
     *dst = '\0';
+
+    return 0;
 }
 
-void strcat(char* dst, const char* src)
+int strcat_s(char* dst, size_t dest_size, const char* src)
 {
     int len = (int)strlen(dst);
-    strcpy(src, dst + len);
+    return strcpy_s(src, dest_size, dst + len);
 }
 
 char hex_digiet(uint8_t digit)
