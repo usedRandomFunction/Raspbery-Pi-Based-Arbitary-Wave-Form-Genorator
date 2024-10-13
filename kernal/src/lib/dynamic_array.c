@@ -93,7 +93,7 @@ void delete_dynamic_array(dynamic_array* header)
         free(header->ptr);
 }
 
-size_t dynamic_array_find_closest_binary_shearch(dynamic_array* header, void* entry, bool* success, 
+size_t dynamic_array_find_closest_binary_shearch(const dynamic_array* header, const void* entry, bool* success, 
     less_then_function less_then, equal_to_function equal_to)
 {
     size_t right = header->number_of_entrys - 1;
@@ -134,7 +134,7 @@ size_t dynamic_array_find_closest_binary_shearch(dynamic_array* header, void* en
     return left;
 }
 
-size_t dynamic_array_binary_shearch(dynamic_array* header, void* entry, 
+size_t dynamic_array_binary_shearch(const dynamic_array* header, const void* entry, 
     less_then_function less_then, equal_to_function equal_to)
 {
     bool success = false;

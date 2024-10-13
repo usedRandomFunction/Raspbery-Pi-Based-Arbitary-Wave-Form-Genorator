@@ -42,8 +42,8 @@ bool remove_dynamic_array_entry(size_t index, dynamic_array* header);
 void delete_dynamic_array(dynamic_array* header);
 
 
-typedef bool (*less_then_function)(void*,void*);
-typedef bool (*equal_to_function)(void*,void*);
+typedef bool (*less_then_function)(const void*, const void*);
+typedef bool (*equal_to_function)(const void*, const void*);
 
 // Preforms a binary shearch on the given array but if failed gives the index it would be inserted into
 // @param header Pointer to the dynamic_array struct
@@ -52,7 +52,7 @@ typedef bool (*equal_to_function)(void*,void*);
 // @param less_then Returns true if A < B 
 // @param equal_to Returns true if A = B 
 // @return The index or (index to insert to) of entry
-size_t dynamic_array_find_closest_binary_shearch(dynamic_array* header, void* entry, bool* success, 
+size_t dynamic_array_find_closest_binary_shearch(const dynamic_array* header, const void* entry, bool* success, 
     less_then_function less_then, equal_to_function equal_to);
 
 // Preforms a binary shearch on the given array
@@ -61,7 +61,7 @@ size_t dynamic_array_find_closest_binary_shearch(dynamic_array* header, void* en
 // @param less_then Returns true if A < B 
 // @param equal_to Returns true if A = B 
 // @return The index or -1 if failed
-size_t dynamic_array_binary_shearch(dynamic_array* header, void* entry, 
+size_t dynamic_array_binary_shearch(const dynamic_array* header, const void* entry, 
     less_then_function less_then, equal_to_function equal_to);
 
 #endif

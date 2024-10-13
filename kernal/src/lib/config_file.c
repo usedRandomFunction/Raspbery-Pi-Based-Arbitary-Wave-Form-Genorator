@@ -14,8 +14,8 @@ struct config_file_table_entry
 typedef struct config_file_table_entry config_file_table_entry;
 
 // Used by binary search function
-static bool s_less_then_cfg_file_entry(void* A, void* B);
-static bool s_equal_to_cfg_file_entry(void* A, void* B);
+static bool s_less_then_cfg_file_entry(const void* A, const void* B);
+static bool s_equal_to_cfg_file_entry(const void* A, const void* B);
 
 // All this function does is load the file into memory
 // @param header Pointer to config_file struct to fill out
@@ -220,7 +220,7 @@ void free_loaded_config_file(config_file* header)
         free(header->buffer);
 }
 
-const config_file_entry* get_config_file_entry_from_name(config_file* header, const char* name)
+const config_file_entry* get_config_file_entry_from_name(const config_file* header, const char* name)
 {
     config_file_table_entry _used_in_search;
     _used_in_search.hash = djb2_hash(name);
@@ -232,7 +232,7 @@ const config_file_entry* get_config_file_entry_from_name(config_file* header, co
     if (index == -1)
         return NULL;
 
-    config_file_table_entry* entry = (config_file_table_entry*)header->entrys.ptr;
+    const config_file_table_entry* entry = (const config_file_table_entry*)header->entrys.ptr;
     entry += index;
 
     return &(entry->entry);
@@ -278,7 +278,7 @@ bool get_string_from_config_file_entry(const config_file_entry* entry, char* str
     if (dest_size > 0)
         *str = '\0';
 
-    return dest_size != 0;
+    return dest_size > 0; // Include null terminator
 }
 
 uint64_t get_u64_from_config_file_entry(const config_file_entry* entry, bool* error)
@@ -291,7 +291,39 @@ int64_t get_s64_from_config_file_entry(const config_file_entry* entry, bool* err
     return string_to_s64(entry->value_begin, entry->value_end, error);
 }
 
-bool s_less_then_cfg_file_entry(void* A, void* B)
+uint64_t get_u64_from_config_file_entry_with_defult_by_name(const config_file* header, const char* name, uint64_t default_value)
+{
+    const config_file_entry* entry = get_config_file_entry_from_name(header, name);
+    bool error = false;
+
+    if (entry == NULL)
+        return default_value;
+
+    uint64_t value = get_u64_from_config_file_entry(entry, &error);
+
+    if (error)
+        return default_value;
+
+    return value;
+}
+
+int64_t get_s64_from_config_file_entry_with_defult_by_name(const config_file* header, const char* name, int64_t default_value)
+{
+    const config_file_entry* entry = get_config_file_entry_from_name(header, name);
+    bool error = false;
+
+    if (entry == NULL)
+        return default_value;
+
+    int64_t value = get_s64_from_config_file_entry(entry, &error);
+
+    if (error)
+        return default_value;
+
+    return value;
+}
+
+bool s_less_then_cfg_file_entry(const void* A, const void* B)
 {
     config_file_table_entry* a = (config_file_table_entry*)A;
     config_file_table_entry* b = (config_file_table_entry*)B;
@@ -299,7 +331,7 @@ bool s_less_then_cfg_file_entry(void* A, void* B)
     return a->hash < b->hash;
 }
 
-bool s_equal_to_cfg_file_entry(void* A, void* B)
+bool s_equal_to_cfg_file_entry(const void* A, const void* B)
 {
     config_file_table_entry* a = (config_file_table_entry*)A;
     config_file_table_entry* b = (config_file_table_entry*)B;

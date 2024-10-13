@@ -41,7 +41,7 @@ void free_loaded_config_file(config_file* header);
 // @param header Config file to get the entry from
 // @param name The name of the config to get
 // @return Pominter to entry or null if failed
-const config_file_entry* get_config_file_entry_from_name(config_file* header, const char* name);
+const config_file_entry* get_config_file_entry_from_name(const config_file* header, const char* name);
 
 // Returns the string stored in the given entry as a null-terminated string
 // @param entry The entry to get the string from
@@ -61,10 +61,18 @@ bool get_string_from_config_file_entry(const config_file_entry* entry, char* str
 // @return The number its self
 uint64_t get_u64_from_config_file_entry(const config_file_entry* entry, bool* error);
 
+// Returns the given entry as a uint64_t, supports binary, base 10, and hexadecimal,
+// @param entry The entry to get the number from
+// @param name The name of the entry
+// @param default_value The value to return if any error occurs
+// @return The number its self
+uint64_t get_u64_from_config_file_entry_with_defult_by_name(const config_file* header, const char* name, uint64_t default_value);
+
 // Returns the given entry as a uint64_t, supports binary, base 10, and hexadecimal
 // @param entry The entry to get the number from
-// @param error (Optional) used to show if a error occured (Ture if error)
+// @param name The name of the entry
+// @param default_value The value to return if any error occurs
 // @return The number its self
-int64_t get_s64_from_config_file_entry(const config_file_entry* entry, bool* error);
+int64_t get_s64_from_config_file_entry_with_defult_by_name(const config_file* entrheadery, const char* name, int64_t default_value);
 
 #endif

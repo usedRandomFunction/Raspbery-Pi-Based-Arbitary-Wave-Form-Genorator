@@ -32,8 +32,8 @@ static dynamic_array s_fd_hash_table;
 extern fat32_fs* root_file_system;
 
 // Used by binary search function
-static bool s_less_then_fd_table_entry(void* A, void* B);
-static bool s_equal_to_fd_table_entry(void* A, void* B);
+static bool s_less_then_fd_table_entry(const void* A, const void* B);
+static bool s_equal_to_fd_table_entry(const void* A, const void* B);
 
 // Shearches the root dirrectory for a file
 // @param path Null terminated string containing path
@@ -537,7 +537,7 @@ int close(int fd)
     return 0;
 }
 
-bool s_less_then_fd_table_entry(void* A, void* B)
+bool s_less_then_fd_table_entry(const void* A, const void* B)
 {
     fd_hash_table_entry* a = (fd_hash_table_entry*)A;
     fd_hash_table_entry* b = (fd_hash_table_entry*)B;
@@ -545,7 +545,7 @@ bool s_less_then_fd_table_entry(void* A, void* B)
     return a->hash < b->hash;
 }
 
-bool s_equal_to_fd_table_entry(void* A, void* B)
+bool s_equal_to_fd_table_entry(const void* A, const void* B)
 {
     fd_hash_table_entry* a = (fd_hash_table_entry*)A;
     fd_hash_table_entry* b = (fd_hash_table_entry*)B;
