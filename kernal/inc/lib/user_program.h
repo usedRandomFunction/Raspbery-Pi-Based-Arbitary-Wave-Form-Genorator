@@ -5,7 +5,8 @@
 
 struct user_program_info
 {
-    translation_table_info table;
+    translation_table_info translation_table;
+    uint32_t abi_version;
     void* stack_start;
     void* stack_end;
     void* entry;
@@ -13,6 +14,12 @@ struct user_program_info
 
 typedef struct user_program_info user_program_info;
 
+// Loads a user program from the disk getting all infomation from its cfg file
+// @param program A pointer to the user_program_info struct to fill out
+// @param path Path to the cfg file
+// @return True if success, false if failed
+// @note While this program requires to change ttbr el0 to write to it
+bool load_user_program_from_disk(user_program_info* program, const char* path);
 
 // Creates the translation table for a program with two sections in memory
 // 1. Program, including all code and data
@@ -29,7 +36,7 @@ bool initialize_monolithic_user_program(user_program_info* program, void* progra
 // @param program A pointer to the program to change
 // @param readonly True to dissable writing, False to enable
 // @return True if success, false if failed
-bool toggle_monolithic_user_program_writability(user_program_info* program, bool readonly);
+bool set_monolithic_user_program_writability(user_program_info* program, bool readonly);
 
 // Tells the mmu to use the program's translation table
 // @param program The program to switch to

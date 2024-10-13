@@ -30,6 +30,12 @@ int strcpy_s(const char* src, size_t dest_size, char* dst);
 // @return Zero on success or non-zero on failer
 int strcat_s(char* dst, size_t dest_size, const char* src);
 
+// Compares Two null terminated strings
+// @param str first string to compare
+// @param str second string to compare
+// @return < 0 If the first byte that doesn't mach follows *str < *str (8 bit) amd > 0 for the o
+int strcmp(const char* str1, const char* str2);
+
 // Simple sting to number function
 // Takes the given string and turns it into a uint64_t
 // suports binary, base 10 and hexadecimal

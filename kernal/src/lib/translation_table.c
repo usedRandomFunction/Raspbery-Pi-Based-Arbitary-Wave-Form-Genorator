@@ -173,7 +173,7 @@ bool remake_translation_table_section(translation_table_info* table, int section
         return false;
     }
 
-    printf("success!\n");
+    printf("Success!\n");
     s_invalid_caching_around_translation_table(table);
     invalidate_tlb();
 

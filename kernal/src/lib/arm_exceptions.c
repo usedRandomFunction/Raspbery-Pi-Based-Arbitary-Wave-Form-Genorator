@@ -72,13 +72,13 @@ void arm_exception_handler(unsigned long type) // TODO maby print x0-x30 for mor
     printf(":\n  ESR_EL1 %x", reg);
 
     asm volatile ( "mrs %0, elr_el1" : "=r"(reg));
-    printf(" ELR_EL1 (falt address) %x", reg);
+    printf(" ELR_EL1 (Instruction address) %x", reg);
 
     asm volatile ( "mrs %0, spsr_el1" : "=r"(reg));
     printf("\n SPSR_EL1 %x", reg);
 
     asm volatile ( "mrs %0, far_el1" : "=r"(reg));
-    printf(" FAR_EL1 %x\n", reg);
+    printf(" FAR_EL1 (Falt address) %x\n", reg);
 
     kernel_panic();
 }

@@ -31,6 +31,22 @@ int strcat_s(char* dst, size_t dest_size, const char* src)
     return strcpy_s(src, dest_size, dst + len);
 }
 
+int strcmp(const char* str1, const char* str2)
+{
+    const uint8_t* buf_A = (uint8_t*)str1;
+    const uint8_t* buf_B = (uint8_t*)str2;
+
+    while (*buf_A != '\0' || *buf_B != '\0') // We dont stop on the first zero as this way it will return correctly
+    {
+        int diff = *buf_B++ - *buf_A++;
+        
+        if (diff != 0)
+            return diff;
+    }
+
+    return 0;
+}
+
 char hex_digiet(uint8_t digit)
 {
     if (digit > 9)
@@ -40,13 +56,6 @@ char hex_digiet(uint8_t digit)
 	return digit;
 }
 
-// Simple sting to number function
-// Takes the given string and turns it into a uint64_t
-// suports binary, base 10 and hexadecimal
-// @param str String to convert
-// @param end (Optional) used to show the end of the data
-// @param error (Optional) used to show if a error occured
-// @return The value
 uint64_t string_to_u64(char* str, char* end, bool* error)
 {
     uint64_t value = 0;

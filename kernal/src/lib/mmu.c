@@ -70,6 +70,14 @@ void set_ttbr0_el1(void* ptr)
     invalidate_tlb();
 }   
 
+void* get_ttbr0_el1()
+{   
+    uint64_t ttbr0;
+	asm volatile ("mrs %x0, ttbr0_el1" : "=r" (ttbr0));
+    
+    return (void*)ttbr0;
+}  
+
 void invalidate_tlb()
 {
     asm volatile (

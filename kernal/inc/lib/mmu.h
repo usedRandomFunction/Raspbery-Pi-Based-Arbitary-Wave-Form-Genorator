@@ -26,6 +26,10 @@ void set_ttbr1_el1(void* ptr);
 // @param ptr thr new page table address
 void set_ttbr0_el1(void* ptr);
 
+// Gets ttbr0_el1 and returns it
+// @return ttbr0
+void* get_ttbr0_el1();
+
 // Invalidates the translation lookaside buffer
 void invalidate_tlb();
 
