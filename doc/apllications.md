@@ -30,7 +30,7 @@ However there are five more optinal entrys:
 
 |                               | |
 |-------------------------------|-|
-| `PROGRAM_MEMORY_WRITABILITY ` | When set to zero (which is the default state if not pressent) The main page will be set to read only by default.
+| `PROGRAM_MEMORY_WRITABILITY`  | When set to zero (which is the default state if not pressent) The main page will be set to read only by default.
 | `MONOLITHIC_PAGE_SIZE`        | This tells the kernal how big to make the main page, if this value is not pressent the kernal uses the size of <br>the image file. If the image file is larger then this value it will be cut off, if this value is larger then <br>the size the extra bytes are set to zero.
 | `MINIUM_STACK_SIZE`           | This value tells the kernal will guarantee the stack to be at lesat this many bytes. <br> This entry defaults to 1024 bytes is unset
 | `PROGRAM_ENTRY`               | This value tells the kernal where the entry function is, if it is not pressent PROGRAM_ADDRESS is used.
