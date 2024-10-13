@@ -40,6 +40,87 @@ char hex_digiet(uint8_t digit)
 	return digit;
 }
 
+// Simple sting to number function
+// Takes the given string and turns it into a uint64_t
+// suports binary, base 10 and hexadecimal
+// @param str String to convert
+// @param end (Optional) used to show the end of the data
+// @param error (Optional) used to show if a error occured
+// @return The value
+uint64_t string_to_u64(char* str, char* end, bool* error)
+{
+    uint64_t value = 0;
+    char base = 10;
+
+    if (error)
+        *error = false;
+
+    if (end - str > 2 && *str == '0')
+    {
+        if (*(str + 1) == 'b' || *(str + 1) == 'B')
+        {
+            base = 2;
+            str += 2;
+        }
+        else if (*(str + 1) == 'x' || *(str + 1) == 'X')
+        {
+            base = 16;
+            str += 2;
+        }
+    }
+
+    while (*str != '\0' && str != end)
+    {
+        char c = *str++;
+                                                // Turn c into a value from 0 to base
+        if (c < 0x30)                           // Less then 0 error
+        {
+            if (error)
+                *error = true;
+
+            return 0;
+        }
+
+        if (c <= 0x39)                          // 0 to 9
+            c -= 0x30;
+        else
+        {
+            if (c >= 0x41 && c <= 0x5A)         // Upper case
+                c -= 0x37;
+            else if (c >= 0x61 && c <= 0x7A)    // Lower case
+                c -= 0x57;
+            else                                // Not a valid digit
+            {
+                if (error)
+                    *error = true;
+
+                return 0;
+            }
+        }
+
+        if (c > base)                           // Digit larger then base?
+        {
+            if (error)
+                *error = true;
+
+            return 0;
+        }
+
+        value *= base;
+        value += c;
+    }
+    
+    return value;
+}
+
+int64_t string_to_s64(char* str, char* end, bool* error)
+{
+    if (*str == '-')
+        return  -((int64_t)string_to_u64(str + 1, end, error));
+
+    return  (int64_t)string_to_u64(str, end, error);
+}
+
 size_t djb2_hash(const char *str)
 {
     size_t hash = 5381;

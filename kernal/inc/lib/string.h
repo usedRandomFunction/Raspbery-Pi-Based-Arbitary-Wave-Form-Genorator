@@ -1,6 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -28,6 +29,24 @@ int strcpy_s(const char* src, size_t dest_size, char* dst);
 // @param dst the string that gets appened to
 // @return Zero on success or non-zero on failer
 int strcat_s(char* dst, size_t dest_size, const char* src);
+
+// Simple sting to number function
+// Takes the given string and turns it into a uint64_t
+// suports binary, base 10 and hexadecimal
+// @param str String to convert
+// @param end (Optional) used to show the end of the data
+// @param error (Optional) used to show if a error occured (Ture if error)
+// @return The value
+uint64_t string_to_u64(char* str, char* end, bool* error);
+
+// Simple sting to number function
+// Takes the given string and turns it into a int64_t
+// suports binary, base 10 and hexadecimal
+// @param str String to convert
+// @param end (Optional) used to show the end of the data
+// @param error (Optional) used to show if a error occured (Ture if error)
+// @return The value
+int64_t string_to_s64(char* str, char* end, bool* error);
 
 // Take from http://www.cse.yorku.ca/~oz/hash.html
 // Simple hash function

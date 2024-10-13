@@ -112,7 +112,7 @@ bool load_config_file(config_file* header, const char* path)
         {
             if (!string_active)                         // Quotation marks are not being used
             {
-                if (*ptr == '\n')
+                if (*ptr == '\n' || (ptr + 1) == end)   // New line or end of file
                     value_end = ptr;
             }
             else
@@ -137,6 +137,7 @@ bool load_config_file(config_file* header, const char* path)
             bool allready_exists = false;
 
             config_file_table_entry entry;
+            entry.entry.back_slash_active = string_active;
             entry.entry.value_begin = value_start;
             entry.entry.value_end = value_end;
             entry.hash = hash;
@@ -158,10 +159,11 @@ bool load_config_file(config_file* header, const char* path)
 
             insert_dynamic_array(&entry, index, &header->entrys);        
 
-            name_start = NULL;
-            name_end = NULL;
+            string_active = false;
             value_start = NULL;
+            name_start = NULL;
             value_end = NULL;
+            name_end = NULL;
         }
     }
     
@@ -234,6 +236,59 @@ const config_file_entry* get_config_file_entry_from_name(config_file* header, co
     entry += index;
 
     return &(entry->entry);
+}
+
+char* get_string_from_config_file_entry_allocated(const config_file_entry* entry)
+{
+    size_t size = entry->value_end - entry->value_begin + 1;
+
+    char* str = malloc(size);
+
+    if (str == NULL)
+        return NULL;
+
+    if (!get_string_from_config_file_entry(entry, str, size))
+    {
+        free(str);
+
+        return NULL;
+    }
+
+    return str;
+}
+
+bool get_string_from_config_file_entry(const config_file_entry* entry, char* str, size_t dest_size)
+{
+    char* ptr = entry->value_begin;
+
+    while ((ptr != entry->value_end) && (dest_size--))
+    {
+        if (entry->back_slash_active)
+        {
+            if (*ptr == '\\' && *(ptr + 1) != '\\')
+            {
+                ptr++;
+                continue;
+            }
+        }
+
+        *str++ = *ptr++;
+    }
+    
+    if (dest_size > 0)
+        *str = '\0';
+
+    return dest_size != 0;
+}
+
+uint64_t get_u64_from_config_file_entry(const config_file_entry* entry, bool* error)
+{
+    return string_to_u64(entry->value_begin, entry->value_end, error);
+}
+
+int64_t get_s64_from_config_file_entry(const config_file_entry* entry, bool* error)
+{
+    return string_to_s64(entry->value_begin, entry->value_end, error);
 }
 
 bool s_less_then_cfg_file_entry(void* A, void* B)

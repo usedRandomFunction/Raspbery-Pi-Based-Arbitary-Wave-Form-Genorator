@@ -20,11 +20,24 @@ static void s_print_cfg_entry(const char* name, config_file* cfg)
     }
 
     char buf[1024];
-    size_t size = entry->value_end - entry->value_begin;
-    memcpy(buf, entry->value_begin, size);
-    buf[size] = '\0'; 
+    get_string_from_config_file_entry(entry, buf, 1024);
 
     printf("%s = %s\n", name , buf);
+}
+
+static void s_print_cfg_entry_as_number(const char* name, config_file* cfg)
+{
+    const config_file_entry* entry = get_config_file_entry_from_name(cfg, name);
+
+    if (entry == NULL)
+    {
+        printf("%s: NOT PRESSENT\n", name);
+        return;
+    }
+
+    uint64_t n = get_u64_from_config_file_entry(entry, NULL);
+
+    printf("%s = 0x%x\n", name , n);
 }
 
 int main()
@@ -36,11 +49,11 @@ int main()
 
 
     s_print_cfg_entry("APPLICATION_TYPE", &cfg);
-    s_print_cfg_entry("MONOLITHIC_PAGE_SIZE", &cfg);
-    s_print_cfg_entry("MINIUM_STACK_SIZE", &cfg);
-    s_print_cfg_entry("PROGRAM_ADDRESS", &cfg);
-    s_print_cfg_entry("PROGRAM_ENTRY", &cfg);
-    s_print_cfg_entry("ABI_VERSION", &cfg);
+    s_print_cfg_entry_as_number("MONOLITHIC_PAGE_SIZE", &cfg);
+    s_print_cfg_entry_as_number("MINIUM_STACK_SIZE", &cfg);
+    s_print_cfg_entry_as_number("PROGRAM_ADDRESS", &cfg);
+    s_print_cfg_entry_as_number("PROGRAM_ENTRY", &cfg);
+    s_print_cfg_entry_as_number("ABI_VERSION", &cfg);
     s_print_cfg_entry("IMAGE_PATH", &cfg);
 
     free_loaded_config_file(&cfg);
