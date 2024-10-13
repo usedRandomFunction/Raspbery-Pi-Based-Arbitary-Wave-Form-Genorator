@@ -52,7 +52,7 @@ Uses as the UI for the system
 ##
 ## GPIO Connections
 
-<b>`Warning: Contrll data, keypad in and SPI Clock are wrong on revison 1.0 mainboards`<\b>
+<b>`Warning: Contrll data, keypad in and SPI Clock are wrong on revison 1.0 mainboards`</b>
 
 | GPIO | Use |
 |------|-----|
