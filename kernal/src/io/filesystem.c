@@ -99,7 +99,7 @@ bool s_find_parition_from_mbr(master_boot_record_partition_table_entry* entry, b
     if (sd_readblock(0, mbr, 1) == 0)
         return false;
 
-    printf("searching for partition, disk id: %x\n", mbr->disk_id);
+    printf("searching for partition, disk id: 0x%x\n", mbr->disk_id);
 
     uint8_t entry_id = 255;
 

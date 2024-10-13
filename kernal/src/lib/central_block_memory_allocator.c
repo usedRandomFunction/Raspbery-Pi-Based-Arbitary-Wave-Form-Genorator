@@ -67,9 +67,9 @@ void initialize_central_block_memory_allocator(void* mem_start, size_t region_si
     // Now all the values are set zero the controll region to get every thing ready
     memclr(header->controll_region_start, controll_region_size_bytes);
     
-    const int prefix_message_size = 34;
+    const int prefix_message_size = 32;
     char prefix[prefix_message_size + 8 + 3]; 
-    strcpy_s("central_block_memory_allocator_0x", prefix_message_size + 8 + 3, &prefix[0]);
+    strcpy_s("central_block_memory_allocator_", prefix_message_size + 8 + 3, &prefix[0]);
     hex_size_t((size_t)header, prefix + prefix_message_size - 1, 8);
     strcat_s(prefix, prefix_message_size + 8 + 3, ": ");
 
@@ -93,7 +93,7 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
 {
     #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_ALLOC_FREE
 
-    printf("\ncentral_block_memory_allocator_%x: Freeing %x\n", header, (size_t)ptr);
+    printf("\ncentral_block_memory_allocator_%x: Freeing 0x%x\n", header, (size_t)ptr);
     #endif
 
     const void* block_offset = (char*)ptr - (size_t)header->allocation_region_start;
@@ -103,9 +103,10 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
     if (blockID >= header->number_of_total_blocks) // Is block does not exist, do free it
     {
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_IF_FAILED_FREE
-        printf("\ncentral_block_memory_allocator_%x: Failed to free block %x, block does not exist!\n",
+        printf("\ncentral_block_memory_allocator_%x: Failed to free block 0x%x, %s\n",
             header,
-            ptr);
+            ptr,
+            "block does not exist!");
         #endif
 
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED
@@ -118,9 +119,10 @@ void central_block_memory_allocator_free(void* ptr, central_block_memory_allocat
     if (get_nth_block_controll(header->controll_region_start, blockID) != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_START)
     {
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_IF_FAILED_FREE
-        printf("\ncentral_block_memory_allocator_%x: Failed to free block %x, controll word != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_START\n",
+        printf("\ncentral_block_memory_allocator_%x: Failed to free block 0x%x, %s\n",
             header,
-            ptr);
+            ptr,
+            "controll word != CENTRAL_BLOCK_MEMORY_ALLOCATOR_BLOCK_START");
         #endif
 
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED
@@ -151,8 +153,8 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     size_t alligment_check_value = 0;
 
     #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_ALLOC_FREE
-    printf("\ncentral_block_memory_allocator_%x: allocating block <2^%d, %x>\n",
-        header, allignment_as_power_of_two, size);
+    printf("\ncentral_block_memory_allocator_%x: allocating block [0x%x, 2^%d]\n",
+        header, size, allignment_as_power_of_two);
     #endif
 
     if (allignment_as_power_of_two == 0 || allignment_as_power_of_two <= header->block_size_as_power_of_two)
@@ -228,7 +230,7 @@ void* central_block_memory_allocator_alloc_alligned(size_t size, size_t allignme
     if (nblocks != required_blocks)
     {
         #ifdef CENTRAL_BLOCK_MEMORY_ALLOCATOR_PRINT_IF_FAILED_ALLOC
-        printf("\ncentral_block_memory_allocator_%x: Failed to allocate block [%x, %d]\n",
+        printf("\ncentral_block_memory_allocator_%x: Failed to allocate block [0x%x, %d]\n",
             header, size, allignment_as_power_of_two);
 
         #endif

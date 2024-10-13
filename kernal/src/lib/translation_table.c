@@ -184,7 +184,7 @@ bool insert_translation_table_section(translation_table_info* table, translation
 {
     int target_section_id = table->number_of_sections;
 
-    printf("Translation table: %x\nInserting section: [start]: %x, [allocation]: %x\n", 
+    printf("Translation table: %x\nInserting section: [start]: 0x%x, [allocation]: 0x%x\n", 
         table, section->section_start, section->allocation);
 
     for (int i = 0; i < table->number_of_sections; i++) // Check if we are inserting not apending

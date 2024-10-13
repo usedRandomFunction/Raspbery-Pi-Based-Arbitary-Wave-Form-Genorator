@@ -192,7 +192,7 @@ page_allocation_info* create_new_page_allocation_at_continuous_physical_address(
     if (offset != NULL)
         *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
 
-    printf("Created continuous physical page allocation %x with size: %d kib\nstarting at: %x\n",
+    printf("Created continuous physical page allocation %x with size: %d kib\nstarting at: 0x%x\n",
         allocation,
         (required_pages << page_allocator_page_size_as_power_of_two) / 1024,
         page_start << page_allocator_page_size_as_power_of_two);
@@ -217,7 +217,7 @@ page_allocation_info* create_new_page_allocation_for_unmanaged_continuous_physic
     if (offset != NULL)
         *offset = physical_address & ((1 << page_allocator_page_size_as_power_of_two) - 1);
 
-    printf("Created continuous (unmanaged) physical page allocation %x with size: %d kib\nstarting at: %x\n",
+    printf("Created continuous (unmanaged) physical page allocation %x with size: %d kib\nstarting at: 0x%x\n",
         allocation,
         (required_pages << page_allocator_page_size_as_power_of_two) / 1024,
         page_start << page_allocator_page_size_as_power_of_two);
