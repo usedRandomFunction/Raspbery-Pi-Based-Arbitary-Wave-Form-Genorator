@@ -9,7 +9,6 @@
 #include "io/file_access.h"
 #include "io/filesystem.h"
 #include "lib/memory.h"
-#include "io/putchar.h"
 #include "lib/random.h"
 #include "io/printf.h"
 #include "lib/mmu.h"
@@ -19,14 +18,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern pc_screen_font_header _binary_data_font_psf_start;
 central_block_memory_allocator_header kernel_heap_allocator;
 translation_table_info kernel_translation_table;
 fat32_fs* root_file_system;
 
 static void s_initialize_virtual_address_translation();
 static void s_prepare_memory_manager();
-static void s_init_defult_values();
 
 int main(); // The main system Function
  
@@ -49,7 +46,6 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 {
 	int boardType = get_board_type();
 	set_mmio_base(boardType);
-    s_init_defult_values();
 
 	#ifdef UART_BAUD_RATE
 	uart_init(UART_BAUD_RATE);
@@ -72,7 +68,6 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         printf("Initialize SD failed!\n");
         kernel_panic();
     }
-
     root_file_system = initialize_filesystem_from_media();
     if (root_file_system == NULL)
     {
@@ -93,14 +88,6 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         uart_getc();
         printf("System halted please restart!\n");
     }
-}
-
-static void s_init_defult_values()
-{
-    uart_initall_init_has_occured = false;
-    is_frambuffer_initialized = false;
-    current_font = &_binary_data_font_psf_start;
-    putchar_init_values();
 }
 
 static void s_prepare_memory_manager()

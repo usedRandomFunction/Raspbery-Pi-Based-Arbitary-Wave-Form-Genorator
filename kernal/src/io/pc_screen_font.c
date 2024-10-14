@@ -4,7 +4,10 @@
 
 #include <stddef.h>
 
-pc_screen_font_header* current_font = NULL;
+extern pc_screen_font_header _binary_data_font_psf_start;
+
+
+pc_screen_font_header* current_font = &_binary_data_font_psf_start;
 
 void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y)
 {

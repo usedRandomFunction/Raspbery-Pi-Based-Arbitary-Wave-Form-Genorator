@@ -5,8 +5,8 @@
 #include "lib/math.h"
 #include "io/uart.h"
 
-static uint32_t console_output_y;
-static uint32_t console_output_x;
+static uint32_t console_output_y = 0;
+static uint32_t console_output_x = 0;
 
 int putchar(int ch)
 {
@@ -44,10 +44,4 @@ int putchar(int ch)
     }
 
     return 0;
-}
-
-void putchar_init_values()
-{
-    console_output_y = 0;
-    console_output_x = 0;
 }
