@@ -18,7 +18,7 @@
 #define CMD_ERRORS_MASK     0xfff9c004
 #define CMD_RCA_MASK        0xffff0000
 
-// COMMANDs
+// commands
 #define CMD_GO_IDLE         0x00000000
 #define CMD_ALL_SEND_CID    0x02010000
 #define CMD_SEND_REL_ADDR   0x03020000
@@ -28,6 +28,8 @@
 #define CMD_READ_SINGLE     0x11220010
 #define CMD_READ_MULTI      0x12220032
 #define CMD_SET_BLOCKCNT    0x17020000
+#define CMD_WRITE_SINGLE    0x18220000
+#define CMD_WRITE_MULTI     0x19220022
 #define CMD_APP_CMD         0x37000000
 #define CMD_SET_BUS_WIDTH   (0x06020000|CMD_NEED_APP)
 #define CMD_SEND_OP_COND    (0x29020000|CMD_NEED_APP)
@@ -35,6 +37,7 @@
 
 // STATUS register settings
 #define SR_READ_AVAILABLE   0x00000800
+#define SR_WRITE_AVAILABLE  0x00000400
 #define SR_DAT_INHIBIT      0x00000002
 #define SR_CMD_INHIBIT      0x00000001
 #define SR_APP_CMD          0x00000020
@@ -43,6 +46,8 @@
 #define INT_DATA_TIMEOUT    0x00100000
 #define INT_CMD_TIMEOUT     0x00010000
 #define INT_READ_RDY        0x00000020
+#define INT_WRITE_RDY       0x00000010
+#define INT_DATA_DONE       0x00000002
 #define INT_CMD_DONE        0x00000001
 
 #define INT_ERROR_MASK      0x017E8000
@@ -555,7 +560,7 @@ int sd_readblock(uint32_t lba, void* buf, uint32_t num)
         return 0;
     
     #ifdef SD_VERBOSE_LOGGING
-    printf("Reading block %x (lba), n = %x from SD\n", lba, num);
+    printf("Reading block 0x%x (lba), n = %x from SD\n", lba, num);
     #endif
     
     if(s_sd_status(SR_DAT_INHIBIT)) 
@@ -611,4 +616,75 @@ int sd_readblock(uint32_t lba, void* buf, uint32_t num)
         s_sd_command(CMD_STOP_TRANS,0);
 
     return s_sd_err != SD_OK || count != num ? 0 : num * 512;
+}
+
+int sd_writeblock(uint32_t lba, void* buf, uint32_t num)
+{
+    if (num == 0)
+        return 0;
+
+        
+    #ifdef SD_VERBOSE_LOGGING
+    printf("Writing block 0x%x (lba), n = %x from SD\n", lba, num);
+    #endif
+    
+    if(s_sd_status(SR_DAT_INHIBIT | SR_WRITE_AVAILABLE)) 
+    {
+        s_sd_err = SD_TIMEOUT; 
+        return 0;
+    }
+
+    unsigned int* bufffer = (unsigned int*)buf;
+    if(s_sd_scr[0] & SCR_SUPP_CCS) 
+    {
+        if(num > 1 && (s_sd_scr[0] & SCR_SUPP_SET_BLKCNT)) 
+        {
+            s_sd_command(CMD_SET_BLOCKCNT, num);
+            if(s_sd_err) 
+                return 0;
+        }
+        mmio_write(EMMC_BLKSIZECNT, (num << 16) | 512);
+        s_sd_command(num == 1 ? CMD_WRITE_SINGLE : CMD_WRITE_MULTI, lba);
+        if(s_sd_err) 
+            return 0;
+    } 
+    else 
+    {
+        mmio_write(EMMC_BLKSIZECNT, (1 << 16) | 512);
+    }
+
+    uint32_t count = 0;
+    int r;
+
+    while(count < num) 
+    {
+        if(!(s_sd_scr[0] & SCR_SUPP_CCS)) 
+        {
+            s_sd_command(CMD_WRITE_SINGLE, (lba + count) * 512);
+            if(s_sd_err) 
+                return 0;
+        }
+        if((r = s_sd_int(INT_WRITE_RDY)))
+        {
+            printf("ERROR: Timeout waiting for ready to write\n");
+            s_sd_err = r;
+            return 0;
+        }
+        for(int d = 0; d < 128; d++) 
+            mmio_write(EMMC_DATA, bufffer[d]);
+        bufffer+=128;
+        count++; 
+    }
+
+    if((r = s_sd_int(INT_DATA_DONE)))
+    {
+        printf("ERROR: Timeout waiting for data done\n");
+        s_sd_err = r;
+        return 0;
+    }
+
+    if( num > 1 && !(s_sd_scr[0] & SCR_SUPP_SET_BLKCNT) && (s_sd_scr[0] & SCR_SUPP_CCS)) 
+        s_sd_command(CMD_STOP_TRANS,0);
+
+    return s_sd_err!=SD_OK || count != num ? 0 : num * 512;
 }
