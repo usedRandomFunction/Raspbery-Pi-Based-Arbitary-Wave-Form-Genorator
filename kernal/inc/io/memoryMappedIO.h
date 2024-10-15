@@ -248,6 +248,16 @@ enum
     EMMC_INT_EN         = (EMMC_BASE + 0x38),
     EMMC_CONTROL2       = (EMMC_BASE + 0x3C),
     EMMC_SLOTISR_VER    = (EMMC_BASE + 0xFC),
+
+    // System timer registers
+    SYS_TIMER_BASE  = 0x3000,
+    SYS_TIMER_CS    = (SYS_TIMER_BASE + 0x00),
+    SYS_TIMER_CLO   = (SYS_TIMER_BASE + 0x04),
+    SYS_TIMER_CHI   = (SYS_TIMER_BASE + 0x08),
+    SYS_TIMER_C0    = (SYS_TIMER_BASE + 0x0C),
+    SYS_TIMER_C1    = (SYS_TIMER_BASE + 0x10),
+    SYS_TIMER_C2    = (SYS_TIMER_BASE + 0x14),
+    SYS_TIMER_C3    = (SYS_TIMER_BASE + 0x18),
 };
 
 

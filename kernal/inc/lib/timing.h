@@ -5,14 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// // Loop <delay> times in a way that the compiler won't optimize away
-// // @param count The number of times to loop
-// static inline void delay(int32_t count)
-// {
-// 	asm volatile("__delay_%=: subs %[count], %[count], #1; bne __delay_%=\n"
-// 		 : "=r"(count): [count]"0"(count) : "cc");
-// }
-
 // Loops cycles times runing nop on each cycle
 // @param cycles The number of cycles
 void wait_cycles(size_t cycles);
@@ -25,5 +17,12 @@ void delay_microseconds(size_t microseconds);
 // @param milliseconds The delay time
 void delay_milliseconds(size_t milliseconds);
 
+// Returns the value of cntfrq_el0
+// @return cntfrq_el0
+uint32_t get_timer_freqency();
+
+// Returns the value of cntpct_el0,
+// @return cntpct_el0,
+uint64_t get_timer_count();
 
 #endif

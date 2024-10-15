@@ -1,4 +1,5 @@
 #include "lib/central_block_memory_allocator.h"
+#include "run_time_kernal_config.h"
 #include "lib/translation_table.h"
 #include "boot/boardDectetion.h"
 #include "lib/arm_exceptions.h"
@@ -69,19 +70,27 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         kernel_panic();
     }
     root_file_system = initialize_filesystem_from_media();
+
     if (root_file_system == NULL)
     {
-        printf("Failed to initialize root fs!\n");
+        printf("Failed to initialize root file system!\n");
         kernel_panic();
     }
     initialize_file_access();
+    initialize_random(); 
 
-    initialize_random();
+    if (!load_kernal_configuration())
+    {
+        printf("Failed to load kernal configuration!\n");
+        kernel_panic();
+    }
     
 	printf("Starting main function!\n");
 	int result = main();
 
 	printf("Program ended with code: %d!\n", result);
+
+    free_kernal_configuration();
 
 	while (1)
     {

@@ -30,3 +30,21 @@ void delay_milliseconds(size_t milliseconds)
 {
     delay_microseconds(milliseconds * 1000);
 }
+
+uint32_t get_timer_freqency()
+{
+    uint32_t reg;
+
+    asm volatile ("mrs %0, cntfrq_el0" : "=r"(reg));
+
+    return reg;
+}
+
+uint64_t get_timer_count()
+{
+    uint64_t reg;
+
+    asm volatile ("mrs %0, cntpct_el0" : "=r"(reg));
+
+    return reg;
+}
