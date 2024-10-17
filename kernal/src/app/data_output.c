@@ -11,11 +11,18 @@ void write_buffer_one_channle_8_bit_samples(uint64_t* buffer_start, uint8_t samp
     uint64_t mask = 0xFF << 18;
     uint8_t bit_offset = (offset & 7) * 8;// offset & 7 is the same as offset % 8
     
-    // Now interweave bit 3:7 - 2:6 - 1:5 - 0:4
-    uint64_t data = ((sample & (1 << 3)) >> 3) | ((sample & (1 << 7)) >> 6);    // Bits 3 and 7
-    data |= (((sample & (1 << 2))     ) | ((sample & (1 << 6)) >> 3)) << 4;            // Bits 2 and 6
-    data |= ((sample & (1 << 1)) << 3) | ((sample & (1 << 5))     );            // Bits 1 and 5
-    data |= (((sample & (1     )) << 6) | ((sample & (1 << 4)) << 3)) >> 4;            // Bits 0 and 4     
+    uint64_t data = 0;
+    // DO NOT EDIT 
+    // These values are based of the traces and need outputs of the shift registers 
+    // So no touchy, i just spend hours debuging these (And it turned out to be math.h...)
+    data |= (sample & (1 << 4)) >> 4 << 0;
+    data |= (sample & (1 << 7)) >> 7 << 1;
+    data |= (sample & (1 << 3)) >> 3 << 2;
+    data |= (sample & (1 << 6)) >> 6 << 3;
+    data |= (sample & (1 << 2)) >> 2 << 4;
+    data |= (sample & (1 << 5)) >> 5 << 5;
+    data |= (sample & (1 << 0)) >> 0 << 6;
+    data |= (sample & (1 << 1)) >> 1 << 7;
 
     data <<= 18;
     
