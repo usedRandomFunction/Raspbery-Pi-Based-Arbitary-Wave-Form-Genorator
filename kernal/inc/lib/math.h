@@ -9,8 +9,8 @@
 #define min(a, b) (a < b ? a : b)
 #define clamp(a, ma, mi) max(min(a, ma), mi)
 
-#define rotate_right(result, value, shift) asm ("ror %0, %1, %2" : "=r" (result) : "r" (value), "r" (64 - shift));
-#define rotate_left(result, value, shift) asm ("ror %0, %1, %2" : "=r" (result) : "r" (value), "r" (64 - shift));
+#define rotate_right(result, value, shift) asm ("ror %0, %1, %2" : "=r" (result) : "r" (value), "r" (shift));
+#define rotate_left(result, value, shift) asm ("ror %0, %1, %2" : "=r" (result) : "r" (value), "r" (64 - (shift)));
 
 
 
