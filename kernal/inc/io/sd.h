@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-
-
 enum 
 {
     SD_OK = 0,
@@ -28,7 +26,16 @@ int sd_readblock(uint32_t lba, void* buf, uint32_t num);
 // @param buf The memory to write from
 // @param num The nubmer of blocks to write
 // @return Number of bytes written, 0 on failer
-int sd_writeblock(uint32_t lba, void* buf, uint32_t num);
+int sd_writeblock(uint32_t lba, const void* buf, uint32_t num);
 
+// Reads section_size sectors copys num bytes from buf at offset, and then writes it back to the SD
+// @param lba The locigal block address to start the read / write at
+// @param buf The memory to copy
+// @param offset The offset from the start of the section (In bytes)
+// @param num The number of bytes to copy from buf
+// @param section_size The number of sectors the "section" contains
+// @param section (Optional) A pointer to the working buffer for this function, if NULL it will be allocted automaticly
+// @return 1 On success, 0 on failer
+int sd_write_section(uint32_t lba, void* buf, uint32_t offset, uint32_t num, uint32_t section_size, void* section);
 
 #endif

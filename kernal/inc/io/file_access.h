@@ -4,11 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifndef SEEK_SET
-#define	SEEK_SET	0	/* set file offset to offset */
-#define	SEEK_CUR	1	/* set file offset to current plus offset */
-#define	SEEK_END	2	/* set file offset to EOF plus offset */
-#endif
 
 // Initializes the buffesr used to track file discriptors
 void initialize_file_access();
@@ -29,7 +24,14 @@ int close(int fd);
 // @param buf pointer to buffer to read into
 // @param n Number of bytes to read
 // @return Number of bytes read / 0 if end of file is reached, -1 on Failer
-size_t read (int fd, void* buf, size_t n);
+size_t read(int fd, void* buf, size_t n);
+
+// Writes n bytes to the file
+// @param fd File discriptor to write to
+// @param buf pointer to buffer to write into
+// @param n Number of bytes to write
+// @return Number of bytes written, -1 on Failer
+size_t write(int fd, const void* buf, size_t n);
 
 // Seeks to a offset in the file
 // @param fd File discriptor to set the offset of
@@ -42,4 +44,20 @@ ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence);
 // @param fd File discriptor of file
 // @return size of file in bytes / -1 on Failer
 size_t get_file_size(int fd);
+
+enum
+{
+    SEEK_SET    =   0,  /* set file offset to offset */
+    SEEK_CUR    =	1,  /* set file offset to current plus offset */
+    SEEK_END    =	2   /* set file offset to EOF plus offset */
+};
+
+enum
+{
+    FILE_FLAGS_READ         = 0,
+    FILE_FLAGS_READ_WRITE   = 1 << 0,
+
+    FILE_FLAGS_UNUSED_BITS = UINT32_MAX & ~(FILE_FLAGS_READ_WRITE),
+};
+
 #endif

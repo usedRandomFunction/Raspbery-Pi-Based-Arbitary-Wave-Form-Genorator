@@ -7,6 +7,7 @@
 #include "lib/timing.h"
 #include "lib/clocks.h"
 #include "io/putchar.h"
+#include "lib/memory.h"
 #include "io/printf.h"
 #include "io/gpio.h"
 
@@ -618,7 +619,7 @@ int sd_readblock(uint32_t lba, void* buf, uint32_t num)
     return s_sd_err != SD_OK || count != num ? 0 : num * 512;
 }
 
-int sd_writeblock(uint32_t lba, void* buf, uint32_t num)
+int sd_writeblock(uint32_t lba, const void* buf, uint32_t num)
 {
     if (num == 0)
         return 0;
@@ -687,4 +688,42 @@ int sd_writeblock(uint32_t lba, void* buf, uint32_t num)
         s_sd_command(CMD_STOP_TRANS,0);
 
     return s_sd_err!=SD_OK || count != num ? 0 : num * 512;
+}
+
+
+// The code above this is just a neater rewrite of a example i've found
+// From hear fully custom
+
+int sd_write_section(uint32_t lba, void* buf, uint32_t offset, uint32_t num, uint32_t section_size, void* section)
+{   
+    if (offset + num > (section_size * 512))
+        return 0; // If we are trying to write to memory out side the section just dont try
+
+    bool section_memory_was_provided = section != NULL;
+
+    if (section == NULL)
+        section = malloc(section_size * 512);
+
+    if (section == NULL) // Failed to allocate
+        return 0;
+
+    if (sd_readblock(lba, section, section_size) != section_size * 512)
+    {
+        if (!section_memory_was_provided)
+            free(section);
+
+        return 0;
+    }
+
+    memcpy(void_ptr_offset_bytes(section, offset), buf, num);
+
+    if (sd_writeblock(lba, section, section_size) != section_size * 512)
+    {
+        if (!section_memory_was_provided)
+            free(section);
+
+        return 0;
+    }
+
+    return 1;
 }

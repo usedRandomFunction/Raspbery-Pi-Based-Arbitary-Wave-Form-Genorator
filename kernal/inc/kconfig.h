@@ -22,6 +22,6 @@
 
 #define CONSOLE_MAX_HEIGHT 440
 
-#define SD_VERBOSE_LOGGING
+// #define SD_VERBOSE_LOGGING
 
 #endif
