@@ -131,6 +131,8 @@ static bool s_set_file_discriptor_to_struct(file_discriptor_metadata* file, uint
 // @param last_fat_sector Used to store the last sector of the fat that was loaded
 static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence);
 
+static size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t n);
+
 void initialize_file_access()
 {
     initialize_dynamic_array(sizeof(fd_hash_table_entry), 0, &s_fd_hash_table);
@@ -350,140 +352,7 @@ size_t write(int fd, const void* buf, size_t n)
     fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
     file += index;
 
-    if (!file->metadata.write_permissions)
-        return -1;
-
-    if (!s_allocate_new_clusters_if_necessary(&file->metadata, n))
-        return -1;
-    
-    const size_t cluster_size = root_file_system->number_of_sectors_per_cluster * 512;
-
-    void* tempoary_buffer = malloc(cluster_size);
-
-    if (tempoary_buffer == NULL)
-        return -1;
-
-    // Accutelly write the thing
-
-    uint32_t number_of_bytes_to_write_to_first_clsuter = 0;
-    uint32_t number_of_bytes_to_write_to_last_clsuter = 0;
-    uint32_t number_of_middle_clusters = 0;
-
-    s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(&file->metadata, n,    // File and number of bytes
-        &number_of_bytes_to_write_to_first_clsuter,                                         // return varibles
-        &number_of_middle_clusters,
-        &number_of_bytes_to_write_to_last_clsuter);
-
-    uint32_t cluster_lba = 0;
-    uint8_t* buffer = (uint8_t*)buf;
-
-    if (number_of_bytes_to_write_to_first_clsuter != 0)
-    {
-        cluster_lba = root_file_system->data_sector;
-        cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
-
-        if (sd_write_section(cluster_lba,                           // LBA to write to
-            buffer,                                                 // Bytes to write
-            file->metadata.current_offset % cluster_size,           // Offset from start
-            number_of_bytes_to_write_to_first_clsuter,             // Number of bytes
-            root_file_system->number_of_sectors_per_cluster,        // Ammount of from the SD to work with
-            tempoary_buffer) == 0)                                  // Working buffer
-        {
-            printf("Error: Failed to write to SD!\n");
-            free(tempoary_buffer);
-
-            return -1;
-        }
-
-        file->metadata.current_offset += number_of_bytes_to_write_to_first_clsuter;
-        buffer += number_of_bytes_to_write_to_first_clsuter;
-    }
-
-    if (number_of_middle_clusters == 0 && number_of_bytes_to_write_to_last_clsuter == 0)
-    {
-        free(tempoary_buffer);
-
-        return n;
-    }
-
-    uint32_t number_of_clusters_to_write_to = number_of_middle_clusters + (number_of_bytes_to_write_to_last_clsuter == 0) ? 0 : 1;
-
-    for ( ; number_of_clusters_to_write_to > 0; number_of_clusters_to_write_to--)
-    {
-        uint32_t fat_sector = root_file_system->first_fat_sector + (file->metadata.current_cluster_number / (512 / 4));
-        uint32_t fat_offset = (file->metadata.current_cluster_number % (512 / 4));
-
-        if (last_fat_sector != fat_sector)
-        {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-            {
-                printf("Erorr: Failed to read FAT!\n");
-                free(tempoary_buffer);
-                free (fat_buffer);
-
-                return -1;
-            }
-            last_fat_sector = fat_sector;
-        }
-
-        uint32_t new_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
-
-        if (new_cluster_number >= 0x0FFFFFF8 && (number_of_middle_clusters != 0 || number_of_bytes_to_write_to_last_clsuter != 0))
-        {
-            printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
-            free(tempoary_buffer);
-            free (fat_buffer);
-
-            return -1;
-        }
-        file->metadata.current_cluster_number = new_cluster_number;
-
-        if (number_of_middle_clusters > 0)
-        {
-            cluster_lba = root_file_system->data_sector;
-            cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
-
-            if (sd_writeblock(cluster_lba, buffer, root_file_system->number_of_sectors_per_cluster) != cluster_size)
-            {
-                printf("Erorr: Failed to write to SD!\n");
-                free(tempoary_buffer);
-                free (fat_buffer);
-
-                return -1;
-            }
-            file->metadata.current_offset += cluster_size;
-            buffer += cluster_size;
-            
-            number_of_middle_clusters--;
-        }
-    }
-
-    if (number_of_bytes_to_write_to_last_clsuter != 0)
-    {
-        cluster_lba = root_file_system->data_sector;
-        cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
-
-        if (sd_write_section(cluster_lba,                           // LBA to write to
-            buffer,                                                 // Bytes to write
-            0,                                                      // Offset from start
-            number_of_bytes_to_write_to_last_clsuter,              // Number of bytes
-            root_file_system->number_of_sectors_per_cluster,        // Ammount of from the SD to work with
-            tempoary_buffer) == 0)                                  // Working buffer
-        {
-            printf("Failed to read SD!\n");
-            free(tempoary_buffer);
-            return -1;
-        }
-        file->metadata.current_offset += number_of_bytes_to_write_to_last_clsuter;
-        buffer += number_of_bytes_to_write_to_last_clsuter;
-    }
-
-
-    free(tempoary_buffer);
-
-    file->metadata.current_offset += n;
-
-    return n;
+    return s_write_internal(file, buf, n);
 }
 
 ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence)
@@ -560,12 +429,10 @@ int ftruncate(int fd, size_t new_size)
 
     void* buffer = malloc(new_size - old_size);
     memclr(buffer, new_size - old_size);
-    
-    // TODO if the write function split up more maby use the internal ones here
 
     success = s_lseek_internal(&file->metadata, 0, SEEK_END) != -1;
 
-    success = write(fd, buffer, new_size - old_size) == (new_size - old_size);
+    success = s_write_internal(&file->metadata, buffer, new_size - old_size) == (new_size - old_size);
     free(buffer);
 
     file->metadata.current_cluster_number = seek_cluster;
@@ -969,7 +836,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size)
     return success;
 }
 
-static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence)
+ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence)
 {
     ptrdiff_t new_offset = (ptrdiff_t)file->current_offset;
 
@@ -1051,6 +918,144 @@ static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offs
     return new_offset;
 }
 
+size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t n)
+{
+    if (!file->write_permissions)
+        return -1;
+
+    if (!s_allocate_new_clusters_if_necessary(file, n))
+        return -1;
+    
+    const size_t cluster_size = root_file_system->number_of_sectors_per_cluster * 512;
+
+    void* tempoary_buffer = malloc(cluster_size);
+
+    if (tempoary_buffer == NULL)
+        return -1;
+
+    // Accutelly write the thing
+
+    uint32_t number_of_bytes_to_write_to_first_clsuter = 0;
+    uint32_t number_of_bytes_to_write_to_last_clsuter = 0;
+    uint32_t number_of_middle_clusters = 0;
+
+    s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(file, n,    // File and number of bytes
+        &number_of_bytes_to_write_to_first_clsuter,                                         // return varibles
+        &number_of_middle_clusters,
+        &number_of_bytes_to_write_to_last_clsuter);
+
+    uint32_t cluster_lba = 0;
+    uint8_t* buffer = (uint8_t*)buf;
+
+    if (number_of_bytes_to_write_to_first_clsuter != 0)
+    {
+        cluster_lba = root_file_system->data_sector;
+        cluster_lba += (file->current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+
+        if (sd_write_section(cluster_lba,                           // LBA to write to
+            buffer,                                                 // Bytes to write
+            file->current_offset % cluster_size,           // Offset from start
+            number_of_bytes_to_write_to_first_clsuter,             // Number of bytes
+            root_file_system->number_of_sectors_per_cluster,        // Ammount of from the SD to work with
+            tempoary_buffer) == 0)                                  // Working buffer
+        {
+            printf("Error: Failed to write to SD!\n");
+            free(tempoary_buffer);
+
+            return -1;
+        }
+
+        file->current_offset += number_of_bytes_to_write_to_first_clsuter;
+        buffer += number_of_bytes_to_write_to_first_clsuter;
+    }
+
+    if (number_of_middle_clusters == 0 && number_of_bytes_to_write_to_last_clsuter == 0)
+    {
+        free(tempoary_buffer);
+
+        return n;
+    }
+
+    uint32_t number_of_clusters_to_write_to = number_of_middle_clusters + (number_of_bytes_to_write_to_last_clsuter == 0) ? 0 : 1;
+
+    for ( ; number_of_clusters_to_write_to > 0; number_of_clusters_to_write_to--)
+    {
+        uint32_t fat_sector = root_file_system->first_fat_sector + (file->current_cluster_number / (512 / 4));
+        uint32_t fat_offset = (file->current_cluster_number % (512 / 4));
+
+        if (last_fat_sector != fat_sector)
+        {
+            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
+            {
+                printf("Erorr: Failed to read FAT!\n");
+                free(tempoary_buffer);
+                free (fat_buffer);
+
+                return -1;
+            }
+            last_fat_sector = fat_sector;
+        }
+
+        uint32_t new_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
+
+        if (new_cluster_number >= 0x0FFFFFF8 && (number_of_middle_clusters != 0 || number_of_bytes_to_write_to_last_clsuter != 0))
+        {
+            printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
+            free(tempoary_buffer);
+            free (fat_buffer);
+
+            return -1;
+        }
+        file->current_cluster_number = new_cluster_number;
+
+        if (number_of_middle_clusters > 0)
+        {
+            cluster_lba = root_file_system->data_sector;
+            cluster_lba += (file->current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+
+            if (sd_writeblock(cluster_lba, buffer, root_file_system->number_of_sectors_per_cluster) != cluster_size)
+            {
+                printf("Erorr: Failed to write to SD!\n");
+                free(tempoary_buffer);
+                free (fat_buffer);
+
+                return -1;
+            }
+            file->current_offset += cluster_size;
+            buffer += cluster_size;
+            
+            number_of_middle_clusters--;
+        }
+    }
+
+    if (number_of_bytes_to_write_to_last_clsuter != 0)
+    {
+        cluster_lba = root_file_system->data_sector;
+        cluster_lba += (file->current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+
+        if (sd_write_section(cluster_lba,                           // LBA to write to
+            buffer,                                                 // Bytes to write
+            0,                                                      // Offset from start
+            number_of_bytes_to_write_to_last_clsuter,              // Number of bytes
+            root_file_system->number_of_sectors_per_cluster,        // Ammount of from the SD to work with
+            tempoary_buffer) == 0)                                  // Working buffer
+        {
+            printf("Failed to read SD!\n");
+            free(tempoary_buffer);
+            return -1;
+        }
+        file->current_offset += number_of_bytes_to_write_to_last_clsuter;
+        buffer += number_of_bytes_to_write_to_last_clsuter;
+    }
+
+
+    free(tempoary_buffer);
+
+    file->current_offset += n;
+
+    return n;
+}
+
 bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written)
 {
     size_t new_size = file->current_offset + bytes_written;
@@ -1127,8 +1132,6 @@ fat_entry_update* s_find_free_clusters(uint32_t n)
 
     return allocation_table_updates;
 }
-
-#include "lib/arm_exceptions.h"
 
 bool s_write_fat_updates(fat_entry_update* updates)
 {   
