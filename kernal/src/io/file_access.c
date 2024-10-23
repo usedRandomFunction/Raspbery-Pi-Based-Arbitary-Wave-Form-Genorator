@@ -39,6 +39,9 @@ struct fat_entry_update
 
 typedef struct fat_entry_update fat_entry_update;
 
+static uint32_t last_fat_sector = UINT32_MAX;
+static uint32_t fat_buffer[512];
+
 static dynamic_array s_fd_hash_table;
 extern fat32_fs* root_file_system;
 
@@ -74,10 +77,8 @@ static int32_t s_format_file_name_8_3_standered(const char* path, char* buffer);
 // Allocates new clusters to file after a write
 // @param file Pointer to file discriptor of the file
 // @param bytes_written bytes written to the file, (used to caculate new size)
-// @param fat_buffer A 512 byte buffer to store a sector of the file allocation table into
-// @param last_fat_sector Used to store the last sector of the fat that was loaded
 // @return True if succesful or false if failed
-static bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+static bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written);
 
 // Used to calcuate the number of btyes to be read / write from the 
 // tail ends of a the clusters, and the ammount of clusters in the middle
@@ -92,37 +93,31 @@ static void s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(fil
 
 // Find n free clusters and returns them as a list of updates
 // @param n The number of clusters to get
-// @param fat_buffer A pointer to a 512 byte buffer to load the FAT into
-// @param last_fat_sector A pointer to a uint32_t  to store the last sector of the fat that was used
 // @return the clusters in a fat_entry_update list connected to each other or NULL if failed
 // @note The first entry of the returned list needs its "entry_number" set or use the return + 1 to if this is a new allocation
 // the lest entry is all zeros to define the end
 // @warning The returned value is allocated on the stack, Remember to free it
-static fat_entry_update* s_find_free_clusters(uint32_t n, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+static fat_entry_update* s_find_free_clusters(uint32_t n);
 
 // Writes the given list of updates to the FAT
 // @param updates The list of updates to use
-// @param fat_buffer A pointer to a 512 byte buffer to load the FAT into
-// @param last_fat_sector A pointer to a uint32_t  to store the last sector of the fat that was used
 // @return True if success, false if failed
 // @note The end of the list is signifed by a entry with "entry_number" set to UINT32_MAX
-static bool s_write_fat_updates(fat_entry_update* updates, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+static bool s_write_fat_updates(fat_entry_update* updates);
 
 // Resizes a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
 // @param file Pointer to file discriptor of the file
 // @param new_size bytes written to the file
-// @param fat_buffer A 512 byte buffer to store a sector of the file allocation table into
-// @param last_fat_sector Used to store the last sector of the fat that was loaded
 // @return True if succesful or false if failed
-// static bool s_resize_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+// static bool s_resize_file(file_discriptor_metadata* file, size_t new_size);
 
 // Expands a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
 // Inputs and outputs the same as s_resize_file
-static bool s_expand_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+static bool s_expand_file(file_discriptor_metadata* file, size_t new_size);
 
 // Shinks a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
 // Inputs and outputs the same as s_resize_file
-static bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+static bool s_shink_file(file_discriptor_metadata* file, size_t new_size);
 
 // Sets the values of the file in its discriptor / dirrectory entry, to what the struct has stored
 // @param file The file to set and the metedata to store
@@ -134,7 +129,7 @@ static bool s_set_file_discriptor_to_struct(file_discriptor_metadata* file, uint
 // @param file The file to work with
 // @param fat_buffer A 512 byte buffer to store a sector of the file allocation table into
 // @param last_fat_sector Used to store the last sector of the fat that was loaded
-static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence, uint32_t* fat_buffer, uint32_t* last_fat_sector);
+static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence);
 
 void initialize_file_access()
 {
@@ -261,17 +256,7 @@ size_t read(int fd, void* buf, size_t n)
         return (file->metadata.file_size_bytes == file->metadata.current_offset) ? 0 : n;
     }
 
-    uint32_t last_fat_sector = UINT32_MAX;
-    uint32_t* fat_buffer = malloc(512);
     uint32_t number_of_clusters_to_read = number_of_middle_clusters + (number_of_bytes_to_read_from_last_clsuter == 0) ? 0 : 1;
-
-    if (fat_buffer == NULL)
-    {
-        if (file_temporay_buffer != NULL)
-            free(file_temporay_buffer);
-
-        return -1;
-    }
 
     for ( ; number_of_clusters_to_read > 0; number_of_clusters_to_read--)
     {
@@ -326,8 +311,6 @@ size_t read(int fd, void* buf, size_t n)
         }
     }
 
-    free(fat_buffer);
-
     if (number_of_bytes_to_read_from_last_clsuter != 0)
     {
         cluster_lba = root_file_system->data_sector;
@@ -370,31 +353,15 @@ size_t write(int fd, const void* buf, size_t n)
     if (!file->metadata.write_permissions)
         return -1;
 
-    uint32_t last_fat_sector = UINT32_MAX;
-    uint32_t* fat_buffer = malloc(512);
-    if (fat_buffer == NULL)     // Handle allocation failed
-        return -1;              // Very advanced methiod, give up
-
-
-    if (!s_allocate_new_clusters_if_necessary(&file->metadata, n, fat_buffer, &last_fat_sector))
-    {
-        if (fat_buffer != NULL)
-            free(fat_buffer);
-
+    if (!s_allocate_new_clusters_if_necessary(&file->metadata, n))
         return -1;
-    }
     
     const size_t cluster_size = root_file_system->number_of_sectors_per_cluster * 512;
 
     void* tempoary_buffer = malloc(cluster_size);
 
     if (tempoary_buffer == NULL)
-    {
-        if (fat_buffer != NULL)
-            free(fat_buffer);
-
         return -1;
-    }
 
     // Accutelly write the thing
 
@@ -425,9 +392,6 @@ size_t write(int fd, const void* buf, size_t n)
             printf("Error: Failed to write to SD!\n");
             free(tempoary_buffer);
 
-            if (fat_buffer != NULL)
-                free(fat_buffer);
-
             return -1;
         }
 
@@ -439,19 +403,7 @@ size_t write(int fd, const void* buf, size_t n)
     {
         free(tempoary_buffer);
 
-        if (fat_buffer != NULL)
-            free(fat_buffer);
-
         return n;
-    }
-
-    if (fat_buffer == NULL)
-        fat_buffer = malloc(512);
-
-    if (fat_buffer == NULL)     // Handle if allocation failed
-    {
-        free(tempoary_buffer);
-        return -1;
     }
 
     uint32_t number_of_clusters_to_write_to = number_of_middle_clusters + (number_of_bytes_to_write_to_last_clsuter == 0) ? 0 : 1;
@@ -505,8 +457,6 @@ size_t write(int fd, const void* buf, size_t n)
             number_of_middle_clusters--;
         }
     }
-    free(fat_buffer);
-
 
     if (number_of_bytes_to_write_to_last_clsuter != 0)
     {
@@ -548,14 +498,8 @@ ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence)
 
     fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
     file += index;
-
-    uint32_t last_fat_sector = UINT32_MAX;
-    uint32_t* fat_buffer = malloc(512);
-    if (fat_buffer == NULL)     // Handle allocation failed
-        return -1;              // Very advanced methiod, give up
     
-    ptrdiff_t return_value = s_lseek_internal(&file->metadata, offset, whence, fat_buffer, &last_fat_sector);
-    free(fat_buffer);
+    ptrdiff_t return_value = s_lseek_internal(&file->metadata, offset, whence);
 
     return return_value;
 }
@@ -590,11 +534,6 @@ int ftruncate(int fd, size_t new_size)
     if (!file->metadata.write_permissions)
         return -1;              
 
-    uint32_t last_fat_sector = UINT32_MAX;
-    uint32_t* fat_buffer = malloc(512);
-    if (fat_buffer == NULL)     // Handle allocation failed
-        return -1;              // Very advanced methiod, give up
-
 
     size_t old_size = file->metadata.file_size_bytes;
 
@@ -602,7 +541,7 @@ int ftruncate(int fd, size_t new_size)
 
     if (new_size < old_size)    // Handle seek pointer
     {                           // Reset if file was shrunk
-        success = s_shink_file(&file->metadata, new_size, fat_buffer, &last_fat_sector);
+        success = s_shink_file(&file->metadata, new_size);
 
         if (file->metadata.current_offset >= new_size)
         {
@@ -610,7 +549,6 @@ int ftruncate(int fd, size_t new_size)
             file->metadata.current_offset = 0;
 
         }
-        free(fat_buffer);
 
         return success ? 0 : -1;
     }
@@ -625,8 +563,7 @@ int ftruncate(int fd, size_t new_size)
     
     // TODO if the write function split up more maby use the internal ones here
 
-    success = s_lseek_internal(&file->metadata, 0, SEEK_END, fat_buffer, &last_fat_sector) != -1;
-    free(fat_buffer);
+    success = s_lseek_internal(&file->metadata, 0, SEEK_END) != -1;
 
     success = write(fd, buffer, new_size - old_size) == (new_size - old_size);
     free(buffer);
@@ -748,7 +685,6 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
 
     uint32_t next_cluster = current_dirrectory_cluster_number;
     fat_directory_entry* matching_dirrectory = NULL;
-    uint32_t last_fat_sector = UINT32_MAX;
     uint32_t cluster_lba = 0;
 
     while (next_cluster < 0x0FFFFFF8)
@@ -845,16 +781,10 @@ fat_directory_entry* s_find_file_from_path(const char* path, uint32_t* directory
     if (dirrectory_cluster == NULL)
         return NULL;
 
-    uint32_t* fat_buffer = malloc(512);
-
-    if (fat_buffer == NULL)
-        return NULL;
-
     fat_directory_entry* entry = s_find_file_recursive(path, root_file_system->root_cluster, fat_buffer, 
         dirrectory_cluster, directory_lba, directory_lba_offset);
 
     free(dirrectory_cluster);
-    free(fat_buffer);
 
     return entry;
 }
@@ -876,18 +806,18 @@ void s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(file_discr
     }
 }
 
-// bool s_resize_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+// bool s_resize_file(file_discriptor_metadata* file, size_t new_size)
 // {   
 //     if (file->file_size_bytes == new_size)
 //         return true;
 
 //     if (file->file_size_bytes < new_size)
-//         return s_expand_file(file, new_size, fat_buffer, last_fat_sector);
+//         return s_expand_file(file, new_size);
 
-//     return s_shink_file(file, new_size, fat_buffer, last_fat_sector);
+//     return s_shink_file(file, new_size);
 // }
 
-bool s_expand_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+bool s_expand_file(file_discriptor_metadata* file, size_t new_size)
 {
     if (file->write_permissions == false || file->file_size_bytes > new_size)
         return false;
@@ -916,7 +846,7 @@ bool s_expand_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fa
     uint32_t seek_cluster = file->current_cluster_number;
     uint32_t seek_offset = file->current_offset;
 
-    if (s_lseek_internal(file, 0, SEEK_END, fat_buffer, last_fat_sector) == -1)
+    if (s_lseek_internal(file, 0, SEEK_END) == -1)
         return false;
 
     uint32_t last_cluster = file->current_cluster_number;
@@ -924,13 +854,13 @@ bool s_expand_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fa
     file->current_offset = seek_offset;
 
     // Now we need to find free sectors
-    fat_entry_update* allocation_table_updates = s_find_free_clusters(number_of_cluster_to_be_added, fat_buffer, last_fat_sector);
+    fat_entry_update* allocation_table_updates = s_find_free_clusters(number_of_cluster_to_be_added);
 
     if (allocation_table_updates == NULL)
         return false;
     allocation_table_updates[0].entry_number = last_cluster; // Set the entry to the last cluster of the file
        
-    success = s_write_fat_updates(allocation_table_updates, fat_buffer, last_fat_sector);
+    success = s_write_fat_updates(allocation_table_updates);
     free(allocation_table_updates);
     
     if (!success)
@@ -944,7 +874,7 @@ bool s_expand_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fa
     return success;
 }
 
-bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+bool s_shink_file(file_discriptor_metadata* file, size_t new_size)
 {
     if (file->write_permissions == false || file->file_size_bytes < new_size)
         return false;
@@ -969,7 +899,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat
     uint32_t seek_cluster = file->current_cluster_number;
     uint32_t seek_offset = file->current_offset;
 
-    if (s_lseek_internal(file, new_size, SEEK_SET, fat_buffer, last_fat_sector) == -1)
+    if (s_lseek_internal(file, new_size, SEEK_SET) == -1)
         return false;
     
     uint32_t current_cluster_number = file->current_cluster_number;
@@ -994,7 +924,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat
         uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
         uint32_t fat_offset = (current_cluster_number % (512 / 4));
 
-        if (*last_fat_sector != fat_sector)
+        if (last_fat_sector != fat_sector)
         {
             if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
             {
@@ -1003,7 +933,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat
                 free(allocation_table_updates);
                 return false;
             }
-            *last_fat_sector = fat_sector;
+            last_fat_sector = fat_sector;
         }
 
         current_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
@@ -1026,7 +956,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat
     }
     allocation_table_updates[i].entry_number = UINT32_MAX;
        
-    success = s_write_fat_updates(allocation_table_updates, fat_buffer, last_fat_sector);
+    success = s_write_fat_updates(allocation_table_updates);
     free(allocation_table_updates);
     
     if (!success)
@@ -1039,7 +969,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size, uint32_t* fat
     return success;
 }
 
-static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence)
 {
     ptrdiff_t new_offset = (ptrdiff_t)file->current_offset;
 
@@ -1087,15 +1017,12 @@ static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offs
         current_cluster_number = file->first_cluster_number;
     }
 
-    if (fat_buffer == NULL)
-        return -1;
-
     while (number_of_clusters_skip > 0)
     {
         uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
         uint32_t fat_offset = (current_cluster_number % (512 / 4));
 
-        if (*last_fat_sector != fat_sector)
+        if (last_fat_sector != fat_sector)
         {
             if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
             {
@@ -1103,7 +1030,7 @@ static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offs
 
                 return -1;
             }
-            *last_fat_sector = fat_sector;
+            last_fat_sector = fat_sector;
         }
 
         current_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
@@ -1124,12 +1051,12 @@ static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offs
     return new_offset;
 }
 
-bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written)
 {
     size_t new_size = file->current_offset + bytes_written;
 
     if (new_size > file->file_size_bytes)
-        return s_expand_file(file, new_size, fat_buffer, last_fat_sector);
+        return s_expand_file(file, new_size);
     
     return true;
 }
@@ -1158,7 +1085,7 @@ bool s_set_file_discriptor_to_struct(file_discriptor_metadata* file, uint32_t* w
     return true;
 }
 
-fat_entry_update* s_find_free_clusters(uint32_t n, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+fat_entry_update* s_find_free_clusters(uint32_t n)
 {
     fat_entry_update* allocation_table_updates = malloc(sizeof(fat_entry_update) * (n + 2));
     if (allocation_table_updates == NULL)
@@ -1173,14 +1100,14 @@ fat_entry_update* s_find_free_clusters(uint32_t n, uint32_t* fat_buffer, uint32_
     while ((fat_sector < (root_file_system->first_fat_sector + root_file_system->sectors_per_fat)) 
             && (n > number_of_clusters_found))
     {   
-        if ((*last_fat_sector != fat_sector) && (sd_readblock(fat_sector, fat_buffer, 1) != 512))
+        if ((last_fat_sector != fat_sector) && (sd_readblock(fat_sector, fat_buffer, 1) != 512))
         {
             printf("Erorr: Failed to read FAT!\n");
             free(allocation_table_updates);
 
             return NULL;
         }
-        *last_fat_sector = fat_sector;
+        last_fat_sector = fat_sector;
         
         for (int i = 0; (i < (512 / 4)) && (n > number_of_clusters_found); i++)
         {
@@ -1203,7 +1130,7 @@ fat_entry_update* s_find_free_clusters(uint32_t n, uint32_t* fat_buffer, uint32_
 
 #include "lib/arm_exceptions.h"
 
-bool s_write_fat_updates(fat_entry_update* updates, uint32_t* fat_buffer, uint32_t* last_fat_sector)
+bool s_write_fat_updates(fat_entry_update* updates)
 {   
     bool is_first_entry = true;
 
@@ -1214,12 +1141,12 @@ bool s_write_fat_updates(fat_entry_update* updates, uint32_t* fat_buffer, uint32
         uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
         uint32_t fat_offset = (current_cluster_number % (512 / 4));
 
-        if (*last_fat_sector != fat_sector)
+        if (last_fat_sector != fat_sector)
         {
             // We dont need to write on the first entry as no changes have been made yet
             if (!is_first_entry) 
             {
-                if (sd_writeblock(*last_fat_sector, fat_buffer, 1) != 512)
+                if (sd_writeblock(last_fat_sector, fat_buffer, 1) != 512)
                 {
                     printf("Erorr: Failed to write to FAT!\n");
                     printf("Warning: allocation table may have been courrpted!\n");
@@ -1238,7 +1165,7 @@ bool s_write_fat_updates(fat_entry_update* updates, uint32_t* fat_buffer, uint32
                 return false;
             }
 
-            *last_fat_sector = fat_sector;
+            last_fat_sector = fat_sector;
         }
 
         // We have reached the end of the updates we can make
