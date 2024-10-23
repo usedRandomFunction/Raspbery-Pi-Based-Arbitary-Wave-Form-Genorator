@@ -13,16 +13,6 @@
 
 int main()
 {
-    int fd = open("test.txt", 1);
-
-    if (fd == -1)
-        return -1;
-
-    const char str[] = "Overwritten!\nThis is a new line\nAnother line";
-
-    write(fd, str, sizeof(str) -1);
-    close(fd);
-
     while (1)
     {
 

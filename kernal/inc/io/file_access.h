@@ -40,6 +40,20 @@ size_t write(int fd, const void* buf, size_t n);
 // @return The resulting offset from the start of file, or -1 if failed
 ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence);
 
+// Used to set the size of a file to new_size bytes new regions in of the file are zeros
+// @param path Path to the file
+// @param new_size The new size of the file
+// @return 0 if success, -1 if failed
+int truncate(const char* path, size_t new_size);
+
+// Used to set the size of a file to new_size bytes new regions in of the file are zeros
+// The seek pointer is not changed, unless the old value would be outside the file
+// @param fd File discriptor of file to set
+// @param new_size The new size of the file
+// @return 0 if success, -1 if failed
+int ftruncate(int fd, size_t new_size);
+
+
 // Gets the size of a given file
 // @param fd File discriptor of file
 // @return size of file in bytes / -1 on Failer
