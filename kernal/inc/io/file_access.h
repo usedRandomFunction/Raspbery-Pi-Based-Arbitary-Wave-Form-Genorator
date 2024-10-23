@@ -53,6 +53,16 @@ int truncate(const char* path, size_t new_size);
 // @return 0 if success, -1 if failed
 int ftruncate(int fd, size_t new_size);
 
+// Deletes a file
+// @param path Path to the file
+// @return 0 if successfull, -1 if Error
+int remove(const char* path);
+
+// Deletes a file
+// @param fd File discriptor
+// @return 0 if successfull, -1 if Error
+// @note Closes the file on its own
+int fremove(int fd);
 
 // Gets the size of a given file
 // @param fd File discriptor of file

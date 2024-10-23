@@ -115,15 +115,29 @@ static bool s_write_fat_updates(fat_entry_update* updates);
 // Inputs and outputs the same as s_resize_file
 static bool s_expand_file(file_discriptor_metadata* file, size_t new_size);
 
+// Same as s_expand_file but doesn't change the dirrectory entry for the file
+static bool s_expand_file_internal(file_discriptor_metadata* file, size_t new_size);
+
 // Shinks a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
-// Inputs and outputs the same as s_resize_file
+// Inputs and outputs the same as s_resize_file except for the addation of 
 static bool s_shink_file(file_discriptor_metadata* file, size_t new_size);
+
+// Same as s_shink_file but doesn't change the dirrectory entry for the file except for how it handles a size of zero
+// @warning When s_shink_file(file, 0) is called s_shink_file_internal(file, 1) is called insted.
+//          When calling s_shink_file_internal(file, 0) The first cluster is removed
+//          and should only be used when deleting a file.
+static bool s_shink_file_internal(file_discriptor_metadata* file, size_t new_size);
+
+// Removes a file, same as fremove but uses file_discriptor_metadata* 
+// @warning This function does not close the file
+static int s_fremove_internal(file_discriptor_metadata* file);
 
 // Sets the values of the file in its discriptor / dirrectory entry, to what the struct has stored
 // @param file The file to set and the metedata to store
 // @param working_buffer (Minium size of 512 bytes stores the memory used to work with the disk
 // @return True if succesful or false if failed
-static bool s_set_file_discriptor_to_struct(file_discriptor_metadata* file, uint32_t* working_buffer);
+// @note If first_cluster_number is set to UINT32_MAX the entry is deleteted
+static bool s_update_file_discriptor(file_discriptor_metadata* file, uint32_t* working_buffer);
 
 // Same as lseek but using file_discriptor_metadata insted of file discriptors them self and the fat buffer and sector args
 // @param file The file to work with
@@ -352,7 +366,7 @@ size_t write(int fd, const void* buf, size_t n)
     fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
     file += index;
 
-    return s_write_internal(file, buf, n);
+    return s_write_internal(&file->metadata, buf, n);
 }
 
 ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence)
@@ -367,10 +381,8 @@ ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence)
 
     fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
     file += index;
-    
-    ptrdiff_t return_value = s_lseek_internal(&file->metadata, offset, whence);
 
-    return return_value;
+    return s_lseek_internal(&file->metadata, offset, whence);
 }
 
 int truncate(const char* path, size_t new_size)
@@ -439,6 +451,40 @@ int ftruncate(int fd, size_t new_size)
     file->metadata.current_offset = seek_offset;
 
     return success ? 0 : -1;
+}
+
+int remove(const char* path)
+{
+    int fd = open(path, FILE_FLAGS_READ_WRITE);
+
+    if (fd == -1)
+        return -1;
+
+    int success = fremove(fd);
+
+    return success;
+}
+
+int fremove(int fd)
+{
+    fd_hash_table_entry uesd_for_shearch;
+    uesd_for_shearch.hash = fd;
+
+    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
+
+    if (index == -1)
+        return -1;
+
+    fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+    file += index;
+
+    if (file->metadata.write_permissions == false)
+        return -1;
+
+    int return_value = s_fremove_internal(&file->metadata);
+    close(fd);
+
+    return return_value;
 }
 
 size_t get_file_size(int fd)
@@ -620,10 +666,12 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
 
         memcpy(entry, matching_dirrectory, sizeof(fat_directory_entry));
 
+        uint32_t offset = (matching_dirrectory - dirrectory_cluster);
+
         if (directory_lba != NULL)
-            *directory_lba = cluster_lba;
+            *directory_lba = cluster_lba + (offset / 512);
         if(directory_lba_offset != NULL)
-            *directory_lba_offset = (matching_dirrectory - dirrectory_cluster);
+            *directory_lba_offset = offset % 512;
 
         return entry;
     }
@@ -689,6 +737,24 @@ bool s_expand_file(file_discriptor_metadata* file, size_t new_size)
     if (file->write_permissions == false || file->file_size_bytes > new_size)
         return false;
 
+    bool success = s_expand_file_internal(file, new_size);
+
+    if (!success)
+        return false;
+
+    file->file_size_bytes = new_size;
+    void* file_io_working_buffer = malloc(512);
+    success = s_update_file_discriptor(file, file_io_working_buffer);
+    free(file_io_working_buffer);
+
+    return success;
+}
+
+bool s_expand_file_internal(file_discriptor_metadata* file, size_t new_size)
+{
+    if (file->write_permissions == false || file->file_size_bytes > new_size)
+        return false;
+
     const size_t cluster_size = root_file_system->number_of_sectors_per_cluster * 512;
     bool success = false;
 
@@ -701,14 +767,7 @@ bool s_expand_file(file_discriptor_metadata* file, size_t new_size)
     uint32_t number_of_cluster_to_be_added = required_clusters - current_clusters;
 
     if (number_of_cluster_to_be_added == 0)
-    {
-        file->file_size_bytes = new_size;
-        void* file_io_working_buffer = malloc(512);
-        success = s_set_file_discriptor_to_struct(file, file_io_working_buffer);
-        free(file_io_working_buffer);
-
-        return success;
-    }
+        return true;
 
     uint32_t seek_cluster = file->current_cluster_number;
     uint32_t seek_offset = file->current_offset;
@@ -730,14 +789,6 @@ bool s_expand_file(file_discriptor_metadata* file, size_t new_size)
     success = s_write_fat_updates(allocation_table_updates);
     free(allocation_table_updates);
     
-    if (!success)
-        return false;
-
-    file->file_size_bytes = new_size;
-    void* file_io_working_buffer = malloc(512);
-    success = s_set_file_discriptor_to_struct(file, file_io_working_buffer);
-    free(file_io_working_buffer);
-
     return success;
 }
 
@@ -746,22 +797,35 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size)
     if (file->write_permissions == false || file->file_size_bytes < new_size)
         return false;
 
+    if (new_size == 0)
+        new_size = 1;
+
+    bool success = s_shink_file_internal(file, new_size);
+    
+    if (!success)
+        return false;
+
+    file->file_size_bytes = new_size;
+    void* file_io_working_buffer = malloc(512);
+    success = s_update_file_discriptor(file, file_io_working_buffer);
+    free(file_io_working_buffer);
+    return success;
+}
+
+static bool s_shink_file_internal(file_discriptor_metadata* file, size_t new_size)
+{
+     if (file->write_permissions == false || file->file_size_bytes < new_size)
+        return false;
+
     const size_t cluster_size = root_file_system->number_of_sectors_per_cluster * 512;
 
     uint32_t required_clusters = new_size / cluster_size + ((new_size % cluster_size) ? 1 : 0);
     uint32_t current_clusters = file->file_size_bytes / cluster_size + ((file->file_size_bytes % cluster_size) ? 1 : 0);
 
     uint32_t number_of_cluster_to_be_removed =  current_clusters - required_clusters;
-    bool success = false;
 
     if (number_of_cluster_to_be_removed == 0)
-    {
-        file->file_size_bytes = new_size;
-        void* file_io_working_buffer = malloc(512);
-        success = s_set_file_discriptor_to_struct(file, file_io_working_buffer);
-        free(file_io_working_buffer);
-        return success;
-    }
+        return true;
     
     uint32_t seek_cluster = file->current_cluster_number;
     uint32_t seek_offset = file->current_offset;
@@ -779,60 +843,59 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size)
         return NULL;
 
     memclr(allocation_table_updates, sizeof(fat_entry_update) * (number_of_cluster_to_be_removed + 2));
-
-    allocation_table_updates[0].entry_number = seek_cluster;    // Set the entry to the last cluster of the file
-    allocation_table_updates[0].new_value = 0x0FFFFFF8;         // And its the new end of the file
     
-    uint32_t i = 1;
-
-    number_of_cluster_to_be_removed++; // This way we skip the fisrt cluster
-    while (number_of_cluster_to_be_removed-- > 0)
+    allocation_table_updates[0].entry_number = seek_cluster;    // Set the entry to the last cluster of the file
+    allocation_table_updates[1].entry_number = UINT32_MAX;      // Used when only one cluster is edited and new_size is zero
+    if (new_size != 0) 
+        allocation_table_updates[0].new_value = 0x0FFFFFF8;         // And its the new end of the file
+    
+    if (new_size != 0 || (new_size == 0 && current_clusters > 1))
     {
-        uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
-        uint32_t fat_offset = (current_cluster_number % (512 / 4));
+        uint32_t i = 1;
 
-        if (last_fat_sector != fat_sector)
+        number_of_cluster_to_be_removed++; // This way we skip the fisrt cluster
+        while (number_of_cluster_to_be_removed-- > 0)
         {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
+            uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
+            uint32_t fat_offset = (current_cluster_number % (512 / 4));
+
+            if (last_fat_sector != fat_sector)
             {
-                printf("Erorr: Failed to read FAT!\n");
+                if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
+                {
+                    printf("Erorr: Failed to read FAT!\n");
+
+                    free(allocation_table_updates);
+                    return false;
+                }
+                last_fat_sector = fat_sector;
+            }
+
+            current_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
+
+            bool is_last_cluster = current_cluster_number >= 0x0FFFFFF8;
+
+            if ((is_last_cluster && number_of_cluster_to_be_removed != 0) ||
+                (!is_last_cluster && number_of_cluster_to_be_removed == 0))
+            {
+                printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
 
                 free(allocation_table_updates);
                 return false;
             }
-            last_fat_sector = fat_sector;
+
+            if (is_last_cluster)
+                break;
+
+            allocation_table_updates[i++].entry_number = current_cluster_number;
         }
-
-        current_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
-
-        bool is_last_cluster = current_cluster_number >= 0x0FFFFFF8;
-
-        if ((is_last_cluster && number_of_cluster_to_be_removed != 0) ||
-            (!is_last_cluster && number_of_cluster_to_be_removed == 0))
-        {
-            printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
-
-            free(allocation_table_updates);
-            return false;
-        }
-
-        if (is_last_cluster)
-            break;
-
-        allocation_table_updates[i++].entry_number = current_cluster_number;
+        allocation_table_updates[i].entry_number = UINT32_MAX;
     }
-    allocation_table_updates[i].entry_number = UINT32_MAX;
+    
        
-    success = s_write_fat_updates(allocation_table_updates);
+    bool success = s_write_fat_updates(allocation_table_updates);
     free(allocation_table_updates);
     
-    if (!success)
-        return false;
-
-    file->file_size_bytes = new_size;
-    void* file_io_working_buffer = malloc(512);
-    success = s_set_file_discriptor_to_struct(file, file_io_working_buffer);
-    free(file_io_working_buffer);
     return success;
 }
 
@@ -1056,6 +1119,36 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
     return n;
 }
 
+int s_fremove_internal(file_discriptor_metadata* file)
+{
+    if (file->write_permissions == false)
+        return -1;
+
+    if (!s_shink_file_internal(file, 0))
+        return -1;
+
+    file->first_cluster_number = UINT32_MAX;
+
+    void* working_buffer = malloc(512);
+
+    if (working_buffer == NULL)
+    {
+        printf("Failed to remove file's dirrectory entry but FAT entrys have been changed!\n");
+        return -1;
+    }
+
+    bool success = s_update_file_discriptor(file, working_buffer);
+    free(working_buffer);
+
+    if (!success)
+    {
+        printf("Failed to remove file's dirrectory entry but FAT entrys have been changed!\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written)
 {
     size_t new_size = file->current_offset + bytes_written;
@@ -1066,7 +1159,7 @@ bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t
     return true;
 }
 
-bool s_set_file_discriptor_to_struct(file_discriptor_metadata* file, uint32_t* working_buffer)
+bool s_update_file_discriptor(file_discriptor_metadata* file, uint32_t* working_buffer)
 {
     if (file->write_permissions == false)
         return false;
@@ -1078,7 +1171,15 @@ bool s_set_file_discriptor_to_struct(file_discriptor_metadata* file, uint32_t* w
         return false;
     }
 
-    (((fat_directory_entry*)working_buffer) + file->directory_lba_offset)->file_size_bytes = file->file_size_bytes;
+    fat_directory_entry* entry = ((fat_directory_entry*)working_buffer) + file->directory_lba_offset;
+
+    if (file->first_cluster_number == UINT32_MAX)   // If the cluster number is UINT32_MAX we delete the entry K?
+    {
+        memclr(entry, sizeof(fat_directory_entry));
+    }
+    else                                            // Just update it
+        entry->file_size_bytes = file->file_size_bytes;
+
 
     if (sd_writeblock(file->directory_lba, working_buffer, 1) != 512)
     {
