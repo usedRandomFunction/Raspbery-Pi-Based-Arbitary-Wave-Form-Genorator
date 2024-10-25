@@ -853,7 +853,9 @@ static bool s_shink_file_internal(file_discriptor_metadata* file, size_t new_siz
     {
         uint32_t i = 1;
 
-        number_of_cluster_to_be_removed++; // This way we skip the fisrt cluster
+        if (new_size != 0)
+            number_of_cluster_to_be_removed++; // This way we skip the fisrt cluster
+
         while (number_of_cluster_to_be_removed-- > 0)
         {
             uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
