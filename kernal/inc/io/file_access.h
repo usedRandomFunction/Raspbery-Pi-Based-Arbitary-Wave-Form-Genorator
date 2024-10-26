@@ -78,10 +78,13 @@ enum
 
 enum
 {
-    FILE_FLAGS_READ         = 0,
-    FILE_FLAGS_READ_WRITE   = 1 << 0,
+    FILE_FLAGS_READ         = 0,            /* As the name states read only*/
+    FILE_FLAGS_READ_WRITE   = 1 << 0,       /* As the name states read / write*/
+    FILE_FLAGS_APPEND       = 1 << 1,       /* Seek to the end of file when opened*/
+    FILE_FLAGS_CREATE       = 1 << 2,       /* If file not found, create a new one (Must have FILE_FLAGS_READ_WRITE)*/
+    FILE_FLAGS_TRUNCATE     = 1 << 3,       /* If file allready exists and is writeable the file is truncated to zero bytes on opening*/
 
-    FILE_FLAGS_UNUSED_BITS = UINT32_MAX & ~(FILE_FLAGS_READ_WRITE),
+    FILE_FLAGS_UNUSED_BITS = UINT32_MAX & ~(FILE_FLAGS_READ_WRITE | FILE_FLAGS_APPEND | FILE_FLAGS_CREATE | FILE_FLAGS_TRUNCATE),
 };
 
 #endif

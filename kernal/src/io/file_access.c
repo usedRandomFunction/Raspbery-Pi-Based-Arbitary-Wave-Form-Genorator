@@ -51,21 +51,23 @@ static bool s_equal_to_fd_table_entry(const void* A, const void* B);
 
 // Shearches the root dirrectory for a file
 // @param path Null terminated string containing path
-// @param directory_lba Stores the lba of the cluster the directory entry was found in
+// @param can_create_new_entrys If true the function will create new entrys so the file exists
+// @param directory_lba Stores the lba of the sector the directory entry was found in
 // @param directory_lba_offset The offset (in sizeof(fat_directory_entry) bytes)
 // @return pointer to directory_entry structer or NULL if file does not exist
 // @note path Does not start with '/' so "/a.txt" turns into "a.txt" (local paths are not supported)
-static fat_directory_entry* s_find_file_from_path(const char* path, uint32_t* directory_lba, uint32_t* directory_lba_offset);
+static fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new_entrys, uint32_t* directory_lba, uint32_t* directory_lba_offset);
 
 // Used by s_find_file_from_path to find a file
 // @param path Path to file form current dirrectory
 // @param current_dirrectory_cluster_number Cluster number of current dirrectory
+// @param can_create_new_entrys If true the function will create new entrys so the file exists
 // @param fat_buffer A 512 byte buffer to store a sector of the file allocation table into
-// @param directory_lba Stores the lba of the cluster the directory entry was found in
+// @param directory_lba Stores the lba of the sector the directory entry was found in
 // @param directory_lba_offset The offset (in sizeof(fat_directory_entry) bytes)
 // @param dirrectory_cluster A 512 * sectors_per_cluster buffer to store the dirrectory into
 // @return pointer to directory_entry structer or NULL if file does not exist
-static fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, 
+static fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, bool can_create_new_entrys, 
     uint32_t* fat_buffer, fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset);
 
 // Used by s_find_file_recursive to get the correctly formated file name, also detects if we still are in a dirrectory
@@ -105,20 +107,20 @@ static fat_entry_update* s_find_free_clusters(uint32_t n);
 // @note The end of the list is signifed by a entry with "entry_number" set to UINT32_MAX
 static bool s_write_fat_updates(fat_entry_update* updates);
 
-// Resizes a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
+// Resizes a file to new_size bytes but does not zero or anything just sets up the clusters and the dirrectory entry
 // @param file Pointer to file discriptor of the file
 // @param new_size bytes written to the file
 // @return True if succesful or false if failed
 // static bool s_resize_file(file_discriptor_metadata* file, size_t new_size);
 
-// Expands a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
+// Expands a file to new_size bytes but does not zero or anything just sets up the clusters and the dirrectory entry
 // Inputs and outputs the same as s_resize_file
 static bool s_expand_file(file_discriptor_metadata* file, size_t new_size);
 
 // Same as s_expand_file but doesn't change the dirrectory entry for the file
 static bool s_expand_file_internal(file_discriptor_metadata* file, size_t new_size);
 
-// Shinks a file to new_size bytes but does not zero or anything just sets up the clusters and FAT
+// Shinks a file to new_size bytes, sets up the clusters and the dirrectory entry
 // Inputs and outputs the same as s_resize_file except for the addation of 
 static bool s_shink_file(file_discriptor_metadata* file, size_t new_size);
 
@@ -139,12 +141,35 @@ static int s_fremove_internal(file_discriptor_metadata* file);
 // @note If first_cluster_number is set to UINT32_MAX the entry is deleteted
 static bool s_update_file_discriptor(file_discriptor_metadata* file, uint32_t* working_buffer);
 
-// Same as lseek but using file_discriptor_metadata insted of file discriptors them self and the fat buffer and sector args
+// Same as lseek but using file_discriptor_metadata insted of file discriptors them self
 // @param file The file to work with
 // @param fat_buffer A 512 byte buffer to store a sector of the file allocation table into
 // @param last_fat_sector Used to store the last sector of the fat that was loaded
 static ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int whence);
 
+// Creates a new entry in a dirrectory allocating clusters for the entry and new cluster for the dirrectory if needed
+// @param dirrectory_cluster_number The cluster number of the dirrectoruy we want to instert into
+// @param name The 8.3 staneded name of the entry
+// @param is_dirrectory If set to true the entry will be another dirrectory (adds the FAT_DIRECTORY_ATTRIBUTES_DIRECTORY flag
+//                      and adds the "." and ".." entrys
+// @param dirrectory_cluster A buffer the size of a cluster on the disk to be used as working memory
+// @param directory_lba Stores the lba of the sector the directory entry was found in
+// @param directory_lba_offset The offset (in sizeof(fat_directory_entry) bytes)
+// @return A (heap allocated) copy of the directory entry or NULL if failed
+static fat_directory_entry* s_create_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const char* name, bool is_dirrectory, 
+    fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset);
+
+// Writes the given entry to the given dirrectory, and allocates new clusters to the dirrectory if needed
+// @param dirrectory_cluster_number The cluster number of the dirrectoruy we want to instert into
+// @param entry The 8.3 staneded name of the entry
+// @param dirrectory_cluster A buffer the size of a cluster on the disk to be used as working memory
+// @param directory_lba Stores the lba of the sector the directory entry was found in
+// @param directory_lba_offset The offset (in sizeof(fat_directory_entry) bytes)
+// @return True if success False if failed
+static bool s_write_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const fat_directory_entry* entry, 
+    fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset);
+
+// Same as lseek but using file_discriptor_metadata insted of file discriptors them 
 static size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t n);
 
 void initialize_file_access()
@@ -175,14 +200,15 @@ int open(const char* path, int flags)
     if (allready_opened == true)
         return -1;
 
-    
+    bool can_create_new_entrys = (flags & FILE_FLAGS_CREATE) && (flags & FILE_FLAGS_READ_WRITE);
 
-    fat_directory_entry* file = s_find_file_from_path(path, &directory_lba, &directory_lba_offset);
+    fat_directory_entry* file = s_find_file_from_path(path, can_create_new_entrys, &directory_lba, &directory_lba_offset);
 
     if (file == NULL)
         return -1;
 
     bool is_readonly = file->attributes & FAT_DIRECTORY_ATTRIBUTES_READ_ONLY;
+    bool can_write = (!is_readonly) && (flags & FILE_FLAGS_READ_WRITE);
 
     fd_hash_table_entry entry;
     entry.metadata.first_cluster_number = (file->first_cluster_number_higher_16_bits << 16) | (file->first_cluster_number_lowwer_16_bits);
@@ -199,11 +225,29 @@ int open(const char* path, int flags)
     {
         if (is_readonly)
         {
-            return -1;
+            return -1;                          // Cant write to a read only file
         }
     }
     else if (flags & FILE_FLAGS_UNUSED_BITS)
-        return -1;
+        return -1;                              // Bad flags
+
+    if (flags & FILE_FLAGS_APPEND)
+    {
+        if (!can_write)
+            return -1;  
+
+        if (s_lseek_internal(&entry.metadata, 0, SEEK_END) == -1)
+            return -1;                          // Failded to seek
+    }
+
+    if (flags & FILE_FLAGS_TRUNCATE)
+    {
+        if (!can_write)
+            return -1;  
+
+        if (s_shink_file(&entry.metadata, 0) == false)
+            return -1;                          // Failded to truncate
+    }
 
 
     if (insert_dynamic_array(&entry, (size_t)index, &s_fd_hash_table) == false)
@@ -584,8 +628,8 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
     return -1;
 }
 
-fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, uint32_t* fat_buffer, 
-    fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset)
+fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, bool can_create_new_entrys,
+    uint32_t* fat_buffer, fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset)
 {
     // char name_buffer[12]; // dont delete these debug lines (even if commented out), bc then you will need them
     char name_buffer[11];
@@ -598,6 +642,7 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
 
     uint32_t next_cluster = current_dirrectory_cluster_number;
     fat_directory_entry* matching_dirrectory = NULL;
+    uint32_t next_dirrectory_cluster = 0;
     uint32_t cluster_lba = 0;
 
     while (next_cluster < 0x0FFFFFF8)
@@ -649,7 +694,32 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
         }
     }
 
-    if (matching_dirrectory == NULL || (matching_dirrectory->attributes == FAT_DIRECTORY_ATTRIBUTES_LFN))
+
+    if (matching_dirrectory == NULL)
+    {
+        if (!can_create_new_entrys)
+            return NULL;
+        // It doesn't exist but we can make it
+
+        matching_dirrectory = s_create_new_dirrectory_entry(current_dirrectory_cluster_number,  // Cluster the dirrectory starts at
+        name_buffer,                                                                            // 8.3 Name
+        name_offset != INT32_MAX,                                                               // Is dirrectory
+        dirrectory_cluster,                                                                     // Working buffer
+        directory_lba, directory_lba_offset);                                                   // Offsets
+
+        if (name_offset == INT32_MAX) // Is File
+            return matching_dirrectory; // It allready is a copy soo...
+        // Do it here so we free the copy
+        
+        next_dirrectory_cluster = (matching_dirrectory->first_cluster_number_higher_16_bits << 16) | 
+        (matching_dirrectory->first_cluster_number_lowwer_16_bits);
+        free(matching_dirrectory);
+
+        return s_find_file_recursive(path + name_offset, next_dirrectory_cluster, can_create_new_entrys, 
+            fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
+    }
+
+    if (matching_dirrectory->attributes == FAT_DIRECTORY_ATTRIBUTES_LFN)
         return NULL;
 
     if (name_offset == INT32_MAX) // Is File
@@ -669,35 +739,36 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
         uint32_t offset = (matching_dirrectory - dirrectory_cluster);
 
         if (directory_lba != NULL)
-            *directory_lba = cluster_lba + (offset / 512);
+            *directory_lba = cluster_lba + (offset / (512 / sizeof(fat_directory_entry)));
         if(directory_lba_offset != NULL)
-            *directory_lba_offset = offset % 512;
+            *directory_lba_offset = offset % (512 / sizeof(fat_directory_entry));
 
         return entry;
     }
 
-    if (matching_dirrectory->attributes & FAT_DIRECTORY_ATTRIBUTES_DIRECTORY)
+    if (!(matching_dirrectory->attributes & FAT_DIRECTORY_ATTRIBUTES_DIRECTORY))
     {
-        printf("Erorr: Expected dirrectory, found somethign else!\n");
+        printf("Erorr: Expected dirrectory, found something else!\n");
 
         return NULL;
     }
 
-    uint32_t next_dirrectory_cluster = (matching_dirrectory->first_cluster_number_higher_16_bits << 16) | 
+    next_dirrectory_cluster = (matching_dirrectory->first_cluster_number_higher_16_bits << 16) | 
         (matching_dirrectory->first_cluster_number_lowwer_16_bits);
 
-    return s_find_file_recursive(path + name_offset, next_dirrectory_cluster, fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
+    return s_find_file_recursive(path + name_offset, next_dirrectory_cluster, can_create_new_entrys, 
+        fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
 }
 
-fat_directory_entry* s_find_file_from_path(const char* path, uint32_t* directory_lba, uint32_t* directory_lba_offset)
+fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new_entrys, uint32_t* directory_lba, uint32_t* directory_lba_offset)
 {
     fat_directory_entry* dirrectory_cluster = malloc(512 * root_file_system->number_of_sectors_per_cluster);
 
     if (dirrectory_cluster == NULL)
         return NULL;
 
-    fat_directory_entry* entry = s_find_file_recursive(path, root_file_system->root_cluster, fat_buffer, 
-        dirrectory_cluster, directory_lba, directory_lba_offset);
+    fat_directory_entry* entry = s_find_file_recursive(path, root_file_system->root_cluster, can_create_new_entrys, 
+        fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
 
     free(dirrectory_cluster);
 
@@ -725,10 +796,10 @@ void s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(file_discr
 // {   
 //     if (file->file_size_bytes == new_size)
 //         return true;
-
+//
 //     if (file->file_size_bytes < new_size)
 //         return s_expand_file(file, new_size);
-
+//
 //     return s_shink_file(file, new_size);
 // }
 
@@ -1282,6 +1353,179 @@ bool s_write_fat_updates(fat_entry_update* updates)
 
         is_first_entry = false;
         updates++;
+    }
+
+    return true;
+}
+
+fat_directory_entry* s_create_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const char* name, bool is_dirrectory, 
+    fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset)
+{
+    fat_directory_entry entry;
+    memclr(&entry, sizeof(fat_directory_entry));
+    memcpy(entry.file_name, name, 11);
+
+    if (is_dirrectory)
+        entry.attributes = FAT_DIRECTORY_ATTRIBUTES_DIRECTORY;
+
+    fat_entry_update* new_cluster = s_find_free_clusters(1);
+
+    if (new_cluster == NULL)
+        return NULL;
+    
+    bool success = s_write_fat_updates(new_cluster + 1); // + 1 as the first update entry is to set the pervius file end which doesn't exist rn
+    uint32_t entry_cluster = new_cluster[1].entry_number;
+    free(new_cluster);
+
+    if (!success)      
+        return NULL;
+
+    entry.first_cluster_number_higher_16_bits = (entry_cluster >> 16) & 0xFFFF;
+    entry.first_cluster_number_lowwer_16_bits = (entry_cluster      ) & 0xFFFF;
+
+    success = s_write_new_dirrectory_entry(dirrectory_cluster_number,   // Cluster number of the dirrectory we are writing into
+        &entry,                                                         // The entry to write
+        dirrectory_cluster,                                             // Working buffer
+        directory_lba, directory_lba_offset);                           // Place to store where the entry is
+
+    if (!success)      
+    {
+        printf("Warning: Dirrectory entry has not been written but clusters have been allocated!\n");
+        return NULL;
+    }
+    
+    // Now if we are writing a dirrectory the . and The .. entrys are nessisary
+    if (is_dirrectory)
+    {
+        memclr(dirrectory_cluster, root_file_system->number_of_sectors_per_cluster * 512);
+
+        memcpy(dirrectory_cluster[0].file_name, "..          " + 1, 11);
+        dirrectory_cluster[0].attributes = FAT_DIRECTORY_ATTRIBUTES_DIRECTORY;
+        dirrectory_cluster[0].first_cluster_number_higher_16_bits = (entry_cluster >> 16) & 0xFFFF;
+        dirrectory_cluster[0].first_cluster_number_lowwer_16_bits = (entry_cluster      ) & 0xFFFF;
+
+        memcpy(dirrectory_cluster[1].file_name, "..          ", 11);
+        dirrectory_cluster[1].attributes = FAT_DIRECTORY_ATTRIBUTES_DIRECTORY;
+        dirrectory_cluster[1].first_cluster_number_higher_16_bits = (dirrectory_cluster_number >> 16) & 0xFFFF;
+        dirrectory_cluster[1].first_cluster_number_lowwer_16_bits = (dirrectory_cluster_number      ) & 0xFFFF;
+
+        uint32_t cluster_lba = root_file_system->data_sector + (entry_cluster - 2) * root_file_system->number_of_sectors_per_cluster;
+         
+        if (sd_writeblock(cluster_lba, dirrectory_cluster, root_file_system->number_of_sectors_per_cluster) 
+            != root_file_system->number_of_sectors_per_cluster * 512) 
+        {
+            printf("Warning, Failed to initialize new directory!\n");
+            return NULL;
+        }
+    }
+
+    fat_directory_entry* entry_cpy = malloc(sizeof(fat_directory_entry));
+
+    if (entry_cpy == NULL)
+    {
+        printf("Failed to allocate memory to return copy of new entry, but it does exist on disk!\n");
+        return NULL;
+    }
+
+    memcpy(entry_cpy, &entry, sizeof(fat_directory_entry));
+
+    return entry_cpy;
+}
+
+bool s_write_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const fat_directory_entry* entry, 
+    fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset)
+{
+    uint32_t current_cluster_number = dirrectory_cluster_number;
+    uint32_t next_cluster = current_cluster_number;
+    bool found_space = false;
+
+    uint32_t cluster_lba = 0;
+
+    while (next_cluster < 0x0FFFFFF8 && found_space == false)
+    {   
+        current_cluster_number = next_cluster;
+        cluster_lba = root_file_system->data_sector + (next_cluster - 2) * root_file_system->number_of_sectors_per_cluster;
+        
+        if (sd_readblock(cluster_lba, dirrectory_cluster, 
+            root_file_system->number_of_sectors_per_cluster) 
+            != 512 * root_file_system->number_of_sectors_per_cluster)
+        {
+            printf("Erorr: Failed to read dirrecotry!\n");
+            break;
+        }
+
+        uint32_t fat_sector = root_file_system->first_fat_sector + (next_cluster / (512 / 4));
+        uint32_t fat_offset = (next_cluster % (512 / 4));
+
+        if (last_fat_sector != fat_sector)
+        {
+            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
+            {
+                printf("Erorr: Failed to read FAT!\n");
+                return false;
+            }
+            last_fat_sector = fat_sector;
+        }
+
+        next_cluster = fat_buffer[fat_offset] & 0x0FFFFFFF;
+
+        for (int i = 0 ; i < ((512 * root_file_system->number_of_sectors_per_cluster) / sizeof(fat_directory_entry)); i++)
+        {
+            if (dirrectory_cluster[i].file_name[0] != '\0') // Entry exists (skip ones that dont)
+                continue;
+
+            memcpy(dirrectory_cluster + i, entry, sizeof(fat_directory_entry));
+            uint32_t entrys_per_sector = 512 / sizeof(fat_directory_entry);
+            uint32_t lba = cluster_lba + (i / entrys_per_sector);
+            uint32_t offset_entrys = (i % entrys_per_sector);
+
+            if (sd_writeblock(lba, dirrectory_cluster + (i / entrys_per_sector), 1) != 512)
+            {
+                printf("Erorr: Failed to write to dirrecotry!\n");
+                printf("Warning: Dirrectory entry has not been written but clusters have been allocated!\n");
+                return false;
+            }
+
+            if (directory_lba != NULL)
+                *directory_lba = lba;
+            if(directory_lba_offset != NULL)
+                *directory_lba_offset = offset_entrys % sizeof(fat_directory_entry);
+
+            found_space = true;
+            break;
+        }
+    }
+
+    if (!found_space) // Just make more
+    {
+        fat_entry_update* new_cluster = s_find_free_clusters(1);
+
+        if (new_cluster == NULL)
+            return false;
+        
+        new_cluster[0].entry_number = current_cluster_number;
+        bool success = s_write_fat_updates(new_cluster);
+        cluster_lba = root_file_system->data_sector + (new_cluster[1].entry_number - 2) * root_file_system->number_of_sectors_per_cluster;
+        free(new_cluster);
+
+        if (!success)
+            return false;
+
+        memclr(dirrectory_cluster, root_file_system->number_of_sectors_per_cluster * 512);
+        memcpy(dirrectory_cluster, entry, sizeof(fat_directory_entry));
+
+        if (sd_readblock(cluster_lba, dirrectory_cluster, 
+        root_file_system->number_of_sectors_per_cluster) 
+        != 512 * root_file_system->number_of_sectors_per_cluster)
+        {
+            printf("Erorr: Failed to write to dirrecotry!\n");
+            return false;
+        }
+
+        if (directory_lba != NULL)
+            *directory_lba = cluster_lba;
+        if(directory_lba_offset != NULL)
+            *directory_lba_offset = 0;
     }
 
     return true;
