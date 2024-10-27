@@ -1,12 +1,17 @@
 #ifndef FILE_ACCESS_H
 #define FILE_ACCESS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
 
 // Initializes the buffesr used to track file discriptors
 void initialize_file_access();
+
+// Used to decide if the kernal or user is using the files
+// @param is_in_user_mode True if user, false if kernal
+void set_user_mode(bool is_in_user_mode);
 
 // Creates file discriptor for the given file
 // @param path Absolute path to file

@@ -28,11 +28,16 @@
 #ifndef PRINTF_H
 #define PRINTF_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+unsigned int printf_user_memory_only(const char* fmt, ...);
+
 unsigned int printf(const char* fmt, ...);
 unsigned int vprintf(const char* fmt, __builtin_va_list args);
+
+unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory, __builtin_va_list args);
 
 unsigned int sprintf(char *dst, const char* fmt, ...);
 unsigned int vsprintf(char *dst, const char* fmt, __builtin_va_list args);

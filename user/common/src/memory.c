@@ -1,4 +1,4 @@
-#include "lib/memory.h"
+#include "common/memory.h"
 
 int memcmp(const void* ptr1, const void* ptr2, size_t n)
 {

@@ -23,8 +23,11 @@
  *
  */
 
-// Moddifyed to include sprintf_s and reguler printf() (useing putchar())
+// Moddifyed to include sprintf_s and reguler printf() (using putchar()) and have functions to restict it to use only user memory if needed
+#include "lib/memory.h"
 #include "io/putchar.h"
+
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -148,9 +151,9 @@ s_put:      buffer_size_check;
 }
 
 /**
- * minimal sprintf implementation
+ * minimal printf implementation
  */
-unsigned int vprintf(const char* fmt, __builtin_va_list args)
+unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory, __builtin_va_list args)
 {
     int bytes_written = 0;
     long int arg;
@@ -158,9 +161,11 @@ unsigned int vprintf(const char* fmt, __builtin_va_list args)
     char *p, tmpstr[19];
 
     // failsafes
-    if(fmt==(void*)0) {
+    if(fmt==(void*)0 || (!can_access_kernal_memory && is_kernal_memory(fmt))) {
         return 0;
     }
+
+
 
     // main loop
     arg = 0;
@@ -247,7 +252,7 @@ unsigned int vprintf(const char* fmt, __builtin_va_list args)
             // string
             if(*fmt=='s') {
                 p = __builtin_va_arg(args, char*);
-copystring:     if(p==(void*)0) {
+copystring:     if(p==(void*)0  || (!can_access_kernal_memory && is_kernal_memory(p))) {
                     p="(null)";
                 }
                 while(*p) {
@@ -266,6 +271,11 @@ put:        bytes_written++;
     
     // number of bytes written
     return bytes_written;
+}
+
+unsigned int vprintf(const char* fmt, __builtin_va_list args)
+{
+    return vprintf_memory_safe(fmt, true, args);
 }
 
 /**
@@ -295,4 +305,11 @@ unsigned int printf(const char* fmt, ...)
     __builtin_va_list args;
     __builtin_va_start(args, fmt);
     return vprintf(fmt, args);
+}
+
+unsigned int printf_user_memory_only(const char* fmt, ...)
+{
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+    return vprintf_memory_safe(fmt, false, args);
 }

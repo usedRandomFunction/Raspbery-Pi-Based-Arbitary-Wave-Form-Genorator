@@ -66,7 +66,7 @@ _vectors:
     b       arm_exception_handler // TODO USER ERROR FUNCTION
 
 .el0_svc:
-    cmp     x8, 2 // Number of syscalls
+    cmp     x8, 17 // Number of syscalls
     bge     .el0_svc_failed
     ldr     x9, =system_call_table
     lsl     x8, x8, #3 // Sames as x8 = x8 * 8 (2^3)
@@ -82,7 +82,7 @@ _vectors:
 
 enter_from_syscall:
     sub	sp, sp, #16 * 15
-	stp	x0, x1,   [sp, #16 * 0]
+	str	x1,       [sp, #16 * 0]
 	stp	x2, x3,   [sp, #16 * 1]
 	stp	x4, x5,   [sp, #16 * 2]
 	stp	x6, x7,   [sp, #16 * 3]
@@ -101,7 +101,7 @@ enter_from_syscall:
     ret
 
 exit_syscall:
-    ldp	x0, x1,   [sp, #16 * 0]
+    ldr	x1,       [sp, #16 * 0]
 	ldp	x2, x3,   [sp, #16 * 1]
 	ldp	x4, x5,   [sp, #16 * 2]
 	ldp	x6, x7,   [sp, #16 * 3]

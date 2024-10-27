@@ -47,4 +47,12 @@ char uart_getc()
     return mmio_read(AUX_MU_IO_REG) & 0xFF;
 }
 
+int uart_poll()
+{
+    if (!(mmio_read(AUX_MU_LSR_REG) & 0x01))
+        return 0xFFFF;
+
+    return mmio_read(AUX_MU_IO_REG) & 0xFF;
+}
+
 #endif

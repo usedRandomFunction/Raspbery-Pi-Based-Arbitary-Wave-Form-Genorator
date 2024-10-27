@@ -19,6 +19,7 @@ struct file_discriptor_metadata
     uint32_t current_offset;
     size_t file_size_bytes;
     bool write_permissions;
+    bool is_owened_by_user;
 };
 
 typedef struct file_discriptor_metadata file_discriptor_metadata;
@@ -41,6 +42,7 @@ typedef struct fat_entry_update fat_entry_update;
 
 static uint32_t last_fat_sector = UINT32_MAX;
 static uint32_t fat_buffer[512];
+static bool s_is_in_user_mode = false;
 
 static dynamic_array s_fd_hash_table;
 extern fat32_fs* root_file_system;
@@ -172,6 +174,11 @@ static bool s_write_new_dirrectory_entry(uint32_t dirrectory_cluster_number, con
 // Same as lseek but using file_discriptor_metadata insted of file discriptors them 
 static size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t n);
 
+// Shearches s_fd_hash_table for fd and returns the metadata
+// @return Pointer to the meta data / NULL if failed
+// @note Pointer doesn't need to be freed
+static file_discriptor_metadata* s_get_file_metadata_from_discriptor(int fd);
+
 void initialize_file_access()
 {
     initialize_dynamic_array(sizeof(fd_hash_table_entry), 0, &s_fd_hash_table);
@@ -211,11 +218,14 @@ int open(const char* path, int flags)
     bool can_write = (!is_readonly) && (flags & FILE_FLAGS_READ_WRITE);
 
     fd_hash_table_entry entry;
+    memclr(&entry, sizeof(fd_hash_table_entry));
+
     entry.metadata.first_cluster_number = (file->first_cluster_number_higher_16_bits << 16) | (file->first_cluster_number_lowwer_16_bits);
     entry.metadata.file_size_bytes = file->file_size_bytes;
     entry.metadata.current_cluster_number = entry.metadata.first_cluster_number;
     entry.metadata.write_permissions = flags & FILE_FLAGS_READ_WRITE;
     entry.metadata.directory_lba_offset = directory_lba_offset;
+    entry.metadata.is_owened_by_user =s_is_in_user_mode;
     entry.metadata.directory_lba = directory_lba;
     entry.metadata.current_offset = 0;
     entry.hash = file_discriptor;
@@ -258,25 +268,19 @@ int open(const char* path, int flags)
 
 size_t read(int fd, void* buf, size_t n)
 {
-    fd_hash_table_entry uesd_for_shearch;
-    uesd_for_shearch.hash = fd;
+    file_discriptor_metadata* file = s_get_file_metadata_from_discriptor(fd);
 
-    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
-
-    if (index == -1)
+    if (file == NULL)
         return -1;
-
-    fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
-    file += index;
 
     const uint32_t cluster_size = root_file_system->number_of_sectors_per_cluster * 512;
     
-    n = min(file->metadata.file_size_bytes - file->metadata.current_offset, n); // Make sure we dont try to read bytes that dont exist
+    n = min(file->file_size_bytes - file->current_offset, n); // Make sure we dont try to read bytes that dont exist
     uint32_t number_of_bytes_to_read_from_first_clsuter = 0;
     uint32_t number_of_bytes_to_read_from_last_clsuter = 0;
     uint32_t number_of_middle_clusters = 0;
 
-    s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(&file->metadata, n,    // File and number of bytes
+    s_cacluate_number_of_byte_from_tail_clusters_and_middle_clusters(file, n,    // File and number of bytes
         &number_of_bytes_to_read_from_first_clsuter,                                        // return varibles
         &number_of_middle_clusters,
         &number_of_bytes_to_read_from_last_clsuter);
@@ -294,7 +298,7 @@ size_t read(int fd, void* buf, size_t n)
     if (number_of_bytes_to_read_from_first_clsuter != 0)
     {
         cluster_lba = root_file_system->data_sector;
-        cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+        cluster_lba += (file->current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
 
         if (sd_readblock(cluster_lba, file_temporay_buffer, root_file_system->number_of_sectors_per_cluster) != cluster_size)
         {
@@ -303,8 +307,8 @@ size_t read(int fd, void* buf, size_t n)
             return -1;
         }
 
-        memcpy(buffer, file_temporay_buffer + (file->metadata.current_offset % cluster_size), number_of_bytes_to_read_from_first_clsuter);
-        file->metadata.current_offset += number_of_bytes_to_read_from_first_clsuter;
+        memcpy(buffer, file_temporay_buffer + (file->current_offset % cluster_size), number_of_bytes_to_read_from_first_clsuter);
+        file->current_offset += number_of_bytes_to_read_from_first_clsuter;
         buffer += number_of_bytes_to_read_from_first_clsuter;
     }
 
@@ -313,15 +317,15 @@ size_t read(int fd, void* buf, size_t n)
         if (file_temporay_buffer != NULL)
             free(file_temporay_buffer);
 
-        return (file->metadata.file_size_bytes == file->metadata.current_offset) ? 0 : n;
+        return (file->file_size_bytes == file->current_offset) ? 0 : n;
     }
 
     uint32_t number_of_clusters_to_read = number_of_middle_clusters + (number_of_bytes_to_read_from_last_clsuter == 0) ? 0 : 1;
 
     for ( ; number_of_clusters_to_read > 0; number_of_clusters_to_read--)
     {
-        uint32_t fat_sector = root_file_system->first_fat_sector + (file->metadata.current_cluster_number / (512 / 4));
-        uint32_t fat_offset = (file->metadata.current_cluster_number % (512 / 4));
+        uint32_t fat_sector = root_file_system->first_fat_sector + (file->current_cluster_number / (512 / 4));
+        uint32_t fat_offset = (file->current_cluster_number % (512 / 4));
 
         if (last_fat_sector != fat_sector)
         {
@@ -348,12 +352,12 @@ size_t read(int fd, void* buf, size_t n)
 
             return -1;
         }
-        file->metadata.current_cluster_number = new_cluster_number;
+        file->current_cluster_number = new_cluster_number;
 
         if (number_of_middle_clusters > 0)
         {
             cluster_lba = root_file_system->data_sector;
-            cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+            cluster_lba += (file->current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
 
             if (sd_readblock(cluster_lba, buffer, root_file_system->number_of_sectors_per_cluster) != cluster_size)
             {
@@ -364,7 +368,7 @@ size_t read(int fd, void* buf, size_t n)
 
                 return -1;
             }
-            file->metadata.current_offset += cluster_size;
+            file->current_offset += cluster_size;
             buffer += cluster_size;
             
             number_of_middle_clusters--;
@@ -374,7 +378,7 @@ size_t read(int fd, void* buf, size_t n)
     if (number_of_bytes_to_read_from_last_clsuter != 0)
     {
         cluster_lba = root_file_system->data_sector;
-        cluster_lba += (file->metadata.current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+        cluster_lba += (file->current_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
 
         if (sd_readblock(cluster_lba, file_temporay_buffer, root_file_system->number_of_sectors_per_cluster) != cluster_size)
         {
@@ -384,7 +388,7 @@ size_t read(int fd, void* buf, size_t n)
         }
 
         memcpy(buffer, file_temporay_buffer, number_of_bytes_to_read_from_last_clsuter);
-        file->metadata.current_offset += number_of_bytes_to_read_from_last_clsuter;
+        file->current_offset += number_of_bytes_to_read_from_last_clsuter;
         buffer += number_of_bytes_to_read_from_last_clsuter;
     }
 
@@ -392,41 +396,29 @@ size_t read(int fd, void* buf, size_t n)
     if (file_temporay_buffer != NULL)
         free(file_temporay_buffer);
 
-    file->metadata.current_offset += n;
+    file->current_offset += n;
 
-    return (file->metadata.file_size_bytes == file->metadata.current_offset) ? 0 : n;
+    return (file->file_size_bytes == file->current_offset) ? 0 : n;
 }
 
 size_t write(int fd, const void* buf, size_t n)
 {
-    fd_hash_table_entry uesd_for_shearch;
-    uesd_for_shearch.hash = fd;
+    file_discriptor_metadata* file = s_get_file_metadata_from_discriptor(fd);
 
-    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
-
-    if (index == -1)
+    if (file == NULL)
         return -1;
 
-    fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
-    file += index;
-
-    return s_write_internal(&file->metadata, buf, n);
+    return s_write_internal(file, buf, n);
 }
 
 ptrdiff_t lseek(int fd, ptrdiff_t offset, int whence)
 {
-    fd_hash_table_entry uesd_for_shearch;
-    uesd_for_shearch.hash = fd;
+    file_discriptor_metadata* file = s_get_file_metadata_from_discriptor(fd);
 
-    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
-
-    if (index == -1)
+    if (file == NULL)
         return -1;
 
-    fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
-    file += index;
-
-    return s_lseek_internal(&file->metadata, offset, whence);
+    return s_lseek_internal(file, offset, whence);
 }
 
 int truncate(const char* path, size_t new_size)
@@ -445,33 +437,27 @@ int truncate(const char* path, size_t new_size)
 
 int ftruncate(int fd, size_t new_size)
 {
-    fd_hash_table_entry uesd_for_shearch;
-    uesd_for_shearch.hash = fd;
+    file_discriptor_metadata* file = s_get_file_metadata_from_discriptor(fd);
 
-    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
-
-    if (index == -1)
+    if (file == NULL)
         return -1;
 
-    fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
-    file += index;
-
-    if (!file->metadata.write_permissions)
+    if (!file->write_permissions)
         return -1;              
 
 
-    size_t old_size = file->metadata.file_size_bytes;
+    size_t old_size = file->file_size_bytes;
 
     bool success = false;
 
     if (new_size < old_size)    // Handle seek pointer
     {                           // Reset if file was shrunk
-        success = s_shink_file(&file->metadata, new_size);
+        success = s_shink_file(file, new_size);
 
-        if (file->metadata.current_offset >= new_size)
+        if (file->current_offset >= new_size)
         {
-            file->metadata.current_cluster_number = file->metadata.first_cluster_number;
-            file->metadata.current_offset = 0;
+            file->current_cluster_number = file->first_cluster_number;
+            file->current_offset = 0;
 
         }
 
@@ -480,19 +466,19 @@ int ftruncate(int fd, size_t new_size)
 
     // Now zero extra bytes
     // This isn't the best methiod tbh but yea
-    uint32_t seek_cluster = file->metadata.current_cluster_number;
-    uint32_t seek_offset = file->metadata.current_offset;
+    uint32_t seek_cluster = file->current_cluster_number;
+    uint32_t seek_offset = file->current_offset;
 
     void* buffer = malloc(new_size - old_size);
     memclr(buffer, new_size - old_size);
 
-    success = s_lseek_internal(&file->metadata, 0, SEEK_END) != -1;
+    success = s_lseek_internal(file, 0, SEEK_END) != -1;
 
-    success = s_write_internal(&file->metadata, buffer, new_size - old_size) == (new_size - old_size);
+    success = s_write_internal(file, buffer, new_size - old_size) == (new_size - old_size);
     free(buffer);
 
-    file->metadata.current_cluster_number = seek_cluster;
-    file->metadata.current_offset = seek_offset;
+    file->current_cluster_number = seek_cluster;
+    file->current_offset = seek_offset;
 
     return success ? 0 : -1;
 }
@@ -511,21 +497,15 @@ int remove(const char* path)
 
 int fremove(int fd)
 {
-    fd_hash_table_entry uesd_for_shearch;
-    uesd_for_shearch.hash = fd;
+   file_discriptor_metadata* file = s_get_file_metadata_from_discriptor(fd);
 
-    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
-
-    if (index == -1)
+    if (file == NULL)
         return -1;
 
-    fd_hash_table_entry* file = (fd_hash_table_entry*)s_fd_hash_table.ptr;
-    file += index;
-
-    if (file->metadata.write_permissions == false)
+    if (file->write_permissions == false)
         return -1;
 
-    int return_value = s_fremove_internal(&file->metadata);
+    int return_value = s_fremove_internal(file);
     close(fd);
 
     return return_value;
@@ -533,18 +513,12 @@ int fremove(int fd)
 
 size_t get_file_size(int fd)
 {
-    fd_hash_table_entry uesd_for_shearch;
-    uesd_for_shearch.hash = fd;
+    file_discriptor_metadata* file = s_get_file_metadata_from_discriptor(fd);
 
-    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
-
-    if (index == -1)
+    if (file == NULL)
         return -1;
 
-    fd_hash_table_entry* entry = (fd_hash_table_entry*)s_fd_hash_table.ptr;
-    entry += index;
-
-    return entry->metadata.file_size_bytes;
+    return file->file_size_bytes;
 }
 
 int close(int fd)
@@ -560,25 +534,12 @@ int close(int fd)
     fd_hash_table_entry* entry = (fd_hash_table_entry*)s_fd_hash_table.ptr;
     entry += index;
 
+    if (entry->metadata.is_owened_by_user != s_is_in_user_mode)
+        return -1;
+
     remove_dynamic_array_entry(index, &s_fd_hash_table);
 
     return 0;
-}
-
-bool s_less_then_fd_table_entry(const void* A, const void* B)
-{
-    fd_hash_table_entry* a = (fd_hash_table_entry*)A;
-    fd_hash_table_entry* b = (fd_hash_table_entry*)B;
-
-    return a->hash < b->hash;
-}
-
-bool s_equal_to_fd_table_entry(const void* A, const void* B)
-{
-    fd_hash_table_entry* a = (fd_hash_table_entry*)A;
-    fd_hash_table_entry* b = (fd_hash_table_entry*)B;
-
-    return a->hash == b->hash;
 }
 
 int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
@@ -1529,4 +1490,44 @@ bool s_write_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const fat_
     }
 
     return true;
+}
+
+file_discriptor_metadata* s_get_file_metadata_from_discriptor(int fd)
+{
+    fd_hash_table_entry uesd_for_shearch;
+    uesd_for_shearch.hash = fd;
+
+    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
+
+    if (index == -1)
+        return NULL;
+
+    fd_hash_table_entry* entry = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+    entry += index;
+
+    if (s_is_in_user_mode != entry->metadata.is_owened_by_user)
+        return NULL;
+
+    return &entry->metadata;
+}
+
+bool s_less_then_fd_table_entry(const void* A, const void* B)
+{
+    fd_hash_table_entry* a = (fd_hash_table_entry*)A;
+    fd_hash_table_entry* b = (fd_hash_table_entry*)B;
+
+    return a->hash < b->hash;
+}
+
+bool s_equal_to_fd_table_entry(const void* A, const void* B)
+{
+    fd_hash_table_entry* a = (fd_hash_table_entry*)A;
+    fd_hash_table_entry* b = (fd_hash_table_entry*)B;
+
+    return a->hash == b->hash;
+}
+
+void set_user_mode(bool is_in_user_mode)
+{
+    s_is_in_user_mode = is_in_user_mode;
 }

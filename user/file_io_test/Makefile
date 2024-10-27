@@ -30,7 +30,7 @@ ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
 DATA_OBJECTS := $(patsubst $(DATADIR)/%, $(OBJDIR)/%.o, $(DATA_SOURCES))
 
 # Targets
-TARGET := $(BINDIR)/helloworld.elf
+TARGET := $(BINDIR)/file_io_test.elf
 
 all: $(TARGET)
 

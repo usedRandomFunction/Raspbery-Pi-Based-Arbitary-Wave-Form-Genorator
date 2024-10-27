@@ -26,6 +26,10 @@ void uart_putc(unsigned char c);
 // @return The charecter read from the UART
 char uart_getc();
 
+// Reads a signaler charecter from the UART but doesn't wait for one to be avaible
+// @return The charecter read from the UART or 0xFFFF if none are avaible
+int uart_poll();
+
 // // Writes a signed integer to the UART
 // // @param integer The number to put in the UART
 // void uart_puti(int integer);

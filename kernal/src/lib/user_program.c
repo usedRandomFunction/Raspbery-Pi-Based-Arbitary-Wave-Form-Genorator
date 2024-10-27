@@ -82,6 +82,8 @@ static char* s_get_program_image_path(const config_file* config, const char* con
     while (config_path[config_offset] != '/' && config_offset)
         config_offset--;
 
+    config_offset++; // We need to keep the '/'
+
     size_t size = config_offset + (image_entry->value_end - image_entry->value_begin);
 
     char* path = malloc(size + 1);

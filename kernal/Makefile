@@ -59,7 +59,7 @@ clean:
 	rm -rf $(OBJDIR) $(TARGET) $(BINDIR)/kernel8.img
 
 lines_of_code:
-	wc -l `find ./src -type f` +  wc -l `find ./inc -type f`
+	wc -l `find ./src -type f` `find ./inc -type f`
 
 run_halt:
 	@echo !==== Running ====!

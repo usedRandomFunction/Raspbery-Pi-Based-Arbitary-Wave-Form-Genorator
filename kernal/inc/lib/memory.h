@@ -1,6 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -78,6 +79,11 @@ inline void* void_ptr_bitwise_and(void* ptr, size_t mask);
 // @return The translated pointer
 inline void* get_physical_address(void* virtual_ptr);
 
+// Takes a pointer and checks if it is in kernal memory space
+// @param ptr Pointer to check
+// @return True if in kernal memory False if not
+inline bool is_kernal_memory(const void* ptr);
+
 inline void* void_ptr_offset_bytes(void* ptr, ptrdiff_t offset)
 {
     return ((uint8_t*)ptr) + offset;
@@ -110,5 +116,9 @@ inline void* get_physical_address(void* virtual_ptr)
     return (void*)((par_el1 & 0xFFFFFFFFF000) + (((size_t)virtual_ptr) & 0xFFF));
 }
 
+inline bool is_kernal_memory(const void* ptr)
+{
+    return ((size_t)ptr) & KERNEL_MEMORY_PREFIX;
+}
 
 #endif

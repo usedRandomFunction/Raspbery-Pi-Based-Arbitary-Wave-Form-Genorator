@@ -1,9 +1,8 @@
 #include "common/sys_calls.h"
 
-int main() 
+void main() 
 {
-    sys_call_print("Hello, World!\n");
+    printf("Hello, World!\n");
 
-    sys_call_exit(0);
-    return -1;
+    exit(0);
 }

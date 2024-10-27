@@ -87,4 +87,12 @@ char uart_getc()
     return mmio_read(UART0_DR);
 }
 
+int uart_poll()
+{
+	if (mmio_read(UART0_FR) & (1 << 4))
+		return 0xFFFF;
+
+	return mmio_read(UART0_DR);
+}
+
 #endif
