@@ -1,6 +1,7 @@
 #include "lib/exceptions.h"
 
 #include "lib/user_program.h"
+#include "io/putchar.h"
 #include "io/printf.h"
 
 extern void* user_program_x30;
@@ -52,7 +53,14 @@ void generic_user_exception(const char* fmt, ...)
     printf("elr_el1: 0x%x (sys call return addresss)\n", elr_el1);
     printf("x30: 0x%x  (user function return address)\n", user_program_x30);
 
-    printf("Terminating current user program!\n\n\n\n\n");
+    printf("Terminating current user program!\n\n");
+
+    putchar('!');
+    for (int i = 0; i < 70; i++)
+        putchar('=');
+
+    printf("!\n\n\n");
+
     terminate_current_user_program();
 }
 
@@ -64,7 +72,13 @@ void user_arm_exception_handler(unsigned long type)
 
     printf("x30: 0x%x  (user function return address)\n", user_program_x30);
 
-    printf("Terminating current user program!\n\n\n\n\n");
+    printf("Terminating current user program!\n\n");
+
+    putchar('!');
+        for (int i = 0; i < 53; i++)
+            putchar('=');
+        printf("!\n\n\n");
+
     terminate_current_user_program();
 }
 
@@ -79,8 +93,16 @@ void kernal_arm_exception_handler(unsigned long type)
     {
         printf("Terminating current user program!\n\n\n\n\n");
         printf("Warning: due to the kernal function ending where\n it is not supost to, a memory leak may have occured!\n");
+    
+        putchar('!');
+        for (int i = 0; i < 55; i++)
+            putchar('=');
+        printf("!\n\n\n");
+
         terminate_current_user_program();
     }
+
+
 
    kernel_panic();
 }

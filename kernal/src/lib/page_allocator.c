@@ -74,7 +74,7 @@ bool initialize_page_allocator()
 
     memclr(s_page_availability, required_bytes);
 
-    printf("initialized page allocator with %d pages(%d Mib)\n", (long)s_total_number_of_pages, 
+    printf("Initialized page allocator with %d pages(%d Mib)\n", (long)s_total_number_of_pages, 
         (s_total_number_of_pages << page_allocator_page_size_as_power_of_two) / 1024 / 1024);
 
     return true;
