@@ -44,3 +44,8 @@ void* memclr(void* dst, size_t size)
 
     return dst;
 }
+
+bool is_kernal_memory(const void* ptr)
+{
+    return ((size_t)ptr) >= KERNEL_MEMORY_PREFIX;
+}

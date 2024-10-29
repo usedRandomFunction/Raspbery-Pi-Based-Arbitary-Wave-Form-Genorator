@@ -24,6 +24,7 @@
  */
 
 // Moddifyed to include sprintf_s and reguler printf() (using putchar()) and have functions to restict it to use only user memory if needed
+#include "lib/exceptions.h"
 #include "lib/memory.h"
 #include "io/putchar.h"
 
@@ -161,9 +162,12 @@ unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory,
     char *p, tmpstr[19];
 
     // failsafes
-    if(fmt==(void*)0 || (!can_access_kernal_memory && is_kernal_memory(fmt))) {
+    if(fmt==(void*)0) {
         return 0;
     }
+
+    if (!can_access_kernal_memory && is_kernal_memory(fmt))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", fmt, "printf");
 
 
 
@@ -252,9 +256,13 @@ unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory,
             // string
             if(*fmt=='s') {
                 p = __builtin_va_arg(args, char*);
-copystring:     if(p==(void*)0  || (!can_access_kernal_memory && is_kernal_memory(p))) {
+copystring:     if(p==(void*)0) {
                     p="(null)";
                 }
+
+                if (!can_access_kernal_memory && is_kernal_memory(p))
+                    generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", p, "printf");
+
                 while(*p) {
                     bytes_written++;
                     if (putchar(*p++) == EOF)

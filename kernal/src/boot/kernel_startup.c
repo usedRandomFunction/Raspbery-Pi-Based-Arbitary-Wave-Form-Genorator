@@ -2,7 +2,7 @@
 #include "run_time_kernal_config.h"
 #include "lib/translation_table.h"
 #include "boot/boardDectetion.h"
-#include "lib/arm_exceptions.h"
+#include "lib/exceptions.h"
 #include "lib/page_allocator.h"
 #include "io/memoryMappedIO.h"
 #include "io/pc_screen_font.h"

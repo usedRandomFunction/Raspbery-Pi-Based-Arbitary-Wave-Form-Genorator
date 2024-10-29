@@ -1,6 +1,6 @@
 #include "lib/mmu.h"
 
-#include "lib/arm_exceptions.h"
+#include "lib/exceptions.h"
 #include "lib/memory.h"
 #include "io/printf.h"
 

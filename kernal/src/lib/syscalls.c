@@ -1,4 +1,4 @@
-#include "lib/arm_exceptions.h"
+#include "lib/exceptions.h"
 #include "io/file_access.h"
 #include "lib/memory.h"
 #include "io/putchar.h"
@@ -25,7 +25,7 @@ int system_call_set_abi_version(int version)
 int system_call_open(const char* path, int flags)
 {   
     if (is_kernal_memory(path))
-        kernel_panic(); // We do this for now untill there is a way to sepaote user and kernal errors k?
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", path, "open");
 
     set_user_mode(true);
     int r = open(path, flags);
@@ -55,7 +55,7 @@ size_t system_call_get_file_size(int fd)
 size_t system_call_read(int fd, void* buf, size_t n)
 {
     if (is_kernal_memory(buf))
-        kernel_panic(); // We do this for now untill there is a way to sepaote user and kernal errors k?
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", buf, "read");
 
     set_user_mode(true);
     size_t r = read(fd, buf, n);
@@ -67,8 +67,7 @@ size_t system_call_read(int fd, void* buf, size_t n)
 size_t system_call_write(int fd, const void* buf, size_t n)
 {
     if (is_kernal_memory(buf))
-        kernel_panic(); // We do this for now untill there is a way to sepaote user and kernal errors k?
-
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", buf, "write");
     set_user_mode(true);
     size_t r = write(fd, buf, n);
     set_user_mode(false);
@@ -88,7 +87,7 @@ ptrdiff_t system_call_lseek(int fd, ptrdiff_t offset, int whence)
 int system_call_truncate(const char* path, size_t new_size)
 {
     if (is_kernal_memory(path))
-        kernel_panic(); // We do this for now untill there is a way to sepaote user and kernal errors k?
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", path, "truncate");
 
     set_user_mode(true);
     int r = truncate(path, new_size);
@@ -109,7 +108,7 @@ int system_call_ftruncate(int fd, size_t new_size)
 int system_call_remove(const char* path)
 {
     if (is_kernal_memory(path))
-        kernel_panic(); // We do this for now untill there is a way to sepaote user and kernal errors k?
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", path, "remove");
 
     set_user_mode(true);
     int r = remove(path);

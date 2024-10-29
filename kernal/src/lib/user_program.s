@@ -1,7 +1,7 @@
 .section .text
 
-.extern SYSTEM_CALL_EXIT_RETURN_STACK
-.extern SYSTEM_CALL_EXIT_RETURN_ADDRESS
+.extern system_call_exit_return_stack
+.extern system_call_exit_return_address
 
 .global user_program_internal_use_program_excute
 user_program_internal_use_program_excute:
@@ -30,10 +30,10 @@ user_program_internal_use_program_excute:
 	stp	x28,        x29,    [sp, #16 * 14]
     str x30,                [sp, #16 * 15]
 
-    ldr x0,         =SYSTEM_CALL_EXIT_RETURN_STACK
+    ldr x0,         =system_call_exit_return_stack
     mov x1,         sp
     str x1,         [x0]
-    ldr x0,         =SYSTEM_CALL_EXIT_RETURN_ADDRESS
+    ldr x0,         =system_call_exit_return_address
     adr x1,         .user_program_internal_use_program_excute_return_address
     str x1,         [x0]
 

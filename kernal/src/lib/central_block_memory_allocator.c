@@ -1,5 +1,5 @@
 #include "lib/central_block_memory_allocator.h"
-#include "lib/arm_exceptions.h"
+#include "lib/exceptions.h"
 #include "lib/string.h"
 #include "lib/memory.h"
 #include "io/printf.h"

@@ -14,6 +14,16 @@ struct user_program_info
 
 typedef struct user_program_info user_program_info;
 
+// Forces the current user program to exit
+// and return int32_min
+// @warning This function will force exuction to go 
+// to where it would if the user called exit()
+void terminate_current_user_program();
+
+// Tells if there is a active user program
+// @return True if there is a active user program
+bool is_user_program_active();
+
 // Loads a user program from the disk getting all infomation from its cfg file
 // @param program A pointer to the user_program_info struct to fill out
 // @param path Path to the cfg file

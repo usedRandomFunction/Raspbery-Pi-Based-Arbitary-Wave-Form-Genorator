@@ -55,6 +55,10 @@ void* memcpy(void* dst, const void* src, size_t n);
 // @return a pointer to the destination buffer
 void* memset(void* dst, size_t size, uint8_t value);
 
+// Takes a pointer and checks if it is in kernal memory space
+// @param ptr Pointer to check
+// @return True if in kernal memory False if not
+bool is_kernal_memory(const void* ptr);
 
 // Sets n bytes of dst to 0
 // @param dst The destination buffer
@@ -78,11 +82,6 @@ inline void* void_ptr_bitwise_and(void* ptr, size_t mask);
 // @param virtual_ptr Pointer to translate
 // @return The translated pointer
 inline void* get_physical_address(void* virtual_ptr);
-
-// Takes a pointer and checks if it is in kernal memory space
-// @param ptr Pointer to check
-// @return True if in kernal memory False if not
-inline bool is_kernal_memory(const void* ptr);
 
 inline void* void_ptr_offset_bytes(void* ptr, ptrdiff_t offset)
 {
@@ -114,11 +113,6 @@ inline void* get_physical_address(void* virtual_ptr)
 
     // Extract the physical address from PAR_EL1
     return (void*)((par_el1 & 0xFFFFFFFFF000) + (((size_t)virtual_ptr) & 0xFFF));
-}
-
-inline bool is_kernal_memory(const void* ptr)
-{
-    return ((size_t)ptr) & KERNEL_MEMORY_PREFIX;
 }
 
 #endif

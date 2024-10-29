@@ -6,13 +6,32 @@
 #include "io/printf.h"
 #include "lib/mmu.h"
 
-extern int SYSTEM_CALL_EXIT_RETURN_VALUE;
+extern int system_call_exit_return_value;
+void system_call_exit(int status); 
+
+static bool s_is_user_program_active = false;
 
 // Used to load a load monolithic user program from the disk
 // @param program A pointer to the user_program_info struct to fill out
 // @param config A fill config file struct for the program
 // @param path Path to the cfg file
 static bool s_load_monolithic_user_program_from_disk(user_program_info* program, const config_file* config, const char* path);
+
+// Uses the config file to find the image path
+// @param config A filled config file struct
+// @param config_path the path to the file
+// @return The image path to the program
+static char* s_get_program_image_path(const config_file* config, const char* config_path);
+
+void terminate_current_user_program()
+{
+    system_call_exit(INT32_MIN);
+}
+
+bool is_user_program_active()
+{
+    return s_is_user_program_active;
+}
 
 bool load_user_program_from_disk(user_program_info* program, const char* path)
 {
@@ -66,10 +85,6 @@ bool load_user_program_from_disk(user_program_info* program, const char* path)
     return success;
 }
 
-// Uses the config file to find the image path
-// @param config A filled config file struct
-// @param config_path the path to the file
-// @return
 static char* s_get_program_image_path(const config_file* config, const char* config_path)
 {
     const config_file_entry* image_entry = get_config_file_entry_from_name(config, "IMAGE_PATH");
@@ -233,11 +248,15 @@ void switch_to_addess_space_to_program(user_program_info* program)
 
 int execute_user_program(user_program_info* program)
 {
+    s_is_user_program_active = true;
+
     // We use the function here, also it exists as a function
     // As it needs to be writen in asm
     user_program_internal_use_program_excute(program->entry, program->stack_end);
     
-    return SYSTEM_CALL_EXIT_RETURN_VALUE;
+    s_is_user_program_active = false;
+
+    return system_call_exit_return_value;
 }
 
 void destroy_user_program(user_program_info* program)
