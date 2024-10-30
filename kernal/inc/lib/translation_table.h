@@ -79,10 +79,20 @@ void print_translation_table(translation_table_info* table);
 // but to be safe the TLB still should be invalidated.
 bool insert_translation_table_section(translation_table_info* table, translation_table_section_info* section, bool only_update_active_buffers_when_ready);
 
+// Removes a section from the translation table
+// @param table The table to remove a section from
+// @param section_id The id of the section to remove
+// @return True if the success, false if failed
+// @param only_update_active_buffers_when_ready Used to prevent the function from
+// overwriting any buffers untill the new contents are ready, This is achived by allocating new buffers
+// this paraeter is only ment to be used with the translation table controlls the code being activly ran
+// @note This function does not update ttbr1_el1 or ttbr1_el0 that must be done elsewhere,
+bool remove_translation_table_section(translation_table_info* table, int section_id, bool only_update_active_buffers_when_ready);
+
 // Calucates the ammount of memory mannaged by the translation table
 // @param table The table to messure
 // @return The number of bytes mannaged by the table
-size_t get_translation_table_memory_mannaged(translation_table_info* table);
+size_t get_translation_table_mannaged_size(translation_table_info* table);
 
 // Deletes the translation table
 // @param table The table to delete

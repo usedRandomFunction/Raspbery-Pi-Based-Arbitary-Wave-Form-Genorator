@@ -9,6 +9,9 @@
 // Initializes the buffesr used to track file discriptors
 void initialize_file_access();
 
+// Frees all files assicated with the user
+void file_access_on_user_app_exit();
+
 // Used to decide if the kernal or user is using the files
 // @param is_in_user_mode True if user, false if kernal
 void set_user_mode(bool is_in_user_mode);

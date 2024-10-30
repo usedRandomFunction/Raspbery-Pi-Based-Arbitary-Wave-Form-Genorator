@@ -13,7 +13,8 @@
 // @param upper_attributes Attributes for the descriptor
 // @param lower_attributes Attributes for the descriptor
 // @param block_table_bit If set to true entry points to other table entry if false entry points to page address
-void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint64_t attributes, bool block_table_bit);
+// @return True if success false if failed
+bool write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint64_t attributes, bool block_table_bit);
 
 // Prints the given descriptor to the UART
 void print_page_descriptor(uint64_t* descriptor_address);

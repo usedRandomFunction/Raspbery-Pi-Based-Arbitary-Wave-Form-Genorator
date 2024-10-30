@@ -2,6 +2,7 @@
 
 .global _vectors
 
+.extern system_call_undefined_handler
 .extern kernal_arm_exception_handler
 .extern user_arm_exception_handler
 .extern system_call_exit
@@ -71,19 +72,18 @@ _vectors:
     b       user_arm_exception_handler
 
 .el0_svc:
-    cmp x8, 17 // Number of syscalls
+    cmp x8,     19              // Number of syscalls
     bge .el0_svc_failed
-    ldr x9, =system_call_table
-    lsl x8, x8, #3 // Sames as x8 = x8 * 8 (2^3)
-    add x9, x9, x8
-    ldr x10,  [x9]
+    ldr x9,     =system_call_table
+    lsl x10,    x8,     #3      // Sames as x8 = x8 * 8 (2^3)
+    add x9,     x9,     x10
+    ldr x10,    [x9]
     blr x10
     kernal_to_user_syscall_exit
 
 
 .el0_svc_failed:
-    mov x0, 0
-    b       user_arm_exception_handler
+    b       system_call_undefined_handler
 
 enter_from_syscall:
     sub	sp, sp, #16 * 14

@@ -126,17 +126,22 @@ static void s_initialize_virtual_address_translation()
     uint64_t* temporary_kernel_heap_pmd = (uint64_t*)aligned_alloc(4096, 8 );
     
     void* mapping_ptr = get_physical_address(PROGRAM_START_ADDRESS_POINTER);
-    write_page_descriptor(temporary_pgd, get_physical_address(temporary_pud), 0x0, true);
-    write_page_descriptor(temporary_pud, get_physical_address(temporary_kernel_code_pmd), 0x0, true);
-    write_page_descriptor(temporary_pud + 1, get_physical_address(temporary_kernel_heap_pmd), 0x0, true);
+    bool failed = failed;
+
+    failed |= !write_page_descriptor(temporary_pgd, get_physical_address(temporary_pud), 0x0, true);
+    failed |= !write_page_descriptor(temporary_pud, get_physical_address(temporary_kernel_code_pmd), 0x0, true);
+    failed |= !write_page_descriptor(temporary_pud + 1, get_physical_address(temporary_kernel_heap_pmd), 0x0, true);
 
     // Both of these are being (temporay set) as non-cache able memory
     for (int i = 0; i < (int)kernel_minium_sections; i++)
-        write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 
-        MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT, false);
+        failed |= !write_page_descriptor(temporary_kernel_code_pmd + i, void_ptr_offset_bytes(mapping_ptr, i << 21), 
+            MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT, false);
 
-    write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 
-    MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT, false);
+    failed |= !write_page_descriptor(temporary_kernel_heap_pmd, void_ptr_offset_bytes(mapping_ptr, kernel_minium_sections << 21), 
+        MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT, false);
+
+    if (failed)
+        kernel_panic();
 
     set_ttbr1_el1(get_physical_address(temporary_pgd));
 

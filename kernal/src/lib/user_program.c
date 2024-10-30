@@ -1,5 +1,6 @@
 #include "lib/user_program.h"
 #include "lib/config_file.h"
+#include "lib/exceptions.h"
 #include "io/file_access.h"
 #include "lib/memory.h"
 #include "lib/string.h"
@@ -9,7 +10,7 @@
 extern int system_call_exit_return_value;
 void system_call_exit(int status); 
 
-static bool s_is_user_program_active = false;
+static user_program_info* s_active_user_program = NULL;
 
 // Used to load a load monolithic user program from the disk
 // @param program A pointer to the user_program_info struct to fill out
@@ -25,12 +26,19 @@ static char* s_get_program_image_path(const config_file* config, const char* con
 
 void terminate_current_user_program()
 {
+    file_access_on_user_app_exit(); // To deal with any open files
+
     system_call_exit(INT32_MIN);
 }
 
 bool is_user_program_active()
 {
-    return s_is_user_program_active;
+    return s_active_user_program != NULL;
+}
+
+user_program_info* get_active_user_program()
+{
+    return s_active_user_program;
 }
 
 bool load_user_program_from_disk(user_program_info* program, const char* path)
@@ -248,13 +256,13 @@ void switch_to_addess_space_to_program(user_program_info* program)
 
 int execute_user_program(user_program_info* program)
 {
-    s_is_user_program_active = true;
+    s_active_user_program = program;
 
     // We use the function here, also it exists as a function
     // As it needs to be writen in asm
     user_program_internal_use_program_excute(program->entry, program->stack_end);
     
-    s_is_user_program_active = false;
+    s_active_user_program = NULL;
 
     return system_call_exit_return_value;
 }
@@ -262,4 +270,72 @@ int execute_user_program(user_program_info* program)
 void destroy_user_program(user_program_info* program)
 {
     destory_translation_table(&program->translation_table);
+}
+
+size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, int flags)
+{
+    if (is_kernal_memory(ptr))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", ptr, "vmemmap");
+
+    if (((size_t)ptr) % (1 << PAGE_ALLOCATOR_PAGE_SIZE_AS_POWER_OF_TWO))
+    {
+        printf("Failed to allocate section: 0x%x is not alligned to 2^%d\n", ptr, PAGE_ALLOCATOR_PAGE_SIZE_AS_POWER_OF_TWO);
+        return 0;
+    }
+
+    uint64_t attributes =  MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EL0_ACCESS;
+
+        if (!(flags & VMEMMAP_EXECUTABLE))
+            attributes |= MMU_ATTRIBUTES_EXECUTE_NEVER;
+
+        if (!(flags & VMEMMAP_WRITABILITY))
+            attributes |= MMU_ATTRIBUTES_READ_ONLY;
+
+        if (flags & VMEMMAP_NON_CACHABLE)
+            attributes |= MMU_ATTRIBUTES_NON_CACHABLE;
+        else
+            attributes |= MMU_ATTRIBUTES_CACHABLE;
+
+    for (int i = 0; i < program->translation_table.number_of_sections; i++)
+    {
+        translation_table_section_info* section = program->translation_table.sections + i;
+
+        if (section->section_start != ptr)
+            continue;               // Now it only continues if we are at the target section
+
+        if (size == 0)
+        {
+            remove_translation_table_section(&program->translation_table, i, false);
+            return 1;
+        }
+
+        if (!resize_page_allocation(section->allocation, size))
+            return 0;
+        
+        section->attributes = attributes;
+
+        if (!remake_translation_table_section(&program->translation_table, i, false))
+            return 0;
+
+        return get_page_allocation_size(section->allocation);
+    }
+
+    if (size == 0)
+        return 1; // We tryed to delete something that doesn't exist
+
+    // Now its only allocations that need to be created
+    
+    translation_table_section_info section;
+
+    section.section_start = ptr;
+    section.attributes = attributes;
+    section.allocation = create_new_page_allocation(size);
+
+    if (section.allocation == NULL)
+        return 0;
+
+    if (insert_translation_table_section(&program->translation_table, &section, false) == false)
+        return 0;
+
+    return get_page_allocation_size(section.allocation);
 }

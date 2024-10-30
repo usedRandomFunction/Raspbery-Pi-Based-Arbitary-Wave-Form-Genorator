@@ -20,6 +20,13 @@ enum
     FILE_FLAGS_TRUNCATE     = 1 << 3,       /* If file allready exists and is writeable the file is truncated to zero bytes on opening*/
 };
 
+enum
+{
+    VMEMMAP_WRITABILITY     =   1 << 0,     /* If set the allocation will be writeable*/
+    VMEMMAP_NON_CACHABLE    =   1 << 1,     /* If set the allocation wont be cachable*/
+    VMEMMAP_EXECUTABLE      =   1 << 2      /* If set the allocation will be executable*/
+};
+
 // Used to set the ABI version used by the app
 // @param version The version that we want to use
 // @return 0 If sucesss, -1 if failed
@@ -110,4 +117,14 @@ int remove(const char* path);
 // @return 0 if successfull, -1 if Error
 // @note Closes the file on its own
 int fremove(int fd);
+
+// Used to manage virtual address translation 
+// @param ptr The address for the allocaion to goto
+// @param size The size of the allocation (to create / modify), or set to zero to delete
+// @param flags flags
+// @return The size of the allocation in bytes / 0 if failed, or if deleting > 0 on success
+size_t vmemmap(void* ptr, size_t size, int flags);
+
+
+
 #endif

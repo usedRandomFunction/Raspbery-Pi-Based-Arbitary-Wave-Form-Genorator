@@ -14,6 +14,13 @@ struct user_program_info
 
 typedef struct user_program_info user_program_info;
 
+enum
+{
+    VMEMMAP_WRITABILITY     =   1 << 0,     /* If set the allocation will be writeable*/
+    VMEMMAP_NON_CACHABLE    =   1 << 1,     /* If set the allocation wont be cachable*/
+    VMEMMAP_EXECUTABLE      =   1 << 2      /* If set the allocation will be executable*/
+};
+
 // Forces the current user program to exit
 // and return int32_min
 // @warning This function will force exuction to go 
@@ -23,6 +30,10 @@ void terminate_current_user_program();
 // Tells if there is a active user program
 // @return True if there is a active user program
 bool is_user_program_active();
+
+// Gets the active user program
+// @return pointer to active user program or null if there are none
+user_program_info* get_active_user_program();
 
 // Loads a user program from the disk getting all infomation from its cfg file
 // @param program A pointer to the user_program_info struct to fill out
@@ -62,13 +73,21 @@ int execute_user_program(user_program_info* program);
 // @param program The program to free
 void destroy_user_program(user_program_info* program);
 
+// Used to manage virtual address translation within a user program
+// @param program The program to change the mappings of
+// @param ptr The address for the allocaion to goto
+// @param size The size of the allocation (to create / modify), or set to zero to delete
+// @param flags flags
+// @return The size of the allocation in bytes / 0 if failed, or if deleting > 0 on success
+size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, int flags);
+
 // ===================================================================
 // DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED
 // ===================================================================
 // Used internaly to call the user program and set the return address
 // @param entry Address to switch to (In EL0)
 // @param stack Address to set sp_el0 to
-// @note DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED
+// @warning DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED
 void user_program_internal_use_program_excute(void* entry, void* stack);
 
 #endif

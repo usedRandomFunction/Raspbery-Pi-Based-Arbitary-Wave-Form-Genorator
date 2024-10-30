@@ -184,6 +184,21 @@ void initialize_file_access()
     initialize_dynamic_array(sizeof(fd_hash_table_entry), 0, &s_fd_hash_table);
 }
 
+void file_access_on_user_app_exit()
+{
+    fd_hash_table_entry* table = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+    
+    for (size_t i = 0; i < s_fd_hash_table.number_of_entrys; i++)
+    {
+        if (!table[i].metadata.is_owened_by_user)
+            continue;
+
+        remove_dynamic_array_entry(i, &s_fd_hash_table);
+        table = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+        i--;
+    }
+}
+
 int open(const char* path, int flags)
 {
     if(path[0] == '/' || path[0] == '\\') 

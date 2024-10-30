@@ -5,7 +5,7 @@
 #include "io/printf.h"
 
 
-void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint64_t attributes, bool block_table_bit)
+bool write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, uint64_t attributes, bool block_table_bit)
 {
     size_t pointer_address_as_number = (size_t)pointer_address;
     uint64_t descriptor = 0b1; // Enable the valid bit
@@ -13,7 +13,7 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
     if (pointer_address_as_number & 0xFFFF000000000FFF)
     {
         printf("write_page_descriptor: failed!\npointer_address has bits set outside of [47:12]!\n%x\n", pointer_address);
-        kernel_panic();
+        return false;
     }
 
     if (block_table_bit == true)
@@ -23,6 +23,8 @@ void write_page_descriptor(uint64_t* descriptor_address, void* pointer_address, 
     descriptor |= (uint64_t)(attributes); // TODO maby add some bitwise stuff to ensure no bad attributes
 
     *descriptor_address = descriptor;
+
+    return true;
 }
 
 void print_page_descriptor(uint64_t* descriptor_address)

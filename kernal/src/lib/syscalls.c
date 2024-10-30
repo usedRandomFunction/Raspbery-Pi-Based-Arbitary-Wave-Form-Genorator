@@ -1,3 +1,4 @@
+#include "lib/user_program.h"
 #include "lib/exceptions.h"
 #include "io/file_access.h"
 #include "lib/memory.h"
@@ -126,6 +127,24 @@ int system_call_fremove(int fd)
     return r;
 }
 
+void system_call_undefined_handler()
+{
+    size_t w8;
+
+    asm volatile ( "mov %0, x8" : "=r"(w8));
+
+    w8 &= 0xFFFFFFFF; // I cant load 32 bits dirrectly so load 64 and bitwise and it
+
+    generic_user_exception("User attempted to call undefined system call %d!\n", w8);
+}
+
+size_t system_call_vmemmap(void* ptr, size_t size, int flags)
+{
+    return user_program_vmemmap(get_active_user_program(),
+        ptr, size, flags);
+}
+
+
 void* const system_call_table[] = {system_call_set_abi_version, // ABI commands
     system_call_exit,                                           // Proccess controll commands
     printf_user_memory_only, putchar,                           // Print commands
@@ -134,5 +153,6 @@ void* const system_call_table[] = {system_call_set_abi_version, // ABI commands
     system_call_get_file_size, system_call_read,                // More File IO
     system_call_write, system_call_lseek, system_call_truncate, // Even more FILE IO
     system_call_ftruncate, system_call_remove,                  // Yup File IO
-    system_call_fremove                                         // Ok, its done
+    system_call_fremove, system_call_undefined_handler,         // Ok, its done
+    system_call_vmemmap                                         //
 };

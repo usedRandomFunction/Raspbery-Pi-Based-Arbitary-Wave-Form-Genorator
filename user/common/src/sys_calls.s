@@ -100,3 +100,9 @@ fremove:
     mov w8, 16
     svc #0
     ret
+
+.global vmemmap
+vmemmap:
+    mov w8, 18
+    svc #0
+    ret
