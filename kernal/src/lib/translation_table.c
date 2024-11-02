@@ -48,7 +48,7 @@ static void s_invalid_caching_around_translation_table(translation_table_info* t
 
 bool initialize_translation_table(translation_table_info* table, translation_table_section_info* sections, uint8_t number_of_sections)
 {
-    printf("Initializing translation table: %x\n", table);
+    printf("Initializing translation table: 0x%x\n", table);
     memclr(table, sizeof(translation_table_info));
     table->number_of_sections = number_of_sections;
     table->sections = malloc(sizeof(translation_table_section_info) * number_of_sections);
@@ -101,7 +101,7 @@ bool initialize_translation_table(translation_table_info* table, translation_tab
 
 void print_translation_table(translation_table_info* table)
 {
-    printf("Translation table: %x debug.\n", table);
+    printf("Translation table: 0x%x debug.\n", table);
 
     uint32_t last_pud_index = table->number_of_page_upper_directory_entrys - 1;
 
@@ -139,7 +139,7 @@ void print_translation_table(translation_table_info* table)
 
 bool remake_translation_table_section(translation_table_info* table, int section_id, bool only_update_active_buffers_when_ready)
 {
-    printf("Translation table: %x\nRemaking section:  %d\n", table, section_id);
+    printf("Translation table: 0x%x\nRemaking section:  %d\n", table, section_id);
 
     if (table->number_of_sections <= section_id)
     {
@@ -186,7 +186,7 @@ bool insert_translation_table_section(translation_table_info* table, translation
 {
     int target_section_id = table->number_of_sections;
 
-    printf("Translation table: %x\nInserting section: [start]: 0x%x, [allocation]: 0x%x\n", 
+    printf("Translation table: 0x%x\nInserting section: [start]: 0x%x, [allocation]: 0x%x\n", 
         table, section->section_start, section->allocation);
 
     for (int i = 0; i < table->number_of_sections; i++) // Check if we are inserting not apending
@@ -316,7 +316,7 @@ size_t get_translation_table_mannaged_size(translation_table_info* table)
 
 void destory_translation_table(translation_table_info* table)
 {
-    printf("Destorying translation table: %x\n", table);
+    printf("Destorying translation table: 0x%x\n", table);
 
     for (int i = 0; i < table->number_of_sections; i++)
     {

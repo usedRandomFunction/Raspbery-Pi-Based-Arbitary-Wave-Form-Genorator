@@ -96,8 +96,11 @@ inline void mmio_write_offset_of_size(size_t reg, uint32_t data, uint_fast8_t of
     bitMask <<= offset;
     data <<= offset;
 
-    mmio_write_bitwise_and(reg, ~bitMask);
-    mmio_write_bitwise_or(reg, data);
+    uint32_t value = mmio_read(reg);
+    value &= ~bitMask;
+    value |= data;
+
+    mmio_write(reg, value);
 }
 
 inline volatile uint32_t* get_mmio_pointer(size_t reg)
@@ -168,7 +171,7 @@ enum
     GPPUDCLK1           = (GPIO_BASE + 0x9C),
  
     // The base address for UART.
-    UART0_BASE          = (GPIO_BASE + 0x1000), // for raspi4 0xFE201000, raspi2 & 3 0x3F201000, and 0x20201000 for raspi1
+    UART0_BASE          = (GPIO_BASE + 0x1000),
     
     // The offsets for reach register for the UART.
     UART0_DR            = (UART0_BASE + 0x00),
@@ -258,6 +261,37 @@ enum
     SYS_TIMER_C1    = (SYS_TIMER_BASE + 0x10),
     SYS_TIMER_C2    = (SYS_TIMER_BASE + 0x14),
     SYS_TIMER_C3    = (SYS_TIMER_BASE + 0x18),
+
+    // Interrupt controlls
+    IRQ_REGISTERS_A_BASE    = 0xB200,
+    IRQ_REGISTERS_B_BASE    = 0x1000000,
+    IRQ_BASIC_PENDING       = (IRQ_REGISTERS_A_BASE + 0x00),
+    IRQ_PENDING_1           = (IRQ_REGISTERS_A_BASE + 0x04),
+    IRQ_PENDING_2           = (IRQ_REGISTERS_A_BASE + 0x08),
+    FIQ_CTRL                = (IRQ_REGISTERS_A_BASE + 0x0C),
+    IRQ_ENABLE_1            = (IRQ_REGISTERS_A_BASE + 0x10),
+    IRQ_ENABLE_2            = (IRQ_REGISTERS_A_BASE + 0x14),
+    IRQ_ENABLE_BASE         = (IRQ_REGISTERS_A_BASE + 0x18),
+    IRQ_DISABLE_1           = (IRQ_REGISTERS_A_BASE + 0x1C),
+    IRQ_DISABLE_2           = (IRQ_REGISTERS_A_BASE + 0x20),
+    IRQ_DISABLE_BASE        = (IRQ_REGISTERS_A_BASE + 0x24),
+    GPU_IRQ_ROUTING         = (IRQ_REGISTERS_B_BASE + 0x0C),
+    CORE_0_TIMER_IRQ_CTRL   = (IRQ_REGISTERS_B_BASE + 0x40),
+    CORE_1_TIMER_IRQ_CTRL   = (IRQ_REGISTERS_B_BASE + 0x44),
+    CORE_2_TIMER_IRQ_CTRL   = (IRQ_REGISTERS_B_BASE + 0x48),
+    CORE_3_TIMER_IRQ_CTRL   = (IRQ_REGISTERS_B_BASE + 0x4C),
+    CORE_0_MAILBOX_IRQ_CTRL = (IRQ_REGISTERS_B_BASE + 0x50),
+    CORE_1_MAILBOX_IRQ_CTRL = (IRQ_REGISTERS_B_BASE + 0x54),
+    CORE_2_MAILBOX_IRQ_CTRL = (IRQ_REGISTERS_B_BASE + 0x58),
+    CORE_3_MAILBOX_IRQ_CTRL = (IRQ_REGISTERS_B_BASE + 0x5C),
+    CORE_0_IRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x60),
+    CORE_1_IRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x64),
+    CORE_2_IRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x68),
+    CORE_3_IRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x6C),
+    CORE_0_FRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x60),
+    CORE_1_FRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x64),
+    CORE_2_FRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x68),
+    CORE_3_FRQ_SOURCE       = (IRQ_REGISTERS_B_BASE + 0x6C),
 };
 
 

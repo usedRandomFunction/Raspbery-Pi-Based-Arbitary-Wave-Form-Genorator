@@ -95,4 +95,21 @@ int uart_poll()
 	return mmio_read(UART0_DR);
 }
 
+void enable_uart_receive_interupt()
+{
+	mmio_write_offset_of_size(UART0_IFLS,	// Interupt FIFO level select register
+		0b001,								// 1/4
+		3,									// Input FIFO
+		3);									// We're writing three bits
+	
+	mmio_write_bitwise_and(UART0_IMSC,		// Interupt mask register
+		~(0b1 << 5));						// Enable UART_RXINTR
+}
+
+void disable_uart_receive_interupt()
+{
+	mmio_write_bitwise_or(UART0_IMSC,		// Interupt mask register
+		0b1 << 5);							// Enable UART_RXINTR
+}
+
 #endif

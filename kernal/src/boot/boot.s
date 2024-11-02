@@ -61,6 +61,7 @@ el2_entry:
     eret
 
 el1_entry:
+    msr     daifclr, 0xf
     adrp	x0, __bss_start
     add     x0, x0, :lo12:__bss_start
 	ldr	    x1, =__bss_size

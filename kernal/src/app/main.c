@@ -31,7 +31,7 @@ int main()
         printf("Main interface program returned %d\n", return_value);
         destroy_user_program(&program);
 
-        if ((porgam_end_count - porgam_start_count) < (get_timer_freqency() / 4)) // If program returned in less then 0.25 sec abort
+        if ((porgam_end_count - porgam_start_count) < (get_timer_frequency() / 4)) // If program returned in less then 0.25 sec abort
         {
             printf("Main interface program took less then 0.25 seconds to reutrn, \nassuming error occured and aborting\n");
             return -2;

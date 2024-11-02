@@ -202,7 +202,7 @@ static void s_initialize_virtual_address_translation()
 
     // MMIO section
     ptrdiff_t mmio_allocation_offset;
-    page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address((void*)MMIO_Base_Address, 1 << 24, 
+    page_allocation_info* mmio_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address((void*)MMIO_Base_Address, 1 << 25, 
         &mmio_allocation_offset);
     table_sections[2].allocation = mmio_allocation;
     table_sections[2].attributes = MMU_ATTRIBUTES_nGnRnE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER;
@@ -222,14 +222,14 @@ static void s_initialize_virtual_address_translation()
     MMIO_Base_Address = ((size_t)MMIO_VIRUTAL_ADDRESS_BASE) + 0xFFFF000000000000 + mmio_allocation_offset;
     set_ttbr0_el1(NULL); // Since we arn't using 0x0000000000000000 to 0x0000FFFFFFFFFFFF anymore we should un map it
 
-    printf("Remapped MMIO to %x\n", MMIO_Base_Address);
+    printf("Remapped MMIO to 0x%x\n", MMIO_Base_Address);
 }
 
 void free(void* p)
 {
     if (p == NULL)
     {
-        printf("kernel attempted to free NULL pointer\nCaller: %x", __builtin_return_address(0));
+        printf("kernel attempted to free NULL pointer\nCaller: 0x%x", __builtin_return_address(0));
         kernel_panic();
     }
 
@@ -240,7 +240,7 @@ void* malloc(size_t size)
 {
     if (size == 0)
     {
-        printf("kernel attempted to allocate zero bytes\nCaller: %x", __builtin_return_address(0));
+        printf("kernel attempted to allocate zero bytes\nCaller: 0x%x", __builtin_return_address(0));
         kernel_panic();
     }
 
@@ -251,7 +251,7 @@ void* aligned_alloc(size_t alignment, size_t size)
 {
     if (size == 0)
     {
-        printf("kernel attempted to allocate zero bytes\nCaller: %x", __builtin_return_address(0));
+        printf("kernel attempted to allocate zero bytes\nCaller: 0x%x", __builtin_return_address(0));
         kernel_panic();
     }
 

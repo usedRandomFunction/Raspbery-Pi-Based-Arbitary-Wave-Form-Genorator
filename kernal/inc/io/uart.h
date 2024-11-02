@@ -38,6 +38,18 @@ int uart_poll();
 // @param str The string to put on the UART
 void uart_puts(const char* str);
 
+// Enables UART_RTINTR (FIFO 1/4)
+void enable_uart_receive_interupt();
+
+// Disables UART_RTINTR
+void disable_uart_receive_interupt();
+
+// Enables IRQ 57
+void enable_uart_interupts();
+
+// Disables IRQ 57
+void disable_uart_interupts();
+
 // // Writes an unsigned integer to the UART
 // // @param integer The number to put in the UART
 // void uart_putui(unsigned int integer);
@@ -71,7 +83,7 @@ void uart_puts(const char* str);
 // Writes the memory to the uart formated like the output simuler to hex dump
 // @param The pointer to the memory to dump
 // @param size The ammount of bytes to dump
-void uart_put_memory_dump_formated(void* ptr, size_t size);
+// void uart_put_memory_dump_formated(void* ptr, size_t size);
 
 // // Writes a pointers address to the UART in hex, without leading zeros and a '0x' prefix
 // // @param ptr the pointer to convert to a number and put on the UART
