@@ -13,7 +13,6 @@ int main()
 {
     while (1)
     {
-
         user_program_info program;
          if (!load_user_program_from_disk(&program, main_interface_app_path))
             return -1;

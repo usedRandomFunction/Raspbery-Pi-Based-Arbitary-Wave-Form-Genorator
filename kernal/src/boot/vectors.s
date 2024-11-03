@@ -74,24 +74,55 @@ _vectors:
 
 .el0_svn:
     enter_from_syscall
-    mrs	x24, esr_el1				// read the syndrome register
-	lsr	x24, x24, #26		// exception class
-	cmp	x24, #0x15			// SVC in 64-bit state
-	b.eq	.el0_svc
-    mov x0, 0
+    mrs	x24,    esr_el1				// read the syndrome register
+	lsr	x24,    x24,    #26		    // exception class
+	cmp	x24,    #0x15			    // SVC in 64-bit state
+	b.eq	    .el0_svc
+    mov x0,     0
     b       user_arm_exception_handler
 
 .el0_svc:
-    cmp x8,     19              // Number of syscalls
-    bge .el0_svc_failed
-    ldr x9,     =system_call_table
-    lsl x10,    x8,     #3      // Sames as x8 = x8 * 8 (2^3)
-    add x9,     x9,     x10
-    ldr x10,    [x9]
-    blr x10
+    lsl x8,    x8,     #3          // Sames as x8 = x8 * 8 (2^3)
+    mrs x24,    esr_el1            
+    and x24,    x24,    #0xFFFF     // Get SVC augrment
+    lsl x24,    x24,    #3          // Sames as x24 = x24 * 8 (2^3)
+                                    // Now we have the table offsets we can work
+    cmp x24,    #0x00FF             //
+    bgt .el0_svc_project_specfic
+.el0_svc_os_functions:
+    ldr x9,     =size_of_os_syscall_tables_sizes_table
+    ldr x9,     [x9]
+    cmp x24,     x9
+    bge .el0_svc_failed             // Make sure we only look at the size of tables we have
+    ldr x9,     =os_syscall_tables_sizes_table // Wow that name
+    add x9,     x9,     x24
+    ldr x9,     [x9]
+    cmp x8,     x9                  
+    bge .el0_svc_failed             // Now we know the syscall exists
+    ldr x9,     =os_syscall_tables_table // Yup table of tables
+    add x9,     x9,     x24
+    ldr x9,     [x9]
+    add x9,     x9,     x8                  
+    ldr x9,     [x9]
+    blr x9
     b exit_from_syscall
-
-
+.el0_svc_project_specfic:
+    ldr x9,     =size_of_project_specfic_syscall_tables_sizes_table
+    ldr x9,     [x9]
+    cmp x24,     x9
+    bge .el0_svc_failed             // Make sure we only look at the size of tables we have
+    ldr x9,     =project_specfic_syscall_tables_sizes_table // Wow that name
+    add x9,     x9,     x24
+    ldr x9,     [x9]
+    cmp x8,     x9                  
+    bge .el0_svc_failed             // Now we know the syscall exists
+    ldr x9,     =project_specfic_syscall_tables_table // Yup table of tables
+    add x9,     x9,     x24
+    ldr x9,     [x9]
+    add x9,     x9,     x8                  
+    ldr x9,     [x9]
+    blr x9
+    b exit_from_syscall
 .el0_svc_failed:
     b       system_call_undefined_handler
 

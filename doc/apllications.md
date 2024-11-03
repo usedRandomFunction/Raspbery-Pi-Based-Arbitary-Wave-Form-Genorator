@@ -5,31 +5,8 @@ this means that all the data and code is stored in one seciton
 
 ## Application basic interface (ABI)
 
-There is currently one ABI availible to user apps "v0"
-
-in this the calls are made by setting w8 to a number and then calling svc #0
-
-| w8 Value | Name | Arguements | Return | Description |
-|----------|------|------------|--------|-------------|
-| 0 | set_abi_version | int version | int    | Sets the ABI to the given version as the name implies, reutrns -1 if failed <br> and zero on success
-| 1 | exit  | int status | N/A | Exits the current program and gives a status number
-| 2 | printf | const char* str, ... | void | Simple printf function, prints to UART and screen
-| 3 | putchar | char c | int | Puts a charector on to the UART and screen, returns EOF on failed
-| 4 | uart_putc | char c | void | Puts a charector onto the UART
-| 5 | uart_getc | N/A | char | Gets a charector from the UART and will wait for one to be avalible
-| 6 | uart_poll | N/A | int | Same as uart_getc but doesn't wait, and will return 0XFFFF, if nothing is avaible
-| 7 | open | const char* path,<br>int [flags](#open-flags) | int | Opens the given file if possible and returns file descriptor <br> or -1 if failed. See [flags](#open-flags)
-| 8 | close | int fd | int | Closes the given file, reutrns 0 on success and -1 on failer
-| 9 | get_file_size | int fd | size_t | Takes the given file and returns is size in bytes or -1 on failer
-| 10 | read | int fd, void* buf, <br>size_t n | size_t | Reads n bytes from the file, returns number of bytes read or 0 on <br> reaching end of file gives -1 on error
-| 11 | write | int fd, const void* buf, <br>size_t n | size_t | Writes n bytes to the file, returns number of bytes written, gives -1 on error
-| 12 | lseek | int fd ptrdiff_t offset,<br>int [whence](#seek-whence) | ptrdiff_t | Seeks to a offset in the file, also read [whence](#seek-whence)
-| 13 | truncate | const char* path, <br> size_t new_size | int | Sets the size of the file n bytes, returns zero on success, -1 on failer
-| 14 | ftruncate | itn fd, size_t new_size | int | Sets the size of the file n bytes, returns zero on success, -1 on failer
-| 15 | remove | const char* path | int | Deletes a file, returns 0 on success, -1 on failer
-| 16 | fremove | int fd | int | Deletes a file, returns 0 on success, -1 on failer
-| 17 | RESRVED | N/A | N/A | reserved for file rename function
-| 18 | vmemmap | void* ptr, size_t size<br>int [flags](#vmemmap-flags) | size_t | Creates / deletes / modifys, virtual memory mappings. <br> It attempts to put the mapping at ptr in memory and will fail if it cant.<br>When a entry at ptr doesn't exist it will create on, if it exists it will modify <br>/ delete it. <br>If size > 0, it will create / modify, and will return the size of the allocation in <br>bytes or 0 if it failed.<br>If size = 0, it will attempt to delete it returning > 0 on success and 0 on failer<br>Note that attempting to delete a allocation doesn't exist will fail. <br> also see [flags](#vmemmap-flags)
+There is currently one ABI availible to user apps "v0"<br>
+Documention for "v0" can be [found here](./v0_abi.md)
 
 
 #### open flags

@@ -129,13 +129,16 @@ int system_call_fremove(int fd)
 
 void system_call_undefined_handler()
 {
+    size_t esr_el1;
     size_t w8;
 
     asm volatile ( "mov %0, x8" : "=r"(w8));
+    asm volatile ( "mrs %0, esr_el1" : "=r"(esr_el1));
 
-    w8 &= 0xFFFFFFFF; // I cant load 32 bits dirrectly so load 64 and bitwise and it
+    esr_el1 &= 0xFFFF;      // Get just the svc argument
+    w8 &= 0xFFFFFFFF;       // I cant load 32 bits dirrectly so load 64 and bitwise and it
 
-    generic_user_exception("User attempted to call undefined system call %d!\n", w8);
+    generic_user_exception("User attempted to call undefined system call: SVC #0x%x, w8=%d!\n", esr_el1, w8);
 }
 
 size_t system_call_vmemmap(void* ptr, size_t size, int flags)
@@ -144,15 +147,17 @@ size_t system_call_vmemmap(void* ptr, size_t size, int flags)
         ptr, size, flags);
 }
 
+const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap};
+const void* const os_syscall_baisc_io[] = {printf_user_memory_only, putchar, uart_putc, uart_getc, uart_poll};
+const void* const os_syscall_file_io[] = {system_call_open, system_call_close, system_call_get_file_size, system_call_read, 
+    system_call_write, system_call_lseek, system_call_truncate, system_call_ftruncate, system_call_remove,   
+    system_call_fremove };
 
-void* const system_call_table[] = {system_call_set_abi_version, // ABI commands
-    system_call_exit,                                           // Proccess controll commands
-    printf_user_memory_only, putchar,                           // Print commands
-    system_call_uart_putc, uart_getc, uart_poll,                // UART commands
-    system_call_open, system_call_close,                        // File IO
-    system_call_get_file_size, system_call_read,                // More File IO
-    system_call_write, system_call_lseek, system_call_truncate, // Even more FILE IO
-    system_call_ftruncate, system_call_remove,                  // Yup File IO
-    system_call_fremove, system_call_undefined_handler,         // Ok, its done
-    system_call_vmemmap                                         //
-};
+const void* const os_syscall_tables_table[] = {os_syscall_program_managment, os_syscall_baisc_io, os_syscall_file_io};
+uint64_t const os_syscall_tables_sizes_table[] = {sizeof(os_syscall_program_managment), 
+    sizeof(os_syscall_baisc_io), sizeof(os_syscall_file_io)};
+const uint64_t size_of_os_syscall_tables_sizes_table = sizeof(os_syscall_tables_sizes_table);
+
+const void* const project_specfic_syscall_tables_table[] = {NULL};
+uint64_t* const project_specfic_syscall_tables_sizes_table[] = {NULL};
+const uint64_t size_of_project_specfic_syscall_tables_sizes_table = sizeof(project_specfic_syscall_tables_sizes_table);
