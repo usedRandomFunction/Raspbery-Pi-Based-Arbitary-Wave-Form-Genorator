@@ -1,114 +1,39 @@
 .section .text
 
+.macro syscall name, w8_value, svc_value
+.global \name
+\name:
+    mov w8, \w8_value
+    svc \svc_value
+    ret
+.endm
+
 // program management
-
-.global set_abi_version
-set_abi_version:
-    mov w8, 0
-    svc #0
-    ret
-
-.global exit
-exit:
-    mov w8, 1
-    svc #0
-
-.global vmemmap
-vmemmap:
-    mov w8, 2
-    svc #0
-    ret
+syscall set_abi_version, 0, #0
+syscall exit, 1, #0
+syscall vmemmap, 2, #0
 
 // basic IO
-
-.global printf
-printf:
-    mov w8, 0
-    svc #1
-    ret
-
-.global putchar
-putchar:
-    mov w8, 1
-    svc #1
-    ret
-
-.global uart_putc
-uart_putc:
-    mov w8, 2
-    svc #1
-    ret
-
-.global uart_getc
-uart_getc:
-    mov w8, 3
-    svc #1
-    ret
-
-.global uart_poll
-uart_poll:
-    mov w8, 4
-    svc #1
-    ret
+syscall printf, 0, #1
+syscall putchar, 1, #1
+syscall uart_putc, 2, #1
+syscall uart_getc, 3, #1
+syscall uart_poll, 4, #1
 
 // File IO
+syscall open, 0, #2
+syscall close, 1, #2
+syscall get_file_size, 2, #2
+syscall read, 3, #2
+syscall write, 4, #2
+syscall lseek, 5, #2
+syscall truncate, 6, #2
+syscall ftruncate, 7, #2
+syscall remove, 8, #2
+syscall fremove, 9, #2
 
-.global open
-open:
-    mov w8, 0
-    svc #2
-    ret
-
-.global close
-close:
-    mov w8, 1
-    svc #2
-    ret
-
-.global get_file_size
-get_file_size:
-    mov w8, 2
-    svc #2
-    ret
-
-.global read
-read:
-    mov w8, 3
-    svc #2
-    ret
-
-.global write
-write:
-    mov w8, 4
-    svc #2
-    ret
-
-.global lseek
-lseek:
-    mov w8, 5
-    svc #2
-    ret
-
-.global truncate
-truncate:
-    mov w8, 6
-    svc #2
-    ret
-
-.global ftruncate
-ftruncate:
-    mov w8, 7
-    svc #2
-    ret
-
-.global remove
-remove:
-    mov w8, 8
-    svc #2
-    ret
-
-.global fremove
-fremove:
-    mov w8, 9
-    svc #2
-    ret
+// Keypad
+syscall keypad_polling 0, #0xFF01
+syscall uart_keypad_emmulation 1, #0xFF01
+syscall capture_prg_exit 2, #0xFF01
+syscall get_keypad_state 3, #0xFF01

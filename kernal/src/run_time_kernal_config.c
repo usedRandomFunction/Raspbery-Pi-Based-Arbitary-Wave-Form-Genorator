@@ -8,6 +8,10 @@
 #include <stddef.h>
 
 char* main_interface_app_path = NULL;
+bool allow_physical_keypad;
+int physical_keypad_default_delay;
+bool allow_uart_keypad_emmulation;
+bool uart_keypad_emmulation_default_state;
 
 bool load_kernal_configuration()
 {
@@ -20,6 +24,10 @@ bool load_kernal_configuration()
 
     main_interface_app_path = get_string_from_config_file_entry_allocated(working_entry);
 
+    allow_physical_keypad = get_u64_from_config_file_entry_with_defult_by_name(&config, "ALLOW_PHYSICAL_KEYPAD", 1) > 0;
+    physical_keypad_default_delay = (int)get_u64_from_config_file_entry_with_defult_by_name(&config, "PHYSICAL_KEYPAD_DEFAULT_DELAY", 50);
+    allow_uart_keypad_emmulation = get_u64_from_config_file_entry_with_defult_by_name(&config, "ALLOW_UART_KEYPAD_EMMULATION", 0) > 0;
+    uart_keypad_emmulation_default_state = get_u64_from_config_file_entry_with_defult_by_name(&config, "UART_KEYPAD_EMMULATION_DEFAULT_STATE", 0) > 0;
 
 
     free_loaded_config_file(&config);

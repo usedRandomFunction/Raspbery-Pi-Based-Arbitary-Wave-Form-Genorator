@@ -6,7 +6,7 @@ Because of this svc #0x0 to svc #0xFF are reseverd for the os while #0xFF00 to #
 A syscall is made by setting w8 then calling svc
 
 note that only OS functions are included here not project specific syscalls <br>
-If any they should be [listed here](./project_specific_syscalls)
+If any they should be [listed here](./project_specific_syscalls.md)
 
 
 ## syscall tables vs SVC argument
@@ -17,7 +17,7 @@ If any they should be [listed here](./project_specific_syscalls)
 |----------|------|------------|--------|-------------|
 | 0 | set_abi_version | int version | int    | Sets the ABI to the given version as the name implies, reutrns -1 if failed <br> and zero on success
 | 1 | exit  | int status | N/A | Exits the current program and gives a status number
-| 2 | vmemmap | void* ptr, size_t size<br>int [flags](#vmemmap-flags) | size_t | Creates / deletes / modifys, virtual memory mappings. <br> It attempts to put the mapping at ptr in memory and will fail if it cant.<br>When a entry at ptr doesn't exist it will create on, if it exists it will modify <br>/ delete it. <br>If size > 0, it will create / modify, and will return the size of the allocation in <br>bytes or 0 if it failed.<br>If size = 0, it will attempt to delete it returning > 0 on success and 0 on failer<br>Note that attempting to delete a allocation doesn't exist will fail. <br> also [see flags](#vmemmap-flags)
+| 2 | vmemmap | void* ptr, size_t size<br>int [flags](#vmemmap-flags) | size_t | Creates / deletes / modifys, virtual memory mappings. <br> It attempts to put the mapping at ptr in memory and will fail if it cant.<br>When a entry at ptr doesn't exist it will create on, if it exists it will modify <br>/ delete it. <br>If size > 0, it will create / modify, and will return the size of the allocation in <br>bytes or 0 if it failed.<br>If size = 0, it will attempt to delete it returning > 0 on success and 0 on failer<br><br>Note that attempting to delete a allocation doesn't exist will fail. <br> also [see flags](#vmemmap-flags)
 
 #### vmemmap flags
 

@@ -2,6 +2,7 @@
 
 #include "io/memoryMappedIO.h"
 #include "lib/exceptions.h"
+#include "io/keypad.h"
 #include "io/printf.h"
 
 void enable_irq(int id)
@@ -53,9 +54,13 @@ void generic_irq_handler()
         }
     }
 
-    
-    // TODO handler
+    if (irq == 57)
+        keypad_uart_interupt_handler();
+    else
+    {
+        // TODO handler
 
-    printf("\n!============================!\nUnkown IRQ %d\n", irq);
-    kernel_panic();
+        printf("\n!============================!\nUnkown IRQ %d\n", irq);
+        kernel_panic();
+    }
 }

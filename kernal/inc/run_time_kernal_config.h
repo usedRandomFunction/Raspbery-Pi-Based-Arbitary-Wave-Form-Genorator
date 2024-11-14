@@ -4,6 +4,10 @@
 #include <stdbool.h>
 
 extern char* main_interface_app_path;
+extern bool allow_physical_keypad;
+extern int physical_keypad_default_delay;
+extern bool allow_uart_keypad_emmulation;
+extern bool uart_keypad_emmulation_default_state;
 
 // Loads infomation stored in system.cfg
 // @return True if success, False if failed

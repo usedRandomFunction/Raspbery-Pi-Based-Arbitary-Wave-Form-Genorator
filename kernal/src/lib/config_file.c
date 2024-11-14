@@ -105,7 +105,8 @@ bool load_config_file(config_file* header, const char* path)
                     value_start++;
                 }
                     
-
+                if (ptr + 1 == end)
+                    value_end = end;
             }
         }
         else if (value_end == NULL)                     // Detect end of a value

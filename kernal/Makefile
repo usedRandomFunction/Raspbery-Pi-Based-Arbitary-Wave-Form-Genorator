@@ -63,37 +63,37 @@ lines_of_code:
 
 run_halt:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial stdio -s -S 
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial stdio -s -S 
 
 run:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial stdio
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial stdio
 
 
 run_halt_serial_over_tcp:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial tcp::4444,server=on -s -S
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial tcp::4444,server=on -s -S
 
 run_serial_over_tcp:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial tcp::4444,server=on
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -display none -serial tcp::4444,server=on
 
 run_halt_display:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial stdio -s -S
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial stdio -s -S
 
 run_display:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial stdio
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial stdio
 
 
 run_halt_serial_over_tcp_display:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial tcp::4444,server=on -s -S
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial tcp::4444,server=on -s -S
 
 run_serial_over_tcp_display:
 	@echo !==== Running ====!
-	qemu-system-aarch64 -M raspi3b -device loader,file=bin/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial tcp::4444,server=on
+	qemu-system-aarch64 -M raspi3b -device loader,file=$(BINDIR)/kernel8.img,addr=0x00000,cpu-num=0 -drive file=$(BINDIR)/diskimage.img,if=sd,format=raw -serial tcp::4444,server=on
 
 
 run_bootloader:

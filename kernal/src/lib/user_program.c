@@ -5,6 +5,7 @@
 #include "lib/memory.h"
 #include "lib/string.h"
 #include "io/printf.h"
+#include "io/keypad.h"
 #include "lib/mmu.h"
 
 extern int system_call_exit_return_value;
@@ -26,8 +27,6 @@ static char* s_get_program_image_path(const config_file* config, const char* con
 
 void terminate_current_user_program()
 {
-    file_access_on_user_app_exit(); // To deal with any open files
-
     system_call_exit(INT32_MIN);
 }
 
@@ -264,6 +263,13 @@ int execute_user_program(user_program_info* program)
     
     s_active_user_program = NULL;
 
+    // Reset anything done by the user app
+
+    file_access_on_user_app_exit(); // To deal with any open files
+    uart_keypad_emmulation(-2);
+    capture_prg_exit(NULL);
+    keypad_polling(-2);
+
     return system_call_exit_return_value;
 }
 
@@ -338,4 +344,10 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
         return 0;
 
     return get_page_allocation_size(section.allocation);
+}
+
+void defult_prg_exit_handler()
+{
+    printf("\nPRG_EXIT interupt raised!\n");
+    terminate_current_user_program();
 }
