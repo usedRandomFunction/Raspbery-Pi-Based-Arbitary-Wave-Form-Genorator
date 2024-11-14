@@ -89,7 +89,7 @@ call `capture_prg_exit(NULL)`.
 
 In reallity the keypad state struct is just a `uint32_t`, however its bits have a meaning.<br>
 For each button on the [Physical keypad](#physical-keypad), a bit is mapped to the button, where `'1'` is on and<br>
-`'0'` if off. The offset of this bit is `column + row * 4`, with exception of PRG_EXIT, which <br>
+`'0'` if off. The offset of this bit is `column + row * 8`, with exception of PRG_EXIT, which <br>
 is not included. Any bits not given a definition by this standered should be set to `'0'`
 
 ## Note about button meanings
