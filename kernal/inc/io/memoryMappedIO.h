@@ -154,7 +154,6 @@ enum
     GPLEN0              = (GPIO_BASE + 0x70),
     GPLEN1              = (GPIO_BASE + 0x74),
 
-
     // GPIO Pin Async. Rising Edge Detect
     GPAREN0             = (GPIO_BASE + 0x7C),
     GPAREN1             = (GPIO_BASE + 0x80),
@@ -192,7 +191,17 @@ enum
     UART0_ITIP          = (UART0_BASE + 0x84),
     UART0_ITOP          = (UART0_BASE + 0x88),
     UART0_TDR           = (UART0_BASE + 0x8C),
- 
+    
+    // SPI0
+    SPI0_BASE           = (GPIO_BASE + 0x4000),
+
+    SPI0_CS             = (SPI0_BASE + 0x00),
+    SPI0_FIFO           = (SPI0_BASE + 0x04),
+    SPI0_CLK            = (SPI0_BASE + 0x08),
+    SPI0_DLEN           = (SPI0_BASE + 0x0C),
+    SPI0_LTOH           = (SPI0_BASE + 0x10),
+    SPI0_DC             = (SPI0_BASE + 0x14),
+
     // Mailbox Registers
     MBOX_BASE           = 0xB880,
     MBOX_READ           = (MBOX_BASE + 0x00),

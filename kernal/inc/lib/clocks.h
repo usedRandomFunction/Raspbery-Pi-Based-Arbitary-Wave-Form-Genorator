@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-// Gets messure the frequency of a given clock
+// Messures the frequency of a given clock
 // @param clock_id the clock id for the clock to get the rate
 // @return The frequency in hertz, or zero if failed
 uint32_t get_clock_rate_messured(uint32_t clock_id);
