@@ -8,11 +8,13 @@
 #include "io/pc_screen_font.h"
 #include "io/framebuffer.h"
 #include "io/file_access.h"
+#include "lib/interrupts.h"
 #include "io/filesystem.h"
 #include "lib/memory.h"
 #include "lib/random.h"
 #include "io/printf.h"
 #include "lib/mmu.h"
+#include "io/gpio.h"
 #include "io/uart.h"
 #include "io/sd.h"
 
@@ -76,6 +78,11 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         printf("Failed to initialize root file system!\n");
         kernel_panic();
     }
+
+    for (int i = 0; i < 64; i++)
+        disable_irq(i);
+
+    initialize_gpio_interupts();
     initialize_file_access();
     initialize_random(); 
 

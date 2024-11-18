@@ -1,5 +1,36 @@
 #include "io/gpio.h"
 
+#include "lib/interrupts.h"
+#include "lib/memory.h"
+#include "io/printf.h"
+
+
+static GPIO_INTERUPT_HANDLER s_interupt_hanlders[54];
+
+void initialize_gpio_interupts()
+{
+    memclr(s_interupt_hanlders, sizeof(s_interupt_hanlders));
+
+    // Clear all events and dissable all interupts
+
+    mmio_write(GPREN0, 0);
+    mmio_write(GPREN1, 0);
+    mmio_write(GPFEN0, 0);
+    mmio_write(GPFEN1, 0);
+    mmio_write(GPHEN0, 0);
+    mmio_write(GPHEN1, 0);
+    mmio_write(GPLEN0, 0);
+    mmio_write(GPLEN1, 0);
+    mmio_write(GPAREN0, 0);
+    mmio_write(GPAREN1, 0);
+    mmio_write(GPAFEN0, 0);
+    mmio_write(GPAFEN1, 0);
+    mmio_write(GPEDS0, 0xFFFFFFFF);
+    mmio_write(GPEDS1, 0xFFFFFFFF);
+
+    enable_irq(52);
+}
+
 void gpio_function_select(uint_fast8_t pin, uint_fast32_t function)
 {
     size_t registerAddress;
@@ -72,4 +103,93 @@ void gpio_function_select(uint_fast8_t pin, uint_fast32_t function)
     }
 
     mmio_write_offset_of_size(registerAddress, function, offset, 3);
+}
+
+void gpio_enable_pin_interupt(int pin, GPIO_INTERUPT_HANDLER handler,
+    bool rising_edge, bool falling_edge, bool high_level, bool low_level, bool async_rising, bool async_falling)
+{
+    if (pin < 0 || pin > 53)   // TODO maby a exception here
+        return;
+
+    gpio_function_select(pin, GPFSEL_Input);
+
+    int register_offset;
+    int bit_offset;
+
+    if (pin < 32)
+    {
+        register_offset = 0;
+        bit_offset = pin;
+    }
+    else
+    {
+        register_offset = 4;
+        bit_offset = pin - 32;
+    }
+
+    uint32_t enable_bit = 1 << bit_offset;
+    uint32_t dissable_mask = ~enable_bit;
+    s_interupt_hanlders[pin] = handler;
+
+    if (rising_edge)
+        mmio_write_bitwise_or(GPREN0 + register_offset, enable_bit);
+    else
+        mmio_write_bitwise_and(GPREN0 + register_offset, dissable_mask);
+
+    if (falling_edge)
+        mmio_write_bitwise_or(GPFEN0 + register_offset, enable_bit);
+    else
+        mmio_write_bitwise_and(GPFEN0 + register_offset, dissable_mask);
+
+    if (high_level)
+        mmio_write_bitwise_or(GPHEN0 + register_offset, enable_bit);
+    else
+        mmio_write_bitwise_and(GPHEN0 + register_offset, dissable_mask);
+
+    if (low_level)
+        mmio_write_bitwise_or(GPLEN0 + register_offset, enable_bit);
+    else
+        mmio_write_bitwise_and(GPLEN0 + register_offset, dissable_mask);
+
+    if (async_rising)
+        mmio_write_bitwise_or(GPAREN0 + register_offset, enable_bit);
+    else
+        mmio_write_bitwise_and(GPAREN0 + register_offset, dissable_mask);
+
+    if (async_falling)
+        mmio_write_bitwise_or(GPAFEN0 + register_offset, enable_bit);
+    else
+        mmio_write_bitwise_and(GPAFEN0 + register_offset, dissable_mask);
+}
+
+void gpio_disable_pin_interupt(int pin)
+{
+    gpio_enable_pin_interupt(pin, NULL, false, false, false, false, false, false);
+}
+
+void gpio_interupt_handler_function()
+{
+    disable_irq(52);
+
+    uint64_t status_registers = (uint64_t)mmio_read(GPEDS0) |  (((uint64_t)mmio_read(GPEDS1)) << 32);
+
+    for (int i = 0; i < 54; i++)
+    {
+        if ((status_registers & (1ULL << i)) == 0)
+            continue;
+
+        if (s_interupt_hanlders[i] == NULL)
+        {
+            printf("Error: Unkown GPIO interupt: %d\n", i);
+
+            continue;
+        }
+
+        s_interupt_hanlders[i](i);
+    }
+
+    mmio_write(GPEDS0, (uint32_t)status_registers);
+    mmio_write(GPEDS1, (uint32_t)(status_registers >> 32));
+
+    enable_irq(52);
 }

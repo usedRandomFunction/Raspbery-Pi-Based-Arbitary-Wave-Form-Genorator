@@ -4,6 +4,7 @@
 #include "lib/exceptions.h"
 #include "io/keypad.h"
 #include "io/printf.h"
+#include "io/gpio.h"
 
 void enable_irq(int id)
 {
@@ -31,9 +32,9 @@ void route_gpu_irqs(int core)
 
 // Used by vectors.s so not static even though its not in the header
 void generic_irq_handler()
-{
+{   
     uint32_t irq_source = mmio_read(CORE_0_IRQ_SOURCE); // TODO check if is core other then zero
-    int irq = 0;
+    int irq = -1;
 
     if (irq_source & (1 << 1))     // Handle physical timer
     {
@@ -41,21 +42,16 @@ void generic_irq_handler()
     }
     else                            // Handle GPU interupt
     {
-        uint64_t irq_raw = mmio_read(IRQ_PENDING_1) | ((uint64_t)mmio_read(IRQ_PENDING_2) << 32);
+        uint64_t irq_raw = mmio_read(IRQ_PENDING_1) | (((uint64_t)mmio_read(IRQ_PENDING_2)) << 32);
 
-        while (irq_raw) // Get first pending interupt and get its id
-        {
-            if (irq_raw & 0b1)
-                break;
-
-            irq++;
-
-            irq_raw >>= 1;
-        }
+        if (irq_raw)
+            irq = __builtin_ctzll(irq_raw);
     }
 
     if (irq == 57)
         keypad_uart_interupt_handler();
+    else if (irq == 52)
+        gpio_interupt_handler_function();
     else
     {
         // TODO handler
