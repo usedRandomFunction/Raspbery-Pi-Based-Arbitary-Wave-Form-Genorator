@@ -4,36 +4,27 @@
 #include "lib/timing.h"
 #include "io/printf.h"
 #include "io/keypad.h"
-#include "io/spi.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-
 int main()
 {
-    // keypad_init();
-
-    // keypad_state old_state = 0;
-
-    initialize_spi0(30 * 1000 * 1000);
-
-    uint8_t buffer[] = {0xAA, 0x00, 0x55, 0x00};
-
+    keypad_state old_state = 0xFFFFFFFF;
+    
     while (1)
     {
-        spi0_write(0, buffer, 4);
-        // keypad_state new_state = get_keypad_state();
+        keypad_state new_state = get_keypad_state();
 
-        // if ((new_state ^ old_state) == 0)
-        //     continue;
+        if ((new_state ^ old_state) == 0)
+            continue;
 
-        // printf("New keypad state: %x\n", new_state);
+        printf("New keypad state: %x\n", new_state);
 
-        // old_state = new_state;
+        old_state = new_state;
         // user_program_info program;
-        //  if (!load_user_program_from_disk(&program, main_interface_app_path))
+        // if (!load_user_program_from_disk(&program, main_interface_app_path))
         //     return -1;
 
 

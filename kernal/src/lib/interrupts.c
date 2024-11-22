@@ -6,6 +6,14 @@
 #include "io/printf.h"
 #include "io/gpio.h"
 
+void initialize_interupts()
+{
+    mmio_write(IRQ_DISABLE_1, 0xFFFFFFFF);      // Dissable all irqs
+    mmio_write(IRQ_DISABLE_2, 0xFFFFFFFF);
+    route_gpu_irqs(0);                          // Sets the core to handle gpu irqs
+    
+    mmio_write(CORE_0_TIMER_IRQ_CTRL, 0);       // Turn off the timer
+}
 void enable_irq(int id)
 {
     if (id <= 31)
@@ -43,15 +51,28 @@ void generic_irq_handler()
     else                            // Handle GPU interupt
     {
         uint64_t irq_raw = mmio_read(IRQ_PENDING_1) | (((uint64_t)mmio_read(IRQ_PENDING_2)) << 32);
-
+        
         if (irq_raw)
+        {
             irq = __builtin_ctzll(irq_raw);
+        }
     }
 
-    if (irq == 57)
+    if (irq == 30)
+        keypad_poll_from_timer();
+    else if (irq == 57)
         keypad_uart_interupt_handler();
     else if (irq == 52)
         gpio_interupt_handler_function();
+    else if (irq == -1)
+    {
+        printf("\n!============================!\n");
+        printf("\nError: unable to find irq number\n");
+        printf("CORE_0_IRQ_SOURCE: %x\n", irq_source);
+        printf("IRQ_PENDING_1: %x\n", mmio_read(IRQ_PENDING_1));
+        printf("IRQ_PENDING_1: %x\n\n", mmio_read(IRQ_PENDING_2));
+        printf("\n!============================!\n");
+    }
     else
     {
         // TODO handler

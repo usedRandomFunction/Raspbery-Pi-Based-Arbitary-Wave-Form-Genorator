@@ -12,6 +12,7 @@ bool allow_physical_keypad;
 int physical_keypad_default_delay;
 bool allow_uart_keypad_emmulation;
 bool uart_keypad_emmulation_default_state;
+bool is_running_in_qemu = false;
 
 bool load_kernal_configuration()
 {
@@ -28,7 +29,7 @@ bool load_kernal_configuration()
     physical_keypad_default_delay = (int)get_u64_from_config_file_entry_with_defult_by_name(&config, "PHYSICAL_KEYPAD_DEFAULT_DELAY", 50);
     allow_uart_keypad_emmulation = get_u64_from_config_file_entry_with_defult_by_name(&config, "ALLOW_UART_KEYPAD_EMMULATION", 0) > 0;
     uart_keypad_emmulation_default_state = get_u64_from_config_file_entry_with_defult_by_name(&config, "UART_KEYPAD_EMMULATION_DEFAULT_STATE", 0) > 0;
-
+    is_running_in_qemu = get_u64_from_config_file_entry_with_defult_by_name(&config, "IS_RUNNING_IN_QEMU", 0) != 0;
 
     free_loaded_config_file(&config);
     printf("Successfuly loaded kernal configuration\n");

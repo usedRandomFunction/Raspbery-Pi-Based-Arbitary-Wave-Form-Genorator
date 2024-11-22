@@ -2,7 +2,10 @@
 
 #include "run_time_kernal_config.h"
 #include "lib/interrupts.h"
+#include "lib/timing.h"
 #include "io/uart.h"
+#include "io/gpio.h"
+#include "io/spi.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -10,24 +13,73 @@
 static keypad_state s_uart_emmulation_forced_off;
 static keypad_state s_uart_emmulation_forced_on;
 static keypad_state s_uart_emmulation_standed;
+static keypad_state s_physical_keypad_state;
 static bool s_uart_emmulation_enabled;
-
-typedef void (*PRG_EXIT_HANDLER)(void);
+static int s_physical_keypad_delay;
 
 static PRG_EXIT_HANDLER prg_exit_handler = &defult_prg_exit_handler;
 
-void keypad_init()
+static void s_tigger_prg_exit_from_gpio(int pin);
+
+#define controll_data_latch_pin 5
+#define keypad_input_latch_pin 6
+
+#include "io/printf.h"
+
+void initialize_keypad()
 {
-    uart_keypad_emmulation(-2);
+    // uart_keypad_emmulation(-2); // UNDONE randomly started halting the hole fucking system
+
+    if (allow_physical_keypad)
+    {
+        gpio_function_select(13, GPFSEL_Input);
+        gpio_enable_pin_interupt(13, s_tigger_prg_exit_from_gpio,
+            true, false, false, false, false, false);
+        gpio_function_select(controll_data_latch_pin, GPFSEL_Output);   // Set controll pins as outputs
+        gpio_function_select(keypad_input_latch_pin, GPFSEL_Output);
+
+        gpio_clear(controll_data_latch_pin);                            // Zero them
+        gpio_set(keypad_input_latch_pin);                               // This one is active low so it gose high
+
+        initialize_spi0(30 * 1000 * 1000);
+
+        uint8_t keypad_init_spi_buffer[] = {0x02, 0x00};                // Start at row 0 (1 << (1 + row))
+
+        spi0_write(3, keypad_init_spi_buffer, 2);                       // Save these valeus into the shift registers
+        gpio_set(controll_data_latch_pin);
+        gpio_clear(controll_data_latch_pin);
+        s_physical_keypad_state = 0;
+    }
+
     keypad_polling(-2);
 }
 
 
 int keypad_polling(int delay_milliseconds)
 {
-    // TODO hardware keypad and GPIO interupt
+    if (allow_physical_keypad == false)
+        return 0;
 
-    return 0;
+    if (delay_milliseconds == -1)
+        return s_physical_keypad_delay / 1000;
+
+    if (delay_milliseconds == -2)
+        delay_milliseconds = physical_keypad_default_delay;
+    
+    if (delay_milliseconds <= 0 || is_running_in_qemu) // Since the emmulator does not understand the hw keypad, we cant work with it
+    {   
+        disable_irq(30);
+        dissable_timer_interrupt();
+
+        s_physical_keypad_delay = 0;
+    }
+    s_physical_keypad_delay = delay_milliseconds * 1000;
+
+    enable_irq(30);
+    enable_timer_interrupt();
+    set_timer_interrupt(s_physical_keypad_delay);
+
+    return delay_milliseconds;
 }
 
 int uart_keypad_emmulation(int state)
@@ -41,9 +93,9 @@ int uart_keypad_emmulation(int state)
     if (state == -2)
         state = uart_keypad_emmulation_default_state;
 
+
     if (state == 1)
     {
-        enable_irq(57);
         enable_uart_interupts();
         enable_uart_receive_interupt();
 
@@ -56,14 +108,13 @@ int uart_keypad_emmulation(int state)
 
     s_uart_emmulation_enabled = false;
 
-    disable_irq(57);
     disable_uart_interupts();
     disable_uart_receive_interupt();
 
     return 0;
 }
 
-void capture_prg_exit(void* handler)
+void capture_prg_exit(PRG_EXIT_HANDLER handler)
 {
     if (handler == NULL)
     {
@@ -72,12 +123,15 @@ void capture_prg_exit(void* handler)
         return;
     }
 
-    prg_exit_handler = (PRG_EXIT_HANDLER)handler;
+    prg_exit_handler = handler;
 }
 
 keypad_state get_keypad_state()
 {
     keypad_state state = 0;
+
+    if (s_physical_keypad_delay > 0)
+        state |= s_physical_keypad_state;
 
     if (s_uart_emmulation_enabled == false)
         return state;
@@ -230,6 +284,56 @@ void keypad_uart_interupt_handler()
 
     if (prg_exit_triggered)
         tigger_prg_exit();
+}
+
+void  keypad_poll()
+{
+    if (is_running_in_qemu)                         // Since the emmulator does not understand the hw keypad, we cant work with it
+        return;
+
+    uint8_t recive_buffer[] = {0x00, 0x00};
+    uint8_t send_buffer[] = {0x00, 0x00};
+
+    uint8_t row_data[] = {0x00, 0x00, 0x00, 0x00};
+
+    for (int row = 0; row < 4; row++)
+    {
+        const uint8_t new_target_row = row < 3 ? row + 1 : 0;
+        send_buffer[0] = 1 << (new_target_row + 1);             // Get the next row ready
+
+        gpio_clear(keypad_input_latch_pin);                     // Save the current state of the keypad
+        gpio_set(keypad_input_latch_pin);
+
+        spi0_write_read(3, send_buffer, recive_buffer, 2);      // Read current / set the next row.
+        gpio_set(controll_data_latch_pin);
+        gpio_clear(controll_data_latch_pin);
+
+        uint8_t keypad_data = 0xFE;
+
+        if (recive_buffer[0] & 0x80)                                // The SPI hardware is not 100% compatible and no
+            keypad_data = (recive_buffer[0] << 1) | 0x1;        // matter the pull resistor it will recive C0 not 80
+
+        row_data[row] = keypad_data;
+    }
+    s_physical_keypad_state =   ~((keypad_state)row_data[3] | 
+                                ((keypad_state) row_data[2] << 8) | 
+                                ((keypad_state)row_data[1] << 16) | 
+                                ((keypad_state)row_data[0] << 24));
+
+}
+
+void keypad_poll_from_timer()
+{
+    disable_irq(30);
+    keypad_poll();
+
+    set_timer_interrupt(s_physical_keypad_delay);
+    enable_irq(30);
+}
+
+void s_tigger_prg_exit_from_gpio(int pin)
+{
+    tigger_prg_exit();
 }
 
 void tigger_prg_exit()

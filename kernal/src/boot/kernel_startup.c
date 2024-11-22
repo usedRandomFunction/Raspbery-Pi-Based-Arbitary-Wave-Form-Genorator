@@ -13,6 +13,7 @@
 #include "lib/memory.h"
 #include "lib/random.h"
 #include "io/printf.h"
+#include "io/keypad.h"
 #include "lib/mmu.h"
 #include "io/gpio.h"
 #include "io/uart.h"
@@ -60,6 +61,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
     
 	s_prepare_memory_manager();
     s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
+    initialize_interupts();
 
     if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
     {
@@ -79,9 +81,6 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         kernel_panic();
     }
 
-    for (int i = 0; i < 64; i++)
-        disable_irq(i);
-
     initialize_gpio_interupts();
     initialize_file_access();
     initialize_random(); 
@@ -91,6 +90,8 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         printf("Failed to load kernal configuration!\n");
         kernel_panic();
     }
+    
+    initialize_keypad();
     
 	printf("Starting main function!\n");
 	int result = main();

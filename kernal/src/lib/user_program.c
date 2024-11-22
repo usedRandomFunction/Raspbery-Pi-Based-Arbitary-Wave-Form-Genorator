@@ -27,6 +27,9 @@ static char* s_get_program_image_path(const config_file* config, const char* con
 
 void terminate_current_user_program()
 {
+    if (!is_user_program_active())
+        return;
+
     system_call_exit(INT32_MIN);
 }
 

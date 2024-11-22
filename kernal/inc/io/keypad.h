@@ -3,12 +3,14 @@
 
 #include <stdint.h>
 
+typedef void (*PRG_EXIT_HANDLER)(void);
+
 typedef uint32_t keypad_state;
 
 // TODO hardware keypad and GPIO interupt
 
 // Initializes the keypad and keypad emmulation to defult values from system.cfg
-void keypad_init();
+void initialize_keypad();
 
 // Used to set / check if the physical keypad is enabled
 // @param delay_milliseconds When > 0 this is the delay between keypad frames, when = 0 it turns off the physical keypad when -1 just returns the current state and -2 just sets the value to defult from (system.cfg).
@@ -23,7 +25,7 @@ int uart_keypad_emmulation(int state);
 // Used to set the a handler function for "PRG_EXIT"
 // @param handler a pointer to a void (void) function to use as the handler
 // @note is handler is NULL this will switch to the defult handler (void defult_prg_exit_handler()))
-void capture_prg_exit(void* handler);
+void capture_prg_exit(PRG_EXIT_HANDLER handler);
 
 // Gets the current state of the keypad
 // @return The current state of the keypad as a keypad_state struct
@@ -33,9 +35,16 @@ keypad_state get_keypad_state();
 // @warning Is not included by defult
 void defult_prg_exit_handler();
 
+// Messures the current state of the physcial keypad
+void  keypad_poll();
+
 // Used by the keypad to handle UART interupt
-// @warning Is not to be called dirrectly and will halt exication untill it has recide all data
+// @warning Is not to be called dirrectly and will halt exication untill it has recived all data
 void keypad_uart_interupt_handler();
+
+// Messures the current state of the physcial keypad
+// @warning This is to be called by the timer interupt not user functions
+void  keypad_poll_from_timer();
 
 // Forces the PRG_EXIT interupt to run
 void tigger_prg_exit();
