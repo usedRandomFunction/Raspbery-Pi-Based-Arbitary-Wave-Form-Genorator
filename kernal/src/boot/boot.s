@@ -1,15 +1,18 @@
 .include "inc/boot/startUpDescriptorConstants.s"
 .section ".text.boot"
 
+.extern kernal_reload_check_if_requested
+.extern get_mmio_base_address
+.extern get_board_type
+.extern set_mmio_base
+
 .global _start
 
 _start:
-    // read cpu id, stop slave cores
-    mrs     x1, mpidr_el1
-    and     x1, x1, #0xff
-    // cpu id != 0, stop
-    cbnz    x1, halt
-    // cpu id == 0
+    mrs     x1,     mpidr_el1   // read cpu id, stop slave cores
+    and     x1,     x1, #0xff 
+    cbnz    x1,     halt        // cpu id != 0, stop
+    
 
 prepare_for_el_switch:
     ldr     x1, =(1 << 20) // allow el1 to use SIMD registers

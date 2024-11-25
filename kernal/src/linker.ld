@@ -4,8 +4,11 @@ SECTIONS
 {
     . = 0xFFFF000000000000;
 
-    .text.boot : {
+    .text.boot : {          /* These are stored here since after boot they are not need to se let the stack overwrite them*/
         KEEP(*(.text.boot))
+    }
+    .text.reloader : {
+        KEEP(*(.text.reloader))
     }
 
     . = ALIGN(4096);

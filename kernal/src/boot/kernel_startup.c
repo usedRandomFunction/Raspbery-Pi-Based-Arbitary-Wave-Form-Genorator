@@ -28,6 +28,12 @@ fat32_fs* root_file_system;
 
 static void s_initialize_virtual_address_translation();
 static void s_prepare_memory_manager();
+static void s_check_if_reload_required();
+
+
+// Used just after boot if prg_exit is depressed
+// should still be in el2 or 3
+void begin_kernal_reload();
 
 int main(); // The main system Function
  
@@ -58,6 +64,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
 	#endif
 
 	printf("Started system, board type: %s\n", get_board_name(boardType));
+    s_check_if_reload_required();
     
 	s_prepare_memory_manager();
     s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
@@ -105,6 +112,15 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         uart_getc();
         printf("System halted please restart!\n");
     }
+}
+
+static void s_check_if_reload_required()
+{
+    gpio_function_select(13, GPFSEL_Input);
+
+    if (gpio_level(13))             // Reload only if PRG_EXIT is active
+        begin_kernal_reload();
+
 }
 
 static void s_prepare_memory_manager()

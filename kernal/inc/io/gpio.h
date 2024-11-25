@@ -47,7 +47,7 @@ void gpio_interupt_handler_function();
 #pragma GCC diagnostic ignored "-Wshift-count-negative"
 #define gpio_clear(pin) if (pin < 32) { mmio_write(GPCLR0, 1 << pin); } else { mmio_write(GPCLR1, 1 << (pin - 32)); }
 #pragma GCC diagnostic ignored "-Wshift-count-negative"
-#define gpio_level(pin) (pin < 32 ? mmio_read(GPLEV0, 1 << pin) : mmio_read(GPLEV1, 1 << (pin - 32)))
+#define gpio_level(pin) (pin < 32 ? (mmio_read(GPLEV0) & (1 << pin)) : (mmio_read(GPLEV1) & (1 << (pin - 32))))
 #pragma GCC diagnostic ignored "-Wshift-count-negative"
 #define gpio_write(pin, value) if (value) { gpio_set(pin); } else { gpio_clear(pin); }
 

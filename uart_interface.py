@@ -2,6 +2,7 @@ from curses import wrapper
 import curses.ascii
 import curses
 import socket
+import time
 import serial
 import select
 import os
@@ -18,56 +19,91 @@ connection = None
 running = True
 stdscr = None
 
-full_name = "AWG uart interface V 0.1"
+full_name = "AWG uart interface V 0.2"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
 uart_output_log_scroll_x = 0
 
+uart_input_hiddle_bytes_counter = -1 # Used while sending files as to not just delete the entrie log
 uart_input_max_lines = 0
 uart_input_log = []
 
 class awg_connection:
     def __init__(self, conn_type, address, port=None, baudrate=None):
         if conn_type == "tcp":
-            self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.conn.connect((address, port))
-            self.conn.setblocking(False)
+            self.conenction = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.conenction.connect((address, port))
+            self.conenction.setblocking(False)
             self.target_string = f"{address}:{port}"
             self.connection_type = 0
         elif conn_type == "serial":
             self.target_string = f"{address} @{baudrate}"
-            self.conn = serial.Serial(address, baudrate)
+            self.conenction = serial.Serial(address, baudrate)
             self.connection_type = 1
+        elif conn_type == 'stt':    # Serial over Tcp Tacked
+            self.conenction = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.conenction.connect((address, 4242))
+            self.conenction.setblocking(False)
+            self.tracking_conenction = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.tracking_conenction.connect((address, 4243))
+            self.tracking_conenction.setblocking(False)
+            self.target_string = f"{address} (STT)"
+            self.connection_type = 2
         elif conn_type ==  "test":
             self.target_string = "Testing mode, no connection"
-            self.connection_type = 2
+            self.connection_type = 3
         else:
-            raise ValueError("Connection type must be 'tcp', 'serial' or 'test'")
+            raise ValueError("Connection type must be 'tcp', 'serial', 'stt' or 'test'")
 
     def write(self, data):
         if self.connection_type == 1:
-            self.conn.write(data)
+            self.conenction.write(data)
         elif self.connection_type == 0:
-            self.conn.sendall(data)
+            self.conenction.sendall(data)
+        elif self.connection_type == 2:
+            self.stt_wait_for_tx_threshold_clear()
+            self.conenction.sendall(data)
+            time.sleep(0.05)            # Wait for 50 ms to wait for any status responce
+            self.stt_wait_for_tx_threshold_clear()
 
     def read(self, size=1024):
         if self.connection_type == 1:
-            return self.conn.read(size).decode()
-        elif self.connection_type == 0:
+            return self.conenction.read(size).decode()
+        elif self.connection_type == 0 or 2:
             try:
-                return self.conn.recv(size).decode()
+                return self.conenction.recv(size).decode()
             except BlockingIOError:
                 return None
 
     def available(self):
         if self.connection_type == 1:
-            return self.conn.in_waiting != 0
-        elif self.connection_type == 0:
-            return bool(select.select([self.conn], [], [], 0.01))
+            return self.conenction.in_waiting != 0
+        elif self.connection_type == 0 or self.connection_type == 2:
+            return bool(select.select([self.conenction], [], [], 0.01))
 
     def close(self):
-        self.conn.close()
+        self.conenction.close()
+
+        if self.connection_type == 2:
+            self.tracking_conenction.close()
+
+    def stt_wait_for_tx_threshold_clear(self):
+        if self.connection_type != 2:
+            return
+
+        status_value = b'\00'
+
+        try:
+            status_value = self.tracking_conenction.recv(1)
+        except BlockingIOError:
+            return
+
+        while status_value != b'\00':
+            try:
+                status_value = self.tracking_conenction.recv(1)
+            except BlockingIOError:
+                pass
 
 def horizontaly_center_text(window: curses.window, y: int, text, attribute = curses.A_NORMAL):
     _, width = window.getmaxyx()
@@ -157,25 +193,61 @@ def split_byte_array(byte_array, chunk_size):
     return [byte_array[i:i + chunk_size] for i in range(0, len(byte_array), chunk_size)]
 
 def uart_send_wrapper(data):
+    global uart_input_hiddle_bytes_counter
     global uart_input_log
 
     connection.write(data)
     
-    # we split into ten bytes each as ten fit on a line
-    split_data = split_byte_array(data, 10)
+    if uart_input_hiddle_bytes_counter == -1:
+        # we split into ten bytes each as ten fit on a line
+        split_data = split_byte_array(data, 10)
 
-    new_lines = []
+        new_lines = []
 
-    for section in split_data:
-        line = section.hex(' ').upper()
-        new_lines.append(line)
+        for section in split_data:
+            line = section.hex(' ').upper()
+            new_lines.append(line)
 
-    uart_input_log += reversed(new_lines)
-    uart_input_log.append("")
-    remove_last_uart_log_entry_if_required()
+        uart_input_log += reversed(new_lines)
+        uart_input_log.append("")
+        remove_last_uart_log_entry_if_required()
+        
+
+        draw_uart_input_window()
+    else:
+        uart_input_hiddle_bytes_counter = uart_input_hiddle_bytes_counter + len(data)
+
+def uart_stop_tracking_input(): # Used while sending files as to not just delete the entrie log
+    global uart_input_hiddle_bytes_counter
+
+    uart_input_hiddle_bytes_counter = 0
+
+def uart_restart_tracking_input():
+    global uart_input_hiddle_bytes_counter
+    global uart_input_log
+
+    line = ""
     
+    if uart_input_hiddle_bytes_counter > 999 * 1024:
+        line = f"    < {(uart_input_hiddle_bytes_counter // 1024):05f} KiB unshown >    "
+    elif uart_input_hiddle_bytes_counter > 99999 * 1024:
+        line = "    < 99999+ KiB unshown >   "
+    else:
+        number_string = f"{(uart_input_hiddle_bytes_counter / 1024):.1f}"
 
+        while len(number_string) < 5:
+            number_string = f" {number_string}"
+
+        line = f"    < {number_string} KiB unshown >    "
+
+    uart_input_log += [line]
+    uart_input_log.append("")
+
+    remove_last_uart_log_entry_if_required()
+        
     draw_uart_input_window()
+    
+    uart_input_hiddle_bytes_counter = -1
 
 def draw_uart_input_window():
     uart_input_log_window.clear()
@@ -220,12 +292,20 @@ def redraw_subwindows():
     draw_uart_input_window()
     draw_keypad_window
 
-def create_new_popup_window(height, width):
+def create_new_popup_window(height, width) -> curses.window:
     # basicly they all follow the same rule for where they go so this function exists
     y = (terminal_height - height) // 4
     x = (terminal_width - width) // 2
 
     return curses.newwin(height, width, y, x)
+
+def create_centered_window(height, width, parent: curses.window, height_offest = 0, width_offset = 0):
+    parent_start_y, parent_start_x = parent.getbegyx()
+    parent_height, parent_width = parent.getmaxyx()
+    y = (parent_height - height) // 2
+    x = (parent_width - width) // 2
+    
+    return parent.subwin(height, width, y + height_offest + parent_start_y, x + width_offset + parent_start_x)
 
 def connect_to(conn_type, address = "", port=None, baudrate=None):
     global connection
@@ -341,13 +421,22 @@ Currently thre are five commands:
 - clear (:clear) clears the screen
 
 """[1:], """
-- send key (:key) use to send a 
+- send key (:key) used to send a 
   keypress, with any state. Give 
   the state followed by the buttons.
   i.e :key forced_on a, b, c, d
   the buttons are the same as normal
   and the states are: off, on, 
   force_off, and forced_on.
+
+- kernal reload (:kernal_reload / 
+  :kreload) used to reload the 
+  kernal. First hold PRG_EXIT while
+  power cycling the system wait for
+  uart mesage about reloading. Run
+  this command with the file path
+  to the image file as the agument.
+  (relitve paths are allowed)
 """[1:]]
 
 def draw_help_page(page_number, window):
@@ -401,7 +490,7 @@ def handle_console_input(key):
     global console_text_input
     global console_error_text
 
-    allowed_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 0123456789,.-:+_")
+    allowed_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 0123456789,.-:+_/")
 
     if 0 <= key <= 255 and chr(key) in allowed_chars: ## TODO enter, esc, backspace
         if len(console_text_input) >= terminal_width - 20:
@@ -458,6 +547,45 @@ def command_key(argument):
     
     sned_key_press_uart_message_from_string(command_split[1], state)
 
+def command_kenral_reload(filepath):
+    size = os.path.getsize(filepath)
+    bytes_read = 0
+
+    uart_send_wrapper(size.to_bytes(4, 'big'))
+    uart_stop_tracking_input()
+
+    window_width = terminal_width // 3 * 2
+    progress_bar_window = create_new_popup_window(9, window_width)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    horizontaly_center_text(progress_bar_window, 0, " Uploading file ")
+    progress_bar_window.addnstr(1, 2, f"Uploading {os.path.basename(filepath)} ({(size // 1024)} KiB)", window_width - 4)
+    progress_bar_window.refresh()
+
+    progress_bar = create_centered_window(3, window_width - 4, progress_bar_window, 1)
+    progress_bar.border()
+    progress_bar.refresh()
+
+    max_bar_size = window_width - 6
+    bytes_sent_per_ch = max_bar_size / size
+    current_bar_size = 0
+
+    with open(filepath, "rb") as file:
+        while bytes_read < size:
+            uart_send_wrapper(file.read(1024))
+            bytes_read = bytes_read + 1024
+
+            new_bar_size = int(bytes_read * bytes_sent_per_ch)
+
+            
+
+            if current_bar_size < new_bar_size:
+                progress_bar.addstr(1, current_bar_size + 1, "█" * (new_bar_size - current_bar_size))
+                progress_bar.refresh()
+                current_bar_size = new_bar_size
+
+    uart_restart_tracking_input()
+    redraw_subwindows()
+
 def handle_console_command():
     global console_error_text
 
@@ -476,7 +604,8 @@ def handle_console_command():
             command_clear()
         elif command == "key":
             command_key(argument)
-
+        elif command in ["kreload", "kernal_reload"]:
+            command_kenral_reload(argument)
         else:
             console_error_text = f"Unkown command \"{command}\""
     except Exception as e:
@@ -580,8 +709,9 @@ def main(_stdscr: curses.window):
     stdscr.nodelay(1)
     create_windows()
 
-    connect_to("tcp", "localhost", 4444)
-    # connect_to("test")
+    # connect_to("tcp", "localhost", 4444)
+    
+    connect_to("test")
 
     while running:
         input = stdscr.getch()
