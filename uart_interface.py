@@ -1,5 +1,7 @@
 from curses import wrapper
 import curses.ascii
+import textwrap
+import argparse
 import curses
 import socket
 import time
@@ -16,10 +18,11 @@ console_window = None
 terminal_height = 0
 terminal_width = 0
 connection = None
+arguments = None
 running = True
 stdscr = None
 
-full_name = "AWG uart interface V 0.2"
+full_name = "AWG uart interface V 0.3"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -107,6 +110,10 @@ class awg_connection:
 
 def horizontaly_center_text(window: curses.window, y: int, text, attribute = curses.A_NORMAL):
     _, width = window.getmaxyx()
+
+    if len(text) > (width - 4):
+        window.addnstr(y, 2, text, width - 4)
+        return
 
     x = (width - len(text)) // 2
 
@@ -292,14 +299,14 @@ def redraw_subwindows():
     draw_uart_input_window()
     draw_keypad_window
 
-def create_new_popup_window(height, width) -> curses.window:
+def create_new_popup_window(height, width, height_offest = 0, width_offset = 0) -> curses.window:
     # basicly they all follow the same rule for where they go so this function exists
     y = (terminal_height - height) // 4
     x = (terminal_width - width) // 2
 
-    return curses.newwin(height, width, y, x)
+    return curses.newwin(height, width, y + height_offest, x + width_offset)
 
-def create_centered_window(height, width, parent: curses.window, height_offest = 0, width_offset = 0):
+def create_centered_window(height, width, parent: curses.window, height_offest = 0, width_offset = 0) -> curses.window:
     parent_start_y, parent_start_x = parent.getbegyx()
     parent_height, parent_width = parent.getmaxyx()
     y = (parent_height - height) // 2
@@ -307,44 +314,46 @@ def create_centered_window(height, width, parent: curses.window, height_offest =
     
     return parent.subwin(height, width, y + height_offest + parent_start_y, x + width_offset + parent_start_x)
 
-def connect_to(conn_type, address = "", port=None, baudrate=None):
+def connect_to(conn_type, args):
     global connection
 
     info_window = create_new_popup_window(10, 40)
     info_window.border("|", "|", "=", "=", "+", "+", "+", "+")
     horizontaly_center_text(info_window, 0, " Connecting ")
     horizontaly_center_text(info_window, 2, conn_type)
-    horizontaly_center_text(info_window, 3, address)
 
-    try:
-        if conn_type == "tcp":
-            horizontaly_center_text(info_window, 4, str(port))
-            info_window.refresh()
+    if len(args) > 0:
+        horizontaly_center_text(info_window, 3, args[0])
+    
+    number_of_arguments = 0
 
-            connection = awg_connection(conn_type, address, port=port)
-        elif conn_type == "serial":
-            horizontaly_center_text(info_window, 5, str(baudrate))
-            info_window.refresh()
+    if conn_type == "tcp":
+        number_of_arguments = 2
+    elif conn_type == "serial":
+        number_of_arguments = 2
+    elif conn_type == "stt":
+        number_of_arguments = 1
+    elif conn_type == "test":
+        number_of_arguments = 0
+    else:
+        raise ValueError("Connection type must be 'tcp', 'serial', 'stt', or 'test'")
 
-            connection = awg_connection(conn_type, address, baudrate=baudrate)
-        elif conn_type == "test":
-            connection = awg_connection(conn_type, None)
-        else:
-            raise ValueError("Connection type must be 'tcp', 'serial', or 'test'")
-    except Exception as e:
-        horizontaly_center_text(info_window, 6, "Error")
-        horizontaly_center_text(info_window, 7, str(e))
+    if len(args) != number_of_arguments:
+        raise ValueError(f"{number_of_arguments} arguments expected for {conn_type}, got {len(args)}.")
+
+    if conn_type == "tcp":
+        horizontaly_center_text(info_window, 4, args[1])
         info_window.refresh()
-
-        console_window.clear()
-        console_window.addstr(0, 1, "q", curses.A_REVERSE)
-        console_window.addstr(0, 2, " to exit")
-        console_window.refresh()
-
-        while stdscr.getch() != ord('q'):
-            x = 0                   # We do nothing in a loop since this is a wait loop
-        
-        exit(-1)
+        connection = awg_connection(conn_type, args[0], port=int(args[1]))
+    elif conn_type == "serial":
+        horizontaly_center_text(info_window, 4, args[1])
+        info_window.refresh()
+        connection = awg_connection(conn_type, args[0], baudrate=args[1])
+    elif conn_type == "stt":
+        info_window.refresh()
+        connection = awg_connection(conn_type, args[0])
+    elif conn_type == "test":
+        connection = awg_connection(conn_type, None)
 
     draw_console_window()
     redraw_subwindows()
@@ -416,10 +425,11 @@ not the AWG.
 
 Currently thre are five commands:
 
+- help (:help / :h) shows this page
+
 - quit (:quit / :q) cloess the app
 
 - clear (:clear) clears the screen
-
 """[1:], """
 - send key (:key) used to send a 
   keypress, with any state. Give 
@@ -606,6 +616,8 @@ def handle_console_command():
             command_key(argument)
         elif command in ["kreload", "kernal_reload"]:
             command_kenral_reload(argument)
+        elif command in ["h", "help"]:
+            show_help_window()
         else:
             console_error_text = f"Unkown command \"{command}\""
     except Exception as e:
@@ -695,11 +707,40 @@ def get_button_code_from_string(button):
     
     return 0
 
+def show_excption_window(e: Exception, height_offest = 0, width_offset = 0):
+    console_window.clear()
+    console_window.addstr(0, 1, "q", curses.A_REVERSE)
+    console_window.addstr(0, 2, " to exit")
+    console_window.refresh()
+
+    exception_name = type(e).__name__
+    error_message = str(e)
+    window_width = max(min(max(len(error_message), len(exception_name)) + 4, terminal_width // 3 * 2), 28)
+    lines = textwrap.wrap(error_message, window_width - 4)
+    window_height = len(lines) + 5
+
+    window = create_new_popup_window(window_height, window_width, height_offest, width_offset)
+    window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    horizontaly_center_text(window, 0, " An excpetion has occured ")
+    horizontaly_center_text(window, 2, f"{exception_name}:")
+
+    for i, line in enumerate(lines):
+        window.addstr(3 + i, 2, line)
+
+    window.refresh()
+
+
+
+    while stdscr.getch() != ord('q'):
+        x = 0                   # We do nothing in a loop since this is a wait loop
+        
+    exit(-1)
+
 def main(_stdscr: curses.window):
     global uart_output_log_scroll_y, uart_output_log_scroll_x
     global stdscr
-
     stdscr = _stdscr
+
     curses.start_color()
     curses.use_default_colors()
 
@@ -709,9 +750,11 @@ def main(_stdscr: curses.window):
     stdscr.nodelay(1)
     create_windows()
 
-    # connect_to("tcp", "localhost", 4444)
-    
-    connect_to("test")
+    try:
+        connection_argument = arguments.connection_type.split(':')
+        connect_to(connection_argument[0], connection_argument[1:])
+    except Exception as e:
+        show_excption_window(e, 4)
 
     while running:
         input = stdscr.getch()
@@ -740,6 +783,18 @@ def main(_stdscr: curses.window):
 
     connection.close()
 
-os.environ.setdefault('ESCDELAY', '25')
+def entry():
+    global arguments
+    argument_parser = argparse.ArgumentParser()
+    argument_parser.add_argument("connection_type", 
+        help="Sates the type of connection to be used [tcp/serial/stt/test]. For tcp use tcp:Address:Port, For serial use serial:Address:Baudrate, For stt use stt:Address. test turns off the conneciton",
+        metavar="connection type", 
+        type=str)
 
-wrapper(main)
+    arguments = argument_parser.parse_args()
+
+    os.environ.setdefault('ESCDELAY', '25')
+    wrapper(main)
+
+if __name__ == "__main__":
+    entry()
