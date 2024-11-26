@@ -112,4 +112,9 @@ void disable_uart_receive_interupt()
 		0b1 << 5);							// Enable UART_RXINTR
 }
 
+void clear_pending_uart_interupts()
+{
+	mmio_write(UART0_ICR, (1 << 11) - 1);	// Clear all interupts (Write 1 for bits 0 to 10 documentation says 0 for all others)
+}
+
 #endif

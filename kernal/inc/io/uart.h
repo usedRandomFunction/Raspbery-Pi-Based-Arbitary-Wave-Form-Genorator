@@ -50,6 +50,10 @@ void enable_uart_interupts();
 // Disables IRQ 57
 void disable_uart_interupts();
 
+// Clears all pending uart interupts
+// should be called before enabling a interupt
+void clear_pending_uart_interupts();
+
 // // Writes an unsigned integer to the UART
 // // @param integer The number to put in the UART
 // void uart_putui(unsigned int integer);

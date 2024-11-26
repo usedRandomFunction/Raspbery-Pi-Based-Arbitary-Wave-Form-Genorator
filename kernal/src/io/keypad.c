@@ -28,7 +28,7 @@ static void s_tigger_prg_exit_from_gpio(int pin);
 
 void initialize_keypad()
 {
-    // uart_keypad_emmulation(-2); // UNDONE randomly started halting the hole fucking system
+    uart_keypad_emmulation(-2);
 
     if (allow_physical_keypad)
     {
@@ -96,6 +96,7 @@ int uart_keypad_emmulation(int state)
 
     if (state == 1)
     {
+        clear_pending_uart_interupts();
         enable_uart_interupts();
         enable_uart_receive_interupt();
 
