@@ -12,6 +12,7 @@ import os
 uart_output_log_window = None
 uart_input_log_window = None
 keypad_details_window = None
+console_scroll_position_x = 0
 console_text_input = ""
 console_error_text = ""
 console_window = None
@@ -22,7 +23,7 @@ arguments = None
 running = True
 stdscr = None
 
-full_name = "AWG uart interface V 0.3"
+full_name = "AWG uart interface V 0.4"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -151,6 +152,22 @@ def create_windows():
     console_window = curses.newwin(1, terminal_width, terminal_height - 1, 0)
     draw_console_window()
     
+def uart_output_window_handle_input(input):
+    global uart_output_log_scroll_y, uart_output_log_scroll_x
+
+    if input == curses.KEY_UP:
+        uart_output_log_scroll_y = max(uart_output_log_scroll_y - 1, 0)
+        draw_uart_output_window()
+    elif input == curses.KEY_DOWN:
+        uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, len(uart_output_log) - 5)
+        draw_uart_output_window()
+    elif input == curses.KEY_LEFT:
+        uart_output_log_scroll_x = max(uart_output_log_scroll_x - 1, 0)
+        draw_uart_output_window()
+    elif input == curses.KEY_RIGHT:
+        uart_output_log_scroll_x = uart_output_log_scroll_x + 1
+        draw_uart_output_window()
+
 def draw_uart_output_window():
     uart_output_log_window.clear()
     uart_output_log_window.border("|", "|", "=", "=", "+", "+", "+", "+")
@@ -378,21 +395,25 @@ def draw_console_window():
     console_window.clear()
 
     if console_error_text != "":
-        console_window.addstr(0, 1, console_error_text, curses.color_pair(1))
-        
+        console_window.addnstr(0, 1, console_error_text, terminal_width - 2, curses.color_pair(1))
         console_window.refresh()
 
         return
 
 
     if console_text_input != "":
-        console_window.addstr(0, 1, console_text_input)
-        if len(console_text_input) < terminal_width - 2:
-            console_window.addch(0, 1 + len (console_text_input), '█', curses.A_BLINK)
+        curses.curs_set(1)
+        offset = 0
+
+        if console_scroll_position_x > terminal_width - 20:
+            offset = (console_scroll_position_x - terminal_width + 20) // 20 * 20 + 1
+
+        console_window.addnstr(0, 1, console_text_input[offset:], terminal_width - 2)
+        console_window.move(0, 1 + console_scroll_position_x - offset)
 
         console_window.refresh()
         return
-
+    
     console_window.addstr(0, 1, "^H", curses.A_REVERSE)
     console_window.addstr(0, 3, " for help")
 
@@ -402,7 +423,7 @@ def draw_console_window():
         if len(target_indicator) < (terminal_width - 13):
             console_window.addstr(0, terminal_width - len(target_indicator) - 1, target_indicator)
 
-
+    curses.curs_set(0)
     console_window.refresh()
 
 help_window_pages = ["""
@@ -497,21 +518,23 @@ def show_help_window():
     draw_console_window()
 
 def handle_console_input(key):
+    global console_scroll_position_x
     global console_text_input
     global console_error_text
 
     allowed_chars = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 0123456789,.-:+_/")
 
-    if 0 <= key <= 255 and chr(key) in allowed_chars: ## TODO enter, esc, backspace
-        if len(console_text_input) >= terminal_width - 20:
-            return                     ## So you dont write of the side of the screeen
-        console_text_input = console_text_input + chr(key)
+    if 0 <= key <= 255 and chr(key) in allowed_chars:
+        console_text_input = console_text_input[:console_scroll_position_x] + chr(key) + console_text_input[console_scroll_position_x:]
+        console_scroll_position_x = console_scroll_position_x + 1
 
         console_error_text = ""
     else:
-        if key == curses.KEY_BACKSPACE and len(console_text_input) > 0:
-            console_text_input = console_text_input[:-1]
+        if key == curses.KEY_BACKSPACE and console_scroll_position_x > 0:
+            console_scroll_position_x = console_scroll_position_x - 1
+            console_text_input = console_text_input[:console_scroll_position_x] + console_text_input[console_scroll_position_x + 1:]
         elif key == curses.ascii.ESC and stdscr.getch() == -1: # Escape key (this is a weird one)
+            console_scroll_position_x = 0
             console_text_input = ""
             console_error_text = ""
             draw_console_window()
@@ -522,11 +545,23 @@ def handle_console_input(key):
                     handle_console_command()
                 else:
                     console_error_text = send_key_presses_from_string(console_text_input)
+            console_scroll_position_x = 0
             console_text_input = ""
         else:
+            handle_console_scroling(key)
             return
 
     draw_console_window()
+
+def handle_console_scroling(input):
+    global console_scroll_position_x
+
+    if input == curses.KEY_LEFT:
+        console_scroll_position_x = max(console_scroll_position_x - 1, 0)
+        draw_console_window()
+    elif input == curses.KEY_RIGHT:
+        console_scroll_position_x = min(console_scroll_position_x + 1, len(console_text_input))
+        draw_console_window()
 
 def command_clear():
     global uart_output_log_scroll_y, uart_output_log_scroll_x
@@ -737,7 +772,6 @@ def show_excption_window(e: Exception, height_offest = 0, width_offset = 0):
     exit(-1)
 
 def main(_stdscr: curses.window):
-    global uart_output_log_scroll_y, uart_output_log_scroll_x
     global stdscr
     stdscr = _stdscr
 
@@ -758,22 +792,15 @@ def main(_stdscr: curses.window):
 
     while running:
         input = stdscr.getch()
+
         if connection.available():
             handle_uart_input()
 
-        if input == curses.KEY_UP:
-            uart_output_log_scroll_y = max(uart_output_log_scroll_y - 1, 0)
-            draw_uart_output_window()
-        elif input == curses.KEY_DOWN:
-            uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, len(uart_output_log) - 5)
-            draw_uart_output_window()
-        elif input == curses.KEY_LEFT:
-            uart_output_log_scroll_x = max(uart_output_log_scroll_x - 1, 0)
-            draw_uart_output_window()
-        elif input == curses.KEY_RIGHT:
-            uart_output_log_scroll_x = uart_output_log_scroll_x + 1
-            draw_uart_output_window()
-        elif input == curses.KEY_RESIZE:
+        if console_text_input == "":                # if th console is being used we dont try to scroll the output window
+            uart_output_window_handle_input(input)
+
+        
+        if input == curses.KEY_RESIZE:
             create_windows()
         elif input == 8: # Controll + h, (the function didn't work)
             show_help_window()
