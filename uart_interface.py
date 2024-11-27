@@ -4,17 +4,20 @@ import textwrap
 import argparse
 import curses
 import socket
-import time
 import serial
 import select
+import time
+import json
 import os
 
 uart_output_log_window = None
 uart_input_log_window = None
 keypad_details_window = None
+console_scroll_position_y = 0
 console_scroll_position_x = 0
 console_text_input = ""
 console_error_text = ""
+config_file_path = ""
 console_window = None
 terminal_height = 0
 terminal_width = 0
@@ -22,8 +25,9 @@ connection = None
 arguments = None
 running = True
 stdscr = None
+config = None
 
-full_name = "AWG uart interface V 0.4"
+full_name = "AWG uart interface V 0.5"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -553,8 +557,25 @@ def handle_console_input(key):
 
     draw_console_window()
 
-def handle_console_scroling(input):
+def console_set_text_to_history(possition):
     global console_scroll_position_x
+    global console_text_input
+
+    if possition < 0:
+        return
+
+    new_text = config["command_history"][possition]
+    console_scroll_position_x = len(new_text) + 1
+    console_text_input = ":" + new_text
+
+
+    draw_console_window()
+
+
+def handle_console_scroling(input):
+    global console_scroll_position_y
+    global console_scroll_position_x
+    global console_text_input
 
     if input == curses.KEY_LEFT:
         console_scroll_position_x = max(console_scroll_position_x - 1, 0)
@@ -562,6 +583,26 @@ def handle_console_scroling(input):
     elif input == curses.KEY_RIGHT:
         console_scroll_position_x = min(console_scroll_position_x + 1, len(console_text_input))
         draw_console_window()
+    elif input == curses.KEY_UP:
+        console_scroll_position_y = min(console_scroll_position_y + 1, len(config["command_history"]))
+        console_set_text_to_history(console_scroll_position_y - 1)
+    elif input == curses.KEY_DOWN:
+        new_y = max(console_scroll_position_x - 1, 0)
+
+        if new_y == console_scroll_position_y:
+            return
+        
+        if new_y > 0:
+            console_set_text_to_history(console_scroll_position_y - 1)
+        else:
+            console_scroll_position_x = 0
+            console_text_input = ""
+            draw_console_window()
+
+        console_scroll_position_y = new_y
+
+         
+
 
 def command_clear():
     global uart_output_log_scroll_y, uart_output_log_scroll_x
@@ -590,7 +631,7 @@ def command_key(argument):
     else:
         raise ValueError(f"Unkown state: {state_stirng}")
     
-    sned_key_press_uart_message_from_string(command_split[1], state)
+    send_key_press_uart_message_from_string(command_split[1], state)
 
 def command_kenral_reload(filepath):
     size = os.path.getsize(filepath)
@@ -644,6 +685,7 @@ def handle_console_command():
 
     try:
         if command in ["q", "quit"]:
+            save_config()
             exit(0)
         elif command == "clear":
             command_clear()
@@ -655,15 +697,27 @@ def handle_console_command():
             show_help_window()
         else:
             console_error_text = f"Unkown command \"{command}\""
+            return
     except Exception as e:
         console_error_text = str(e)
 
+    if command in ["q", "quit"]:        # Dont include closing the app in the command history
+        return
+
+    command_history = config["command_history"]
+    command_history.insert(0, command)
+    
+    if len(command_history) > config["command_history_max_size"]:
+        command_history.pop()
+
+    config["command_history"] = command_history
+
 def send_key_presses_from_string(string):
-    error = sned_key_press_uart_message_from_string(string, b'\x01')
+    error = send_key_press_uart_message_from_string(string, b'\x01')
 
     return error
 
-def sned_key_press_uart_message_from_string(string: str, state_byte):
+def send_key_press_uart_message_from_string(string: str, state_byte):
     keys = string.replace(' ', '').lower().split(',')
 
     uart_message = bytearray()
@@ -771,7 +825,31 @@ def show_excption_window(e: Exception, height_offest = 0, width_offset = 0):
         
     exit(-1)
 
+def load_config_or_create_new():
+    global config
+    
+    try:
+        if os.path.isfile(config_file_path):
+            with open(config_file_path, 'r') as file:
+                config = json.load(file)
+            return
+    
+    except Exception as e:
+        show_excption_window(e)
+
+    config = {
+        "command_history_max_size": 10,
+        "command_history": []
+    }
+
+def save_config():
+    with open(config_file_path, 'w') as file:
+        file.truncate(0)
+
+        json.dump(config, file, indent=4, sort_keys=True)
+
 def main(_stdscr: curses.window):
+    global config_file_path
     global stdscr
     stdscr = _stdscr
 
@@ -779,16 +857,19 @@ def main(_stdscr: curses.window):
     curses.use_default_colors()
 
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_RED)
+    config_file_path = arguments.config_file
 
     curses.curs_set(0)
     stdscr.nodelay(1)
     create_windows()
+    load_config_or_create_new()
 
     try:
         connection_argument = arguments.connection_type.split(':')
         connect_to(connection_argument[0], connection_argument[1:])
     except Exception as e:
         show_excption_window(e, 4)
+
 
     while running:
         input = stdscr.getch()
@@ -817,6 +898,12 @@ def entry():
         help="Sates the type of connection to be used [tcp/serial/stt/test]. For tcp use tcp:Address:Port, For serial use serial:Address:Baudrate, For stt use stt:Address. test turns off the conneciton",
         metavar="connection type", 
         type=str)
+    argument_parser.add_argument("-c", "--config_file",
+        help="Used to give the path to the config file.",
+        default="./uart_interface_config.json",
+        metavar="config_file",
+        type=str)
+    
 
     arguments = argument_parser.parse_args()
 

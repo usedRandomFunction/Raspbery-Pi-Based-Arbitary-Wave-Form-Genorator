@@ -5,3 +5,4 @@ ArbitaryWaveFormGenorator.code-workspace
 bootloader.py
 .vscode/
 kernal/bin
+uart_interface_config.json
