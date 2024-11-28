@@ -31,6 +31,8 @@ syscall truncate, 6, #2
 syscall ftruncate, 7, #2
 syscall remove, 8, #2
 syscall fremove, 9, #2
+syscall rename, 10, #2
+syscall path_exists, 11, #2
 
 // Keypad
 syscall keypad_polling 0, #0xFF01

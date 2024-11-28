@@ -51,6 +51,8 @@ If any they should be [listed here](./project_specific_syscalls.md)
 | 7 | ftruncate | itn fd, size_t new_size | int | Sets the size of the file n bytes, returns zero on success, -1 on failer
 | 8 | remove | const char* path | int | Deletes a file, returns 0 on success, -1 on failer
 | 9 | fremove | int fd | int | Deletes a file, returns 0 on success, -1 on failer
+| 10 | rename | const char* old_path, const char* new_path | int | Renames a file / moves it to a new dirrectory. Returns 0 on success Non-zero of failure
+| 11 | path_exists | const char* path | int | Checks if a file / dirrectory exists. Returns 1 if existance, 0 if does not, -1 on failer
 
 #### open flags
 The flags used by the open function are as follows

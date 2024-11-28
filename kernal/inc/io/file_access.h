@@ -73,9 +73,19 @@ int remove(const char* path);
 int fremove(int fd);
 
 // Gets the size of a given file
-// @param fd File discriptor of file
-// @return size of file in bytes / -1 on Failer
+// @param fd File discriptor of fileFailer
 size_t get_file_size(int fd);
+
+// Renames / moves a file
+// @param old_path The current path to the file
+// @param new_path The new path the file will use
+// @return 0 If success, non-zero on failer
+int rename(const char* old_path, const char* new_path);
+
+// Checks if a file exists
+// @param path Path to file / dirrectory to check existance of
+// @return 1 if exists 0 if not -1 on failer
+int path_exists(const char* path);
 
 enum
 {

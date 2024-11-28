@@ -79,4 +79,15 @@ int remove(const char* path);
 // @note Closes the file on its own
 int fremove(int fd);
 
+// Renames / moves a file
+// @param old_path The current path to the file
+// @param new_path The new path the file will use
+// @return 0 If success, non-zero on failer
+int rename(const char* old_path, const char* new_path);
+
+// Checks if a file exists
+// @param path Path to file / dirrectory to check existance of
+// @return 1 if exists 0 if not -1 on failer
+int path_exists(const char* path);
+
 #endif

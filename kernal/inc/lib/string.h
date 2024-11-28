@@ -36,6 +36,18 @@ int strcat_s(char* dst, size_t dest_size, const char* src);
 // @return < 0 If the first byte that doesn't mach follows *str < *str (8 bit) amd > 0 for the o
 int strcmp(const char* str1, const char* str2);
 
+// Find the first occurrence of a character in a string
+// @param str A pointer to a NULL terminated string
+// @param ch The character to shearch for
+// @return Pointer to first occurrenc or NULL
+char* strchr(const char* str, int ch);
+
+// Find the last occurrence of a character in a string
+// @param str A pointer to a NULL terminated string
+// @param ch The character to shearch for
+// @return Pointer to last occurrenc or NULL
+char* strrchr(const char* str, int ch);
+
 // Simple sting to number function
 // Takes the given string and turns it into a uint64_t
 // suports binary, base 10 and hexadecimal

@@ -47,6 +47,28 @@ int strcmp(const char* str1, const char* str2)
     return 0;
 }
 
+char* strchr(const char* str, int ch)
+{
+    while (*str != '\0')
+        if (*str++ == (char)ch)
+            return *(char**)(&str) - 1;
+
+    return NULL;
+}
+
+char* strrchr(const char* str, int ch)
+{
+    size_t size = strlen(str);
+
+    const char* ptr = str + size;
+
+    while (ptr-- != str)
+        if (*ptr == (char)ch)
+            return *(char**)(&ptr);
+
+    return NULL;
+}
+
 char hex_digiet(uint8_t digit)
 {
     if (digit > 9)

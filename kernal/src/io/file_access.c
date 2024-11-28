@@ -229,6 +229,9 @@ int open(const char* path, int flags)
     if (file == NULL)
         return -1;
 
+    if (file->attributes & FAT_DIRECTORY_ATTRIBUTES_DIRECTORY)  // You can't open a dirrectory this way
+        return -1;                                                   
+
     bool is_readonly = file->attributes & FAT_DIRECTORY_ATTRIBUTES_READ_ONLY;
     bool can_write = (!is_readonly) && (flags & FILE_FLAGS_READ_WRITE);
 
@@ -557,6 +560,140 @@ int close(int fd)
     return 0;
 }
 
+int path_exists(const char* path)
+{
+    void* entry = s_find_file_from_path(path, false, NULL, NULL);
+
+    if (entry)
+        free(entry);
+    
+    return entry != NULL;
+}
+
+int rename(const char* old_path, const char* new_path)
+{
+    // First lets make sure that the files are not open
+    fd_hash_table_entry uesd_for_shearch;
+    int file_discriptor = (int)djb2_hash_uppercase(new_path);
+    
+    if (file_discriptor == -1)
+        file_discriptor -= 1;
+
+    uesd_for_shearch.hash = file_discriptor;
+
+    size_t index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
+
+    if (index != -1)
+        return -1;
+
+    file_discriptor = (int)djb2_hash_uppercase(old_path);
+    
+    if (file_discriptor == -1)
+        file_discriptor -= 1;
+
+    index = dynamic_array_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
+
+    if (index != -1)
+        return -1;
+
+    uint32_t directory_lba_offset;
+    uint32_t directory_lba;
+
+    fat_directory_entry* file = s_find_file_from_path(new_path, false, NULL, NULL);
+
+    if (file != NULL)   // "new" file allready exists? abort
+    {
+        free(file);
+        return -2;
+    }
+
+    file = s_find_file_from_path(old_path, false, &directory_lba, &directory_lba_offset);
+
+    if (file == NULL)   // File doesn't exist at current possition?
+        return -3;
+    
+
+    // Check if it is the same dirrectory, If so, just rename it
+    const char* old_path_name_begin = strrchr(old_path, '/');
+    const char* new_path_name_begin = strrchr(new_path, '/');
+
+    new_path_name_begin = new_path_name_begin == NULL ? new_path : new_path_name_begin;
+    old_path_name_begin = old_path_name_begin == NULL ? old_path : old_path_name_begin;
+
+    size_t dirrectorys_length = new_path_name_begin - new_path;
+
+    if (s_format_file_name_8_3_standered(new_path_name_begin + 1, file->file_name) == -1)   // Failed to format name
+    {
+        free(file);
+        return -4;
+    }
+
+
+    if ((old_path_name_begin - old_path) == dirrectorys_length &&   // They have to have the same length
+        memcmp(old_path, new_path, dirrectorys_length) == 0)        // And be equal
+    {
+        // Since nothing is using the FAT we will use it working buffer here
+        if (sd_write_section(directory_lba, file, directory_lba_offset * sizeof(fat_directory_entry), sizeof(fat_directory_entry), 1, fat_buffer) == 0)
+        {
+            free(file);     // Failed to write
+            return -5;
+        }
+
+        free(file);
+        return 0;
+    }
+    char* new_dirrectory_path = malloc(dirrectorys_length + 2);
+
+    if (new_dirrectory_path == NULL)    // Failed to allocate space for string
+    {
+        free(file);
+        return -6;
+    }
+
+    memcpy(new_dirrectory_path, new_path, dirrectorys_length);
+    new_dirrectory_path[dirrectorys_length]     = '/';
+    new_dirrectory_path[dirrectorys_length + 1] = '\0';
+
+    fat_directory_entry* new_dirrectory = s_find_file_from_path(new_dirrectory_path, true, NULL, NULL);
+    free(new_dirrectory_path);
+
+    if (new_dirrectory == NULL) // Failed to find / create new dirrectory
+    {
+        free(file);
+        return -7;
+    }
+
+    uint32_t dirrecotry_cluster = (new_dirrectory->first_cluster_number_higher_16_bits << 16) | (new_dirrectory->first_cluster_number_lowwer_16_bits);
+    free(new_dirrectory);
+
+    void* working_buffer = malloc(root_file_system->number_of_sectors_per_cluster * 512);
+
+    if (working_buffer == NULL) // Failed to allocate space to use as working buffer
+    {
+        free(file);
+        return -8;
+    }
+
+    if (s_write_new_dirrectory_entry(dirrecotry_cluster, file, working_buffer, NULL, NULL) == false)    // Failed to create new entry for file
+    {
+        free(file);
+        return -9;
+    }
+
+    memclr(file, sizeof(fat_directory_entry));  // We will use the file buffer as the space to write zeros into
+
+    // Since nothing is using the FAT we will use it working buffer here
+    if (sd_write_section(directory_lba, file, directory_lba_offset, sizeof(fat_directory_entry), 1, fat_buffer) == 0)
+    {
+        printf("Warning: File \"%s\" has been moved to \"%s\" but has failed to delete original entry, two copys pointing to same disk spce now exist!",
+            old_path, new_path);
+        free(file);     // Failed to write
+        return -10;
+    }
+    free(file); 
+    return 0;
+}
+
 int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
 {
     size_t size_of_current_entry_name = 1;
@@ -698,14 +835,8 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
     if (matching_dirrectory->attributes == FAT_DIRECTORY_ATTRIBUTES_LFN)
         return NULL;
 
-    if (name_offset == INT32_MAX) // Is File
+    if (name_offset == INT32_MAX || path[name_offset] == '\0')
     {
-        if (matching_dirrectory->attributes & FAT_DIRECTORY_ATTRIBUTES_DIRECTORY)
-        {
-            printf("Erorr: Expected file, found dirrectory!\n");
-            return NULL;
-        }
-
         fat_directory_entry* entry = malloc(sizeof(fat_directory_entry));
         if (entry == NULL)
             return NULL;
