@@ -683,7 +683,7 @@ int rename(const char* old_path, const char* new_path)
     memclr(file, sizeof(fat_directory_entry));  // We will use the file buffer as the space to write zeros into
 
     // Since nothing is using the FAT we will use it working buffer here
-    if (sd_write_section(directory_lba, file, directory_lba_offset, sizeof(fat_directory_entry), 1, fat_buffer) == 0)
+    if (sd_write_section(directory_lba, file, directory_lba_offset * sizeof(fat_directory_entry), sizeof(fat_directory_entry), 1, fat_buffer) == 0)
     {
         printf("Warning: File \"%s\" has been moved to \"%s\" but has failed to delete original entry, two copys pointing to same disk spce now exist!",
             old_path, new_path);
