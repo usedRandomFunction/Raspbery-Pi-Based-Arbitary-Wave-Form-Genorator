@@ -680,7 +680,7 @@ def handle_console_command():
 
     console_error_text = console_error_text.lower()
     command_split = console_text_input.split(' ', 1)
-    command = command_split[0][1:]
+    command = command_split[0][1:].lower()
     argument = ""
     
     if len(command_split) > 1:
