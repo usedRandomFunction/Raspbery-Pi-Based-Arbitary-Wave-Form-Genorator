@@ -385,7 +385,7 @@ def handle_uart_input():
     if data == None:
         return
 
-    lines = data.split('\n')
+    lines = data.replace('\r', '\n\\r').split('\n')
 
     uart_output_log[len(uart_output_log) - 1] = uart_output_log[len(uart_output_log) - 1] + lines[0]
 
@@ -576,6 +576,9 @@ def handle_console_scroling(input):
     global console_scroll_position_y
     global console_scroll_position_x
     global console_text_input
+
+    if console_text_input == "":
+        return
 
     if input == curses.KEY_LEFT:
         console_scroll_position_x = max(console_scroll_position_x - 1, 0)
