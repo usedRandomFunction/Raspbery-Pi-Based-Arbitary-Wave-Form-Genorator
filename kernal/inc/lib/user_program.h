@@ -21,6 +21,11 @@ enum
     VMEMMAP_EXECUTABLE      =   1 << 2      /* If set the allocation will be executable*/
 };
 
+// Used to indicate if switch_to was called
+// should be free and set to NULL after the 
+// app is executed
+extern char* use_program_requested_switch;
+
 // Forces the current user program to exit
 // and return int32_min
 // @warning This function will force exuction to go 
@@ -80,6 +85,13 @@ void destroy_user_program(user_program_info* program);
 // @param flags flags
 // @return The size of the allocation in bytes / 0 if failed, or if deleting > 0 on success
 size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, int flags);
+
+// Exits the current user program and starts the given program
+// @param new_executable_path The path to the new program
+// @note The next program will only be 
+// @warning This function will force exuction to go 
+// to where it would if the user called exit()
+void user_program_switch_to(const char* new_executable_path);
 
 // ===================================================================
 // DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED

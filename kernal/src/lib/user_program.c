@@ -12,6 +12,7 @@ extern int system_call_exit_return_value;
 void system_call_exit(int status); 
 
 static user_program_info* s_active_user_program = NULL;
+char* use_program_requested_switch = NULL;
 
 // Used to load a load monolithic user program from the disk
 // @param program A pointer to the user_program_info struct to fill out
@@ -53,6 +54,8 @@ bool load_user_program_from_disk(user_program_info* program, const char* path)
     {
         printf("Failed to laod user program: %s\n", "Unkown file extention: ");
         printf("%s\n", path + strlen(path) - 4);
+
+        return false;
     }
 
     config_file config;
@@ -217,7 +220,7 @@ bool initialize_monolithic_user_program(user_program_info* program, void* progra
     table_sections[0].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EL0_ACCESS;
     table_sections[0].section_start = program_start;
 
-    if (required_size != 0)
+    if (required_stack != 0)
     {
         table_sections[1].allocation = create_new_page_allocation(required_stack);
         table_sections[1].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_EL0_ACCESS;
@@ -347,6 +350,23 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
         return 0;
 
     return get_page_allocation_size(section.allocation);
+}
+
+void user_program_switch_to(const char* new_executable_path)
+{
+    size_t size = strlen(new_executable_path);
+
+    if (use_program_requested_switch != NULL)
+        free(use_program_requested_switch);
+
+    use_program_requested_switch = malloc(size + 1);
+
+    if (use_program_requested_switch == NULL)
+        generic_user_exception("Failed to allocate space to store location of next user program.");
+    
+    strcpy_s(new_executable_path, size + 1, use_program_requested_switch);
+
+    terminate_current_user_program();
 }
 
 void defult_prg_exit_handler()

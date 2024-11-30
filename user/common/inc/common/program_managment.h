@@ -26,4 +26,8 @@ void exit(int i);
 // @return The size of the allocation in bytes / 0 if failed, or if deleting > 0 on success
 size_t vmemmap(void* ptr, size_t size, int flags);
 
+// Used to simultausly exit the current program while simultaiusly starting the given program
+// @param new_executable_path Path to the new program
+void switch_to(const char* new_executable_path);
+
 #endif

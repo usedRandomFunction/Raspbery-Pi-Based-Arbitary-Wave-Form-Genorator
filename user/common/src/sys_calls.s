@@ -12,6 +12,7 @@
 syscall set_abi_version, 0, #0
 syscall exit, 1, #0
 syscall vmemmap, 2, #0
+syscall switch_to, 3, #0
 
 // basic IO
 syscall printf, 0, #1

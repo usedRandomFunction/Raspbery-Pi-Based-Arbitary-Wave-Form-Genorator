@@ -869,7 +869,7 @@ int dirclose(int dd)
     if (entry->discriptor.is_owened_by_user != s_is_in_user_mode)
         return -1;
 
-    remove_dynamic_array_entry(index, &s_fd_hash_table);
+    remove_dynamic_array_entry(index, &s_dd_hash_table);
 
     return 0;
 }

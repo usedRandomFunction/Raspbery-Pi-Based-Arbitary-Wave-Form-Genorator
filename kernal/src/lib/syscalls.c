@@ -209,6 +209,14 @@ size_t system_call_vmemmap(void* ptr, size_t size, int flags)
         ptr, size, flags);
 }
 
+void system_call_switch_to(const char* new_executable_path)
+{
+    if (is_kernal_memory(new_executable_path))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", new_executable_path, "switch_to");
+
+    user_program_switch_to(new_executable_path);
+}
+
 void system_call_capture_prg_exit(void* handler)
 {
     if (is_kernal_memory(handler))
@@ -217,7 +225,8 @@ void system_call_capture_prg_exit(void* handler)
     capture_prg_exit(handler);
 }
 
-const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap};
+const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap,
+    system_call_switch_to};
 const void* const os_syscall_baisc_io[] = {printf_user_memory_only, putchar, uart_putc, uart_getc, uart_poll};
 const void* const os_syscall_file_io[] = {system_call_open, system_call_close, system_call_get_file_size, system_call_read, 
     system_call_write, system_call_lseek, system_call_truncate, system_call_ftruncate, system_call_remove,   
