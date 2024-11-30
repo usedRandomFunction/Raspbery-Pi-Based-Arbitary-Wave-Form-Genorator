@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#pragma region structs
+
 struct file_discriptor_metadata
 {
     uint32_t directory_lba; // The lba that the dirrectory is stored in
@@ -24,7 +26,7 @@ struct file_discriptor_metadata
 
 typedef struct file_discriptor_metadata file_discriptor_metadata;
 
-struct fd_hash_table_entry
+struct fd_hash_table_entry      // File Discriptor
 {
     file_discriptor_metadata metadata;
     int hash;
@@ -40,16 +42,43 @@ struct fat_entry_update
 
 typedef struct fat_entry_update fat_entry_update;
 
+struct dirrectory_discriptor      // Used with diropen() ect..
+{
+    fat_directory_entry* storage_buffer;    // Should be the size of a cluster on the disk
+    uint32_t next_cluster_number;           // Next cluster number. Note: value >= 0x0FFFFFF8 means end of dirrectory
+    uint32_t offset;                        // The offset (in fat_directory_entry's) that the next entry will come from
+                                            // This is relitive to the loaded cluster
+                                            // Note UINT32_MAX represents storage_buffer is unloaded
+    bool is_owened_by_user;
+};
+
+typedef struct dirrectory_discriptor dirrectory_discriptor;
+
+struct dd_hash_table_entry      // Dirrectory Discriptor
+{
+    dirrectory_discriptor discriptor;
+    int hash;
+};
+
+typedef struct dd_hash_table_entry dd_hash_table_entry;
+
+#pragma endregion
+
 static uint32_t last_fat_sector = UINT32_MAX;
 static uint32_t fat_buffer[512];
 static bool s_is_in_user_mode = false;
 
 static dynamic_array s_fd_hash_table;
+static dynamic_array s_dd_hash_table;
 extern fat32_fs* root_file_system;
+
+#pragma region Static Funcitons
 
 // Used by binary search function
 static bool s_less_then_fd_table_entry(const void* A, const void* B);
 static bool s_equal_to_fd_table_entry(const void* A, const void* B);
+static bool s_less_then_dd_table_entry(const void* A, const void* B);
+static bool s_equal_to_dd_table_entry(const void* A, const void* B);
 
 // Shearches the root dirrectory for a file
 // @param path Null terminated string containing path
@@ -179,22 +208,49 @@ static size_t s_write_internal(file_discriptor_metadata* file, const void* buf, 
 // @note Pointer doesn't need to be freed
 static file_discriptor_metadata* s_get_file_metadata_from_discriptor(int fd);
 
+// Reads the FAT to find the next cluster
+// @param current_cluster The current cluster
+// @return The next cluster
+// @note return value >= 0x0FFFFFF8 means no more further clusters while UINT32_MAX means error
+static uint32_t s_get_next_cluster_in_chain(uint32_t current_cluster);
+
+// Used while reading dirrectorys to load new clusters
+// uses the offest to check if loading is required
+// @param dir The dirrectory to load
+// @return 0 If no more clusters or error, 1 If no loading was required, 2 If loaded
+static int s_load_next_dirrectory_cluster_if_required(dirrectory_discriptor* dir);
+
+#pragma endregion
+
 void initialize_file_access()
 {
     initialize_dynamic_array(sizeof(fd_hash_table_entry), 0, &s_fd_hash_table);
+    initialize_dynamic_array(sizeof(dd_hash_table_entry), 0, &s_dd_hash_table);
 }
 
 void file_access_on_user_app_exit()
 {
-    fd_hash_table_entry* table = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+    fd_hash_table_entry* fd_table = (fd_hash_table_entry*)s_fd_hash_table.ptr;
     
     for (size_t i = 0; i < s_fd_hash_table.number_of_entrys; i++)
     {
-        if (!table[i].metadata.is_owened_by_user)
+        if (!fd_table[i].metadata.is_owened_by_user)
             continue;
 
         remove_dynamic_array_entry(i, &s_fd_hash_table);
-        table = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+        fd_table = (fd_hash_table_entry*)s_fd_hash_table.ptr;
+        i--;
+    }
+
+    dd_hash_table_entry* dd_table = (dd_hash_table_entry*)s_dd_hash_table.ptr;
+    
+    for (size_t i = 0; i < s_dd_hash_table.number_of_entrys; i++)
+    {
+        if (!dd_table[i].discriptor.is_owened_by_user)
+            continue;
+
+        remove_dynamic_array_entry(i, &s_dd_hash_table);
+        dd_table = (dd_hash_table_entry*)s_dd_hash_table.ptr;
         i--;
     }
 }
@@ -216,7 +272,7 @@ int open(const char* path, int flags)
     uint32_t directory_lba_offset = 0;
     uint32_t directory_lba = 0;
 
-    int index = (int)dynamic_array_find_closest_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, &allready_opened,
+    size_t index = dynamic_array_find_closest_binary_shearch(&s_fd_hash_table, &uesd_for_shearch, &allready_opened,
         s_less_then_fd_table_entry, s_equal_to_fd_table_entry);
 
     if (allready_opened == true)
@@ -230,7 +286,11 @@ int open(const char* path, int flags)
         return -1;
 
     if (file->attributes & FAT_DIRECTORY_ATTRIBUTES_DIRECTORY)  // You can't open a dirrectory this way
+    {
+        free(file);
         return -1;                                                   
+    }
+        
 
     bool is_readonly = file->attributes & FAT_DIRECTORY_ATTRIBUTES_READ_ONLY;
     bool can_write = (!is_readonly) && (flags & FILE_FLAGS_READ_WRITE);
@@ -243,7 +303,7 @@ int open(const char* path, int flags)
     entry.metadata.current_cluster_number = entry.metadata.first_cluster_number;
     entry.metadata.write_permissions = flags & FILE_FLAGS_READ_WRITE;
     entry.metadata.directory_lba_offset = directory_lba_offset;
-    entry.metadata.is_owened_by_user =s_is_in_user_mode;
+    entry.metadata.is_owened_by_user = s_is_in_user_mode;
     entry.metadata.directory_lba = directory_lba;
     entry.metadata.current_offset = 0;
     entry.hash = file_discriptor;
@@ -278,7 +338,7 @@ int open(const char* path, int flags)
     }
 
 
-    if (insert_dynamic_array(&entry, (size_t)index, &s_fd_hash_table) == false)
+    if (insert_dynamic_array(&entry, index, &s_fd_hash_table) == false)
         return -1; // Failed to insert
 
     return file_discriptor;
@@ -342,24 +402,7 @@ size_t read(int fd, void* buf, size_t n)
 
     for ( ; number_of_clusters_to_read > 0; number_of_clusters_to_read--)
     {
-        uint32_t fat_sector = root_file_system->first_fat_sector + (file->current_cluster_number / (512 / 4));
-        uint32_t fat_offset = (file->current_cluster_number % (512 / 4));
-
-        if (last_fat_sector != fat_sector)
-        {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-            {
-                printf("Erorr: Failed to read FAT!\n");
-                if (file_temporay_buffer != NULL)
-                    free(file_temporay_buffer);
-                free (fat_buffer);
-
-                return -1;
-            }
-            last_fat_sector = fat_sector;
-        }
-
-        uint32_t new_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
+        uint32_t new_cluster_number =  s_get_next_cluster_in_chain(file->current_cluster_number);
 
         if (new_cluster_number >= 0x0FFFFFF8 && (number_of_middle_clusters != 0 || number_of_bytes_to_read_from_last_clsuter != 0))
         {
@@ -696,6 +739,141 @@ int rename(const char* old_path, const char* new_path)
     return 0;
 }
 
+int diropen(const char* path)
+{
+    if(path[0] == '/' || path[0] == '\\') 
+        path++; // Just used so /a.txt becomes a.txt 
+
+    int directory_discriptor = (int)djb2_hash_uppercase(path);
+    
+    if (directory_discriptor == -1)
+        directory_discriptor -= 1;
+
+    fd_hash_table_entry uesd_for_shearch;
+    uesd_for_shearch.hash = directory_discriptor;
+ 
+    bool allready_opened = false;
+
+    int index = (int)dynamic_array_find_closest_binary_shearch(&s_dd_hash_table, &uesd_for_shearch, &allready_opened,
+        s_less_then_dd_table_entry, s_equal_to_dd_table_entry);
+
+    if (allready_opened == true)
+        return -1;
+
+    fat_directory_entry* directory = s_find_file_from_path(path, false, NULL, NULL);
+
+    if (directory == NULL)      // Unable to find dirrectory
+        return -1;
+
+    if (!(directory->attributes & FAT_DIRECTORY_ATTRIBUTES_DIRECTORY))  // Make sure its a directory
+    {
+        free(directory);
+        return -1;
+    }
+
+    dd_hash_table_entry entry;
+    memclr(&entry, sizeof(dd_hash_table_entry));
+    entry.hash = directory_discriptor;
+    entry.discriptor.is_owened_by_user = s_is_in_user_mode;
+    entry.discriptor.next_cluster_number = (directory->first_cluster_number_higher_16_bits << 16) | (directory->first_cluster_number_lowwer_16_bits);
+    entry.discriptor.storage_buffer = malloc(root_file_system->number_of_sectors_per_cluster * 512);
+    entry.discriptor.offset = UINT32_MAX;
+    free(directory);
+
+    if (entry.discriptor.storage_buffer == NULL)    // Failed to allocate storage buffer
+        return -1;
+
+
+    if (insert_dynamic_array(&entry, index, &s_dd_hash_table) == false)
+        return -1; // Failed to insert
+
+    return directory_discriptor;
+}
+
+int dirread(int dd, dirrectory_entry* entry)
+{
+    dd_hash_table_entry uesd_for_shearch;
+    uesd_for_shearch.hash = dd;
+
+    size_t index = dynamic_array_binary_shearch(&s_dd_hash_table, &uesd_for_shearch, s_less_then_dd_table_entry, s_equal_to_dd_table_entry);
+
+    if (index == -1)        // Unable to find file
+        return -1;
+
+    dd_hash_table_entry* dirrectory = (dd_hash_table_entry*)s_dd_hash_table.ptr;
+    dirrectory += index;
+    
+    if (dirrectory->discriptor.is_owened_by_user != s_is_in_user_mode)
+        return -2;          // Bad permisions (not the owner)
+
+    dirrectory_discriptor* discriptor = &dirrectory->discriptor;
+
+    while(s_load_next_dirrectory_cluster_if_required(discriptor))
+    {
+        fat_directory_entry* dir_entry = &discriptor->storage_buffer[discriptor->offset++];
+        
+        if (dir_entry->file_name[0] == '\0')    
+            continue;                           // Empty entry, skip
+
+        if (dir_entry->attributes == FAT_DIRECTORY_ATTRIBUTES_LFN) 
+            continue;                           // Skip LFN for now
+
+        if (memcmp(dir_entry->file_name, "..          " + 1, 11) == 0 ||
+            memcmp(dir_entry->file_name, "..          ", 11) == 0)
+            continue;                           // Skip . and .. entrys
+
+        memclr(entry, sizeof(dirrectory_entry));
+        entry->size = dir_entry->file_size_bytes;
+
+
+        for (int i = 0; i < 8; i++)
+        {
+            char c = dir_entry->file_name[i];
+
+            if (c == ' ')
+                break;
+
+            entry->name[i] = c;
+        }
+
+        for (int i = 8; i < 11; i++)
+        {
+            char c = dir_entry->file_name[i];
+
+            if (c == ' ')
+                break;
+
+            entry->extention[i - 8] = c;
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
+
+int dirclose(int dd)
+{
+    dd_hash_table_entry uesd_for_shearch;
+    uesd_for_shearch.hash = dd;
+
+    size_t index = dynamic_array_binary_shearch(&s_dd_hash_table, &uesd_for_shearch, s_less_then_dd_table_entry, s_equal_to_dd_table_entry);
+
+    if (index == -1)
+        return -1;
+
+    dd_hash_table_entry* entry = (dd_hash_table_entry*)s_dd_hash_table.ptr;
+    entry += index;
+    free(entry->discriptor.storage_buffer);
+
+    if (entry->discriptor.is_owened_by_user != s_is_in_user_mode)
+        return -1;
+
+    remove_dynamic_array_entry(index, &s_fd_hash_table);
+
+    return 0;
+}
+
 int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
 {
     size_t size_of_current_entry_name = 1;
@@ -760,7 +938,7 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
     uint32_t next_dirrectory_cluster = 0;
     uint32_t cluster_lba = 0;
 
-    while (next_cluster < 0x0FFFFFF8)
+    while (next_cluster < 0x0FFFFFF8) // TODO maby create a more genral form of s_load_next_cluster_if_required and use it here
     {   
         cluster_lba = root_file_system->data_sector + (next_cluster - 2) * root_file_system->number_of_sectors_per_cluster;
         
@@ -772,20 +950,7 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
             break;
         }
 
-        uint32_t fat_sector = root_file_system->first_fat_sector + (next_cluster / (512 / 4));
-        uint32_t fat_offset = (next_cluster % (512 / 4));
-
-        if (last_fat_sector != fat_sector)
-        {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-            {
-                printf("Erorr: Failed to read FAT!\n");
-                return NULL;
-            }
-            last_fat_sector = fat_sector;
-        }
-
-        next_cluster = fat_buffer[fat_offset] & 0x0FFFFFFF;
+        next_cluster = s_get_next_cluster_in_chain(next_cluster);
 
         for (int i = 0 ; i < ((512 * root_file_system->number_of_sectors_per_cluster) / sizeof(fat_directory_entry)); i++)
         {
@@ -1038,22 +1203,7 @@ static bool s_shink_file_internal(file_discriptor_metadata* file, size_t new_siz
 
         while (number_of_cluster_to_be_removed-- > 0)
         {
-            uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
-            uint32_t fat_offset = (current_cluster_number % (512 / 4));
-
-            if (last_fat_sector != fat_sector)
-            {
-                if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-                {
-                    printf("Erorr: Failed to read FAT!\n");
-
-                    free(allocation_table_updates);
-                    return false;
-                }
-                last_fat_sector = fat_sector;
-            }
-
-            current_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
+            current_cluster_number = s_get_next_cluster_in_chain(current_cluster_number);
 
             bool is_last_cluster = current_cluster_number >= 0x0FFFFFF8;
 
@@ -1131,21 +1281,7 @@ ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int
 
     while (number_of_clusters_skip > 0)
     {
-        uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster_number / (512 / 4));
-        uint32_t fat_offset = (current_cluster_number % (512 / 4));
-
-        if (last_fat_sector != fat_sector)
-        {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-            {
-                printf("Erorr: Failed to read FAT!\n");
-
-                return -1;
-            }
-            last_fat_sector = fat_sector;
-        }
-
-        current_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
+        current_cluster_number = s_get_next_cluster_in_chain(current_cluster_number);//fat_buffer[fat_offset] & 0x0FFFFFFF;
 
         if (current_cluster_number >= 0x0FFFFFF8)
         {
@@ -1225,23 +1361,7 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
 
     for ( ; number_of_clusters_to_write_to > 0; number_of_clusters_to_write_to--)
     {
-        uint32_t fat_sector = root_file_system->first_fat_sector + (file->current_cluster_number / (512 / 4));
-        uint32_t fat_offset = (file->current_cluster_number % (512 / 4));
-
-        if (last_fat_sector != fat_sector)
-        {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-            {
-                printf("Erorr: Failed to read FAT!\n");
-                free(tempoary_buffer);
-                free (fat_buffer);
-
-                return -1;
-            }
-            last_fat_sector = fat_sector;
-        }
-
-        uint32_t new_cluster_number = fat_buffer[fat_offset] & 0x0FFFFFFF;
+        uint32_t new_cluster_number = s_get_next_cluster_in_chain(file->current_cluster_number);
 
         if (new_cluster_number >= 0x0FFFFFF8 && (number_of_middle_clusters != 0 || number_of_bytes_to_write_to_last_clsuter != 0))
         {
@@ -1563,20 +1683,7 @@ bool s_write_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const fat_
             break;
         }
 
-        uint32_t fat_sector = root_file_system->first_fat_sector + (next_cluster / (512 / 4));
-        uint32_t fat_offset = (next_cluster % (512 / 4));
-
-        if (last_fat_sector != fat_sector)
-        {
-            if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
-            {
-                printf("Erorr: Failed to read FAT!\n");
-                return false;
-            }
-            last_fat_sector = fat_sector;
-        }
-
-        next_cluster = fat_buffer[fat_offset] & 0x0FFFFFFF;
+        next_cluster = s_get_next_cluster_in_chain(next_cluster);
 
         for (int i = 0 ; i < ((512 * root_file_system->number_of_sectors_per_cluster) / sizeof(fat_directory_entry)); i++)
         {
@@ -1659,6 +1766,47 @@ file_discriptor_metadata* s_get_file_metadata_from_discriptor(int fd)
     return &entry->metadata;
 }
 
+uint32_t s_get_next_cluster_in_chain(uint32_t current_cluster)
+{
+    uint32_t fat_sector = root_file_system->first_fat_sector + (current_cluster / (512 / 4));
+    uint32_t fat_offset = (current_cluster % (512 / 4));
+
+    if (last_fat_sector != fat_sector)
+    {
+        if (sd_readblock(fat_sector, fat_buffer, 1) != 512)
+        {
+            printf("Erorr: Failed to read FAT!\n");
+            return UINT32_MAX;
+        }
+        last_fat_sector = fat_sector;
+    }
+
+    return fat_buffer[fat_offset] & 0x0FFFFFFF;
+}
+
+int s_load_next_dirrectory_cluster_if_required(dirrectory_discriptor* dir)
+{
+    const uint32_t bytes_per_cluster = root_file_system->number_of_sectors_per_cluster * 512;
+    const uint32_t dirrectory_entrys_per_cluster = bytes_per_cluster / sizeof(fat_directory_entry);
+
+    if (dir->offset <= dirrectory_entrys_per_cluster)
+        return 1;           // No loading nessisrary
+
+    if (dir->next_cluster_number >= 0x0FFFFFF8)
+        return 0;           // No more clusters
+
+    uint32_t lba = root_file_system->data_sector;
+    lba += (dir->next_cluster_number - 2) * root_file_system->number_of_sectors_per_cluster;
+    dir->next_cluster_number = s_get_next_cluster_in_chain(dir->next_cluster_number);
+    dir->offset = 0;
+
+    if (sd_readblock(lba, dir->storage_buffer, root_file_system->number_of_sectors_per_cluster) 
+        != bytes_per_cluster)   // Failed to read
+        return 0;
+
+    return 2;
+}
+
 bool s_less_then_fd_table_entry(const void* A, const void* B)
 {
     fd_hash_table_entry* a = (fd_hash_table_entry*)A;
@@ -1671,6 +1819,22 @@ bool s_equal_to_fd_table_entry(const void* A, const void* B)
 {
     fd_hash_table_entry* a = (fd_hash_table_entry*)A;
     fd_hash_table_entry* b = (fd_hash_table_entry*)B;
+
+    return a->hash == b->hash;
+}
+
+bool s_less_then_dd_table_entry(const void* A, const void* B)
+{
+    dd_hash_table_entry* a = (dd_hash_table_entry*)A;
+    dd_hash_table_entry* b = (dd_hash_table_entry*)B;
+
+    return a->hash < b->hash;
+}
+
+bool s_equal_to_dd_table_entry(const void* A, const void* B)
+{
+    dd_hash_table_entry* a = (dd_hash_table_entry*)A;
+    dd_hash_table_entry* b = (dd_hash_table_entry*)B;
 
     return a->hash == b->hash;
 }

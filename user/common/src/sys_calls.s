@@ -33,6 +33,9 @@ syscall remove, 8, #2
 syscall fremove, 9, #2
 syscall rename, 10, #2
 syscall path_exists, 11, #2
+syscall diropen, 12, #2
+syscall dirread, 13, #2
+syscall dirclose, 14, #2
 
 // Keypad
 syscall keypad_polling 0, #0xFF01

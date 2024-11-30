@@ -128,6 +128,66 @@ int system_call_fremove(int fd)
     return r;
 }
 
+int system_call_rename(const char* old_path, const char* new_path)
+{
+    if (is_kernal_memory(old_path))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", old_path, "rename");
+
+    if (is_kernal_memory(new_path))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", new_path, "rename");
+
+    set_user_mode(true);
+    int r = rename(old_path, new_path);
+    set_user_mode(false);
+
+    return r;
+}
+
+int system_call_path_exists(const char* path)
+{
+    if (is_kernal_memory(path))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", path, "path_exists");
+
+    set_user_mode(true);
+    int r = path_exists(path);
+    set_user_mode(false);
+
+    return r;
+}
+
+int system_call_diropen(const char* path)
+{
+    if (is_kernal_memory(path))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", path, "diropen");
+
+    set_user_mode(true);
+    int r = diropen(path);
+    set_user_mode(false);
+
+    return r;
+}
+
+int system_call_dirread(int dd, dirrectory_entry* entry)
+{
+    if (is_kernal_memory(entry))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", entry, "dirread");
+
+    set_user_mode(true);
+    int r = dirread(dd, entry);
+    set_user_mode(false);
+
+    return r;
+}
+
+int system_call_dirclose(int dd)
+{
+    set_user_mode(true);
+    int r = dirclose(dd);
+    set_user_mode(false);
+
+    return r;
+}
+
 void system_call_undefined_handler()
 {
     size_t esr_el1;
@@ -160,7 +220,8 @@ const void* const os_syscall_program_managment[] = {system_call_set_abi_version,
 const void* const os_syscall_baisc_io[] = {printf_user_memory_only, putchar, uart_putc, uart_getc, uart_poll};
 const void* const os_syscall_file_io[] = {system_call_open, system_call_close, system_call_get_file_size, system_call_read, 
     system_call_write, system_call_lseek, system_call_truncate, system_call_ftruncate, system_call_remove,   
-    system_call_fremove };
+    system_call_fremove, system_call_rename, system_call_path_exists, system_call_diropen, system_call_dirread,
+    system_call_dirclose};
 
 const void* const os_syscall_tables_table[] = {os_syscall_program_managment, os_syscall_baisc_io, os_syscall_file_io};
 const uint64_t os_syscall_tables_sizes_table[] = {sizeof(os_syscall_program_managment), 

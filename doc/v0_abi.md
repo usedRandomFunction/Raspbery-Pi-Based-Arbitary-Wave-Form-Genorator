@@ -45,14 +45,17 @@ If any they should be [listed here](./project_specific_syscalls.md)
 | 1 | close | int fd | int | Closes the given file, reutrns 0 on success and -1 on failer
 | 2 | get_file_size | int fd | size_t | Takes the given file and returns is size in bytes or -1 on failer
 | 3 | read | int fd, void* buf, <br>size_t n | size_t | Reads n bytes from the file, returns number of bytes read or 0 on <br> reaching end of file gives -1 on error
-| 4 | write | int fd, const void* buf, <br>size_t n | size_t | Writes n bytes to the file, returns number of bytes written, gives -1 on error
+| 4 | write | int fd, const void* buf, <br>size_t n | size_t | Writes n bytes to the file, returns number of bytes written, <br>gives -1 on error
 | 5 | lseek | int fd ptrdiff_t offset,<br>int [whence](#seek-whence) | ptrdiff_t | Seeks to a offset in the file, also read [whence](#seek-whence)
 | 6 | truncate | const char* path, <br> size_t new_size | int | Sets the size of the file n bytes, returns zero on success, -1 on failer
 | 7 | ftruncate | itn fd, size_t new_size | int | Sets the size of the file n bytes, returns zero on success, -1 on failer
 | 8 | remove | const char* path | int | Deletes a file, returns 0 on success, -1 on failer
 | 9 | fremove | int fd | int | Deletes a file, returns 0 on success, -1 on failer
-| 10 | rename | const char* old_path, const char* new_path | int | Renames a file / moves it to a new dirrectory. Returns 0 on success Non-zero of failure
-| 11 | path_exists | const char* path | int | Checks if a file / dirrectory exists. Returns 1 if existance, 0 if does not, -1 on failer
+| 10 | rename | const char* old_path, const char* new_path | int | Renames a file / moves it to a new dirrectory. Returns 0 on success, <br> Non-zero of failure
+| 11 | path_exists | const char* path | int | Checks if a file / dirrectory exists. Returns 1 if existance, 0 if not,<br> -1 on failer
+| 12 | diropen | const char* path | int | Opens the given dirrectory if possible and returns dirrectory descriptor <br> or -1 if failed.
+| 13 | dirread | int dd, dirrectory_entry* entry | int | Returns one entry from the given dirrectory. Returns 1 On success, <br> 0 if no more entrys exist and < 0 on error. [See dirrectory_entry struct](#dirrectory_entry-struct)
+| 14 | dirclose | int dd | int | Closes the given dirrectory, Returns zero on success non-zero on failer
 
 #### open flags
 The flags used by the open function are as follows
@@ -73,3 +76,16 @@ The flags used by the seek function are as follows
 | 0 | SEEK_SET | Sets the offset of the file to the given offest
 | 1 | SEEK_CUR | Adds the given offset to the current offest
 | 2 | SEEK_END | Sets the offset relitive to the end of the file
+
+#### dirrectory_entry struct
+
+The dirrectory_entry struct is defined simply as:
+
+```c
+struct dirrectory_entry
+{
+    uint64_t size;
+    char name[32];
+    char extention[8];
+};
+```

@@ -5,6 +5,15 @@
 #include <stdint.h>
 #include <stddef.h>
 
+struct dirrectory_entry
+{
+    uint64_t size;
+    char name[32];
+    char extention[8];
+};
+
+typedef struct dirrectory_entry dirrectory_entry;
+
 
 // Initializes the buffesr used to track file discriptors
 void initialize_file_access();
@@ -86,6 +95,27 @@ int rename(const char* old_path, const char* new_path);
 // @param path Path to file / dirrectory to check existance of
 // @return 1 if exists 0 if not -1 on failer
 int path_exists(const char* path);
+
+// Used to list the contents of a dirrectory
+// 1. Open 
+// 2. Read untill it returns <= 0
+// 3. Close
+// Simuler to the linux opendir, but the struct is diffrent so diffrent name
+// @param path Path of dirrectory to check
+// @return A dirrectory discriptor, or -1 if failed
+int diropen(const char* path);
+
+// Reads a dirrectory and returns one entry as a dirrectory_entry struct
+// @param dd Dirrectory discriptor of dirrectory to read
+// @param entry Pointer to dirrectory_entry struct to fill out
+// @return 1 Means success, 0 means end of dirrectory, > 0 means error
+int dirread(int dd, dirrectory_entry* entry);
+
+// Closes the given dirrectory
+// @param dd Dirrectory discriptor  to close
+// @return 0 on success, non-zero on failer
+int dirclose(int dd);
+
 
 enum
 {
