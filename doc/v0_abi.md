@@ -1,7 +1,7 @@
 # V0 ABI
 
 The V0 ABI is designed to be expanedable so if the OS is used in a embeded projectwhere hardware functions are abstracted. <br>
-Because of this svc #0x0 to svc #0xFF are reseverd for the os while #0xFF00 to #0xFFFF are for the user
+Because of this svc #0x0 to svc #0x7FFF are reseverd for the os while #0xFF00 to #0xFFFF are for the user
 
 A syscall is made by setting w8 then calling svc
 

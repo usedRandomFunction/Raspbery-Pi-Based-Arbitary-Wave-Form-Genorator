@@ -4,10 +4,10 @@ The project specific syscalls follow the standard as defined in the [v0 abi](./v
 
 ## syscall tables vs SVC argument
 
-## 0xFF00 - Reserved for hardware outputs (DAC) and settings (buffering / resulation)
+## 0x8000 - Reserved for hardware outputs (DAC) and settings (buffering / resulation)
 
 
-## 0xFF01 - Keypad data and controlls
+## 0x8001 - Keypad data and controlls
 
 | w8 Value | Name | Arguements | Return | Description |
 |----------|------|------------|--------|-------------|

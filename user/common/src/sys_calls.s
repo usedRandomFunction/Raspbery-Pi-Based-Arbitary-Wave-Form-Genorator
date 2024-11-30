@@ -38,7 +38,7 @@ syscall dirread, 13, #2
 syscall dirclose, 14, #2
 
 // Keypad
-syscall keypad_polling 0, #0xFF01
-syscall uart_keypad_emmulation 1, #0xFF01
-syscall capture_prg_exit 2, #0xFF01
-syscall get_keypad_state 3, #0xFF01
+syscall keypad_polling 0, #0x8001
+syscall uart_keypad_emmulation 1, #0x8001
+syscall capture_prg_exit 2, #0x8001
+syscall get_keypad_state 3, #0x8001

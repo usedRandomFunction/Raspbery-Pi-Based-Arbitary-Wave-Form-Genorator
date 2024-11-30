@@ -198,6 +198,7 @@ void system_call_undefined_handler()
 
     esr_el1 &= 0xFFFF;      // Get just the svc argument
     w8 &= 0xFFFFFFFF;       // I cant load 32 bits dirrectly so load 64 and bitwise and it
+    w8 /= 8;                // w8 has been timesed by 8 before so we need to undo it
 
     generic_user_exception("User attempted to call undefined system call: SVC #0x%x, w8=%d!\n", esr_el1, w8);
 }
