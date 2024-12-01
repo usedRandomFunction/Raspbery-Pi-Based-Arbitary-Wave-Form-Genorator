@@ -43,7 +43,12 @@ int main()
 }
 
 void print_new_selection(int id)
-{
+{   
+    putchar('\r');
+
+    for (int i = 0; i < 42; i++)
+        putchar(' ');
+
     printf("\rSelected: %s", program_names[id]);
 }
 
@@ -89,7 +94,7 @@ void main_app_loop()
             current_selection++;
 
             if (current_selection >= number_of_programs_found)
-                current_keypad_state = 0;
+                current_selection = 0;
         }
 
         if (key_down & KEYPAD_STATE_BUTTON_ENT) // Launch
