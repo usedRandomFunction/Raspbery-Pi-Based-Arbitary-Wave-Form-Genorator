@@ -1,4 +1,4 @@
-ENTRY(entry)
+ENTRY(_entry)
 
 SECTIONS
 {
@@ -6,7 +6,7 @@ SECTIONS
 
     .text : 
     { 
-        bin/obj/entry.c.o (.text)           /* This is to force entry to be at a specific address */
+        *(.start)
         *(.text .text.* .gnu.linkonce.t*) 
     }
 
