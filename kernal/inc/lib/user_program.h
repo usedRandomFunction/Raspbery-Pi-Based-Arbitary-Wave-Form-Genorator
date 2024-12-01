@@ -54,9 +54,11 @@ bool load_user_program_from_disk(user_program_info* program, const char* path);
 // @param program_start The address to load the program section into
 // @param required_size The minium size of the program section
 // @param entry Address to start execution
+// @param stack_start The address of the start of the stack in memory
 // @param required_stack the minimum size of the stack
 // @return True if success, false if failed
-bool initialize_monolithic_user_program(user_program_info* program, void* program_start, size_t required_size, void* entry, size_t required_stack);
+bool initialize_monolithic_user_program(user_program_info* program, void* program_start, size_t required_size, void* entry, 
+    void* stack_start, size_t required_stack);
 
 // Changes whether or not the given program's program section is readonly
 // @param program A pointer to the program to change

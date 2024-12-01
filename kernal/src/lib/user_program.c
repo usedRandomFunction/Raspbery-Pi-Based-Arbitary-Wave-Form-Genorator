@@ -145,9 +145,16 @@ static bool s_load_monolithic_user_program_from_disk(user_program_info* program,
 
     uint64_t maxium_program_size = get_u64_from_config_file_entry_with_defult_by_name(config, "MONOLITHIC_PAGE_SIZE", UINT64_MAX);
     uint64_t minium_stack_size = get_u64_from_config_file_entry_with_defult_by_name(config, "MINIUM_STACK_SIZE", 1024);
+    uint64_t stack_address = get_u64_from_config_file_entry_with_defult_by_name(config, "STACK_ADDRESS", program_address + 0x000400000000);
     uint64_t program_entry = get_u64_from_config_file_entry_with_defult_by_name(config, "PROGRAM_ENTRY", program_address);
     uint64_t writability = get_u64_from_config_file_entry_with_defult_by_name(config, "PROGRAM_MEMORY_WRITABILITY", 0);
     uint64_t abi_version = get_u64_from_config_file_entry_with_defult_by_name(config, "ABI_VERSION", 0);
+
+    if (abi_version != 0)
+    {
+        free(image_path);
+        return false;
+    }
 
     int image = open(image_path, 0);
     free(image_path);
@@ -173,7 +180,7 @@ static bool s_load_monolithic_user_program_from_disk(user_program_info* program,
         monolithic_page_size = image_size;
     
     if (!initialize_monolithic_user_program(program, (void*)program_address, 
-        monolithic_page_size, (void*)program_entry, minium_stack_size))
+        monolithic_page_size, (void*)program_entry, (void*)stack_address, minium_stack_size))
     {
         close(image);
         return false;
@@ -205,12 +212,11 @@ static bool s_load_monolithic_user_program_from_disk(user_program_info* program,
     return true;
 }
 
-bool initialize_monolithic_user_program(user_program_info* program, void* program_start, size_t required_size, void* entry, size_t required_stack)
+bool initialize_monolithic_user_program(user_program_info* program, void* program_start, size_t required_size, void* entry, 
+    void* stack_start, size_t required_stack)
 {
-    void * program_stack = void_ptr_offset_bytes(program_start, 0x000400000000); // We'll just place the stack 128 GiB above the program
-    
     memclr(program, sizeof(user_program_info));
-    program->stack_start = program_stack;
+    program->stack_start = stack_start;
     program->entry = entry;
     
     translation_table_section_info table_sections[2];
@@ -224,11 +230,11 @@ bool initialize_monolithic_user_program(user_program_info* program, void* progra
     {
         table_sections[1].allocation = create_new_page_allocation(required_stack);
         table_sections[1].attributes = MMU_ATTRIBUTES_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER | MMU_ATTRIBUTES_EL0_ACCESS;
-        table_sections[1].section_start = program_stack;
+        table_sections[1].section_start = stack_start;
     }
 
     size_t stack_size = get_page_allocation_size(table_sections[1].allocation);
-    program->stack_end = void_ptr_offset_bytes(program_stack, stack_size);
+    program->stack_end = void_ptr_offset_bytes(stack_start, stack_size);
 
     
     if (!initialize_translation_table(&(program->translation_table), table_sections, required_size == 0 ? 1 : 2))
