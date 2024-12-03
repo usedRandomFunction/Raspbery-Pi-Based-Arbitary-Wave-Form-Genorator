@@ -26,8 +26,10 @@ ASM_SOURCES := $(shell find $(SRCDIR) -name '*.s')
 C_OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.c.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
 
+NAME := mainmenu
+
 # Targets
-TARGET := $(BINDIR)/mainmenu.elf
+TARGET := $(BINDIR)/$(NAME).elf
 
 all: $(TARGET)
 
@@ -35,7 +37,7 @@ $(TARGET): $(C_OBJECTS) $(ASM_OBJECTS)
 	@echo !==== linking ====!
 	$(LD) -o $@ $^ $(LDFLAGS)
 	@echo !==== Image Genoration ====!
-	aarch64-elf-objcopy $(TARGET) -O binary $(TARGET).img
+	aarch64-elf-objcopy $(TARGET) -O binary $(BINDIR)/$(NAME).img
 
 $(OBJDIR)/%.c.o: $(SRCDIR)/%.c
 	@echo !==== Compiling $^ ====!
