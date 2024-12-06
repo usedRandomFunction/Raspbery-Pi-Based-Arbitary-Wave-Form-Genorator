@@ -163,7 +163,7 @@ def uart_output_window_handle_input(input):
         uart_output_log_scroll_y = max(uart_output_log_scroll_y - 1, 0)
         draw_uart_output_window()
     elif input == curses.KEY_DOWN:
-        uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, len(uart_output_log) - 5)
+        uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, max(len(uart_output_log) - 5, 0))
         draw_uart_output_window()
     elif input == curses.KEY_LEFT:
         uart_output_log_scroll_x = max(uart_output_log_scroll_x - 1, 0)
