@@ -27,7 +27,7 @@ running = True
 stdscr = None
 config = None
 
-full_name = "AWG uart interface V 0.5"
+full_name = "AWG uart interface V 0.5.1"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -522,6 +522,7 @@ def show_help_window():
     draw_console_window()
 
 def handle_console_input(key):
+    global console_scroll_position_y
     global console_scroll_position_x
     global console_text_input
     global console_error_text
@@ -538,6 +539,7 @@ def handle_console_input(key):
             console_scroll_position_x = console_scroll_position_x - 1
             console_text_input = console_text_input[:console_scroll_position_x] + console_text_input[console_scroll_position_x + 1:]
         elif key == curses.ascii.ESC and stdscr.getch() == -1: # Escape key (this is a weird one)
+            console_scroll_position_y = 0
             console_scroll_position_x = 0
             console_text_input = ""
             console_error_text = ""
@@ -549,6 +551,7 @@ def handle_console_input(key):
                     handle_console_command()
                 else:
                     console_error_text = send_key_presses_from_string(console_text_input)
+            console_scroll_position_y = 0
             console_scroll_position_x = 0
             console_text_input = ""
         else:
@@ -590,7 +593,7 @@ def handle_console_scroling(input):
         console_scroll_position_y = min(console_scroll_position_y + 1, len(config["command_history"]))
         console_set_text_to_history(console_scroll_position_y - 1)
     elif input == curses.KEY_DOWN:
-        new_y = max(console_scroll_position_x - 1, 0)
+        new_y = max(console_scroll_position_y - 1, 0)
 
         if new_y == console_scroll_position_y:
             return
@@ -598,7 +601,7 @@ def handle_console_scroling(input):
         if new_y > 0:
             console_set_text_to_history(console_scroll_position_y - 1)
         else:
-            console_scroll_position_x = 0
+            console_scroll_position_y = 0
             console_text_input = ""
             draw_console_window()
 
@@ -708,7 +711,7 @@ def handle_console_command():
         return
 
     command_history = config["command_history"]
-    command_history.insert(0, command)
+    command_history.insert(0, console_text_input)
     
     if len(command_history) > config["command_history_max_size"]:
         command_history.pop()
