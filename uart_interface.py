@@ -171,6 +171,7 @@ def uart_output_window_handle_input(input):
         draw_uart_output_window()
     elif input == curses.KEY_DOWN:
         uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, max(len(uart_output_log) - 5, 0))
+        uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, max(len(uart_output_log) - 5, 0))
         draw_uart_output_window()
     elif input == curses.KEY_LEFT:
         uart_output_log_scroll_x = max(uart_output_log_scroll_x - 1, 0)
@@ -629,6 +630,7 @@ def show_help_window():
     draw_console_window()
 
 def handle_console_input(key):
+    global console_scroll_position_y
     global console_scroll_position_x
     global console_scroll_position_y
     global console_text_input
@@ -646,6 +648,7 @@ def handle_console_input(key):
             console_scroll_position_x = console_scroll_position_x - 1
             console_text_input = console_text_input[:console_scroll_position_x] + console_text_input[console_scroll_position_x + 1:]
         elif key == curses.ascii.ESC and stdscr.getch() == -1: # Escape key (this is a weird one)
+            console_scroll_position_y = 0
             console_scroll_position_x = 0
             console_scroll_position_y = 0
             console_text_input = ""
@@ -658,6 +661,7 @@ def handle_console_input(key):
                     handle_console_command()
                 else:
                     console_error_text = send_key_presses_from_string(console_text_input)
+            console_scroll_position_y = 0
             console_scroll_position_x = 0
             console_scroll_position_y = 0
             console_text_input = ""
@@ -700,6 +704,7 @@ def handle_console_scroling(input):
         console_set_text_to_history(console_scroll_position_y - 1)
     elif input == curses.KEY_DOWN:
         new_y = max(console_scroll_position_y - 1, 0)
+        new_y = max(console_scroll_position_y - 1, 0)
 
         if new_y == console_scroll_position_y:
             return
@@ -707,6 +712,7 @@ def handle_console_scroling(input):
         if new_y > 0:
             console_set_text_to_history(console_scroll_position_y - 1)
         else:
+            console_scroll_position_y = 0
             console_scroll_position_y = 0
             console_text_input = ""
             draw_console_window()
