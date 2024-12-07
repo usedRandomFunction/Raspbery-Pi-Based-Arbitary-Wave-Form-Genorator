@@ -241,14 +241,16 @@ size_t get_page_allocation_size(page_allocation_info* allocation)
 bool resize_page_allocation(page_allocation_info* allocation, size_t new_size)
 {
     size_t current_size = get_page_allocation_size(allocation);
+    size_t rounded_size = new_size + (new_size & (page_allocator_page_size_bytes - 1)) ? page_allocator_page_size_bytes : 0;
+    // We round up the size to handle the case were the current size is the clostest we can make to new_size
     
-    if (current_size == new_size)
+    if (current_size == rounded_size)
         return true;
 
-    if (current_size < new_size)
-        return s_grow_page_allocation(allocation, new_size, current_size);
+    if (current_size < rounded_size)
+        return s_grow_page_allocation(allocation, rounded_size, current_size);
 
-    return s_shrink_page_allocation(allocation, new_size, current_size);
+    return s_shrink_page_allocation(allocation, rounded_size, current_size);
 }
 
 void destroy_page_allocation(page_allocation_info* allocation)

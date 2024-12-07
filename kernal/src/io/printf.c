@@ -44,7 +44,7 @@ unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __bui
     char *p, *orig=dst, tmpstr[19];
 
     // failsafes
-    if(dst==(void*)0 || fmt==(void*)0) {
+    if(dst==(void*)0 || fmt==(void*)0  || !is_valid_memory(fmt)  || !is_valid_memory(dst)) {
         return 0;
     }
 
@@ -132,7 +132,7 @@ unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __bui
             // string
             if(*fmt=='s') {
                 p = __builtin_va_arg(args, char*);
-s_copystring:     if(p==(void*)0) {
+s_copystring:     if(p == (void*) 0  || !is_valid_memory(p)) {
                     p="(null)";
                 }
                 while(*p) {
@@ -158,11 +158,11 @@ unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory,
 {
     int bytes_written = 0;
     long int arg;
-    int len, sign, i;
+    int len, sign, i = 0;
     char *p, tmpstr[19];
 
     // failsafes
-    if(fmt==(void*)0) {
+    if(fmt==(void*)0 || !is_valid_memory(fmt)) {
         return 0;
     }
 
@@ -256,11 +256,11 @@ unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory,
             // string
             if(*fmt=='s') {
                 p = __builtin_va_arg(args, char*);
-copystring:     if(p==(void*)0) {
+copystring:     if(p == (void*) 0 || !is_valid_memory(p)) {
                     p="(null)";
                 }
 
-                if (!can_access_kernal_memory && is_kernal_memory(p))
+                if (!can_access_kernal_memory && is_kernal_memory(p) && (p != &tmpstr[i]))
                     generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", p, "printf");
 
                 while(*p) {

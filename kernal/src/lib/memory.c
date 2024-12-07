@@ -49,3 +49,22 @@ bool is_kernal_memory(const void* ptr)
 {
     return ((size_t)ptr) >= KERNEL_MEMORY_PREFIX;
 }
+
+bool is_valid_memory(const void* ptr)
+{
+    unsigned long par_el1;
+    asm volatile (
+        "at S1E1R, %1\n"
+        "mrs %0, par_el1\n"
+        : "=r" (par_el1)
+        : "r" (ptr)
+        : "memory");
+    
+    // Check for translation faults in PAR_EL1
+    // If there are any this is a invaild memory address
+
+    if (par_el1 & 0x1) 
+        return false;
+    
+    return true;
+}

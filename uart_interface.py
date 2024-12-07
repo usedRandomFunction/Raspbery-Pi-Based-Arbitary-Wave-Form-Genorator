@@ -10,6 +10,7 @@ import time
 import json
 import os
 
+dont_update_output_window = False
 uart_output_log_window = None
 uart_input_log_window = None
 keypad_details_window = None
@@ -27,7 +28,11 @@ running = True
 stdscr = None
 config = None
 
-full_name = "AWG uart interface V 0.5"
+magic_word_uart_ready_recive_offset = 0
+magic_word_uart_ready_recived = False
+magic_word_uart_ready = "UARTRDY\n"
+
+full_name = "AWG uart interface V 0.6"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -42,6 +47,7 @@ class awg_connection:
         if conn_type == "tcp":
             self.conenction = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.conenction.connect((address, port))
+            self.conenction.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)  # Set buffer size to 64 KB
             self.conenction.setblocking(False)
             self.target_string = f"{address}:{port}"
             self.connection_type = 0
@@ -52,6 +58,7 @@ class awg_connection:
         elif conn_type == 'stt':    # Serial over Tcp Tacked
             self.conenction = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.conenction.connect((address, 4242))
+            self.conenction.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)  # Set buffer size to 64 KB
             self.conenction.setblocking(False)
             self.tracking_conenction = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.tracking_conenction.connect((address, 4243))
@@ -163,7 +170,7 @@ def uart_output_window_handle_input(input):
         uart_output_log_scroll_y = max(uart_output_log_scroll_y - 1, 0)
         draw_uart_output_window()
     elif input == curses.KEY_DOWN:
-        uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, len(uart_output_log) - 5)
+        uart_output_log_scroll_y = min(uart_output_log_scroll_y + 1, max(len(uart_output_log) - 5, 0))
         draw_uart_output_window()
     elif input == curses.KEY_LEFT:
         uart_output_log_scroll_x = max(uart_output_log_scroll_x - 1, 0)
@@ -253,6 +260,10 @@ def uart_stop_tracking_input(): # Used while sending files as to not just delete
 def uart_restart_tracking_input():
     global uart_input_hiddle_bytes_counter
     global uart_input_log
+
+    if uart_input_hiddle_bytes_counter <= 0:
+        uart_input_hiddle_bytes_counter = -1
+        return
 
     line = ""
     
@@ -379,12 +390,96 @@ def connect_to(conn_type, args):
     draw_console_window()
     redraw_subwindows()
 
+def parse_cfg_file(filepath):
+    lines = []
+    file = {}
+
+    with open(filepath, 'r') as fd:
+        lines = fd.readlines()
+
+    for line_index in range(len(lines)):
+        line = lines[line_index]
+        comment_index = line.find('#')
+
+        if comment_index != -1:
+            line = line[:comment_index] # remove comments
+
+        if len(line) == 0 or line == "\n":
+            continue
+        
+        first_break = min(max(line.find(' '), 0), max(line.find('='), 0))
+
+        name = line[0:first_break]
+        value = line[first_break:]  # This still has leading spaces and equals
+
+        value = value.lstrip()
+
+        while value[0] == '=':
+            value = value[1:].lstrip()
+
+        if value[0] != '"':
+            file[name] = value.replace('\n', '')
+            continue
+
+        # Now handle qoutes
+
+        line = value[1:] # Work around since this is how the rest of the code will work
+        value = ""
+        done = False
+
+
+        while line_index < len(lines) and done == False:
+            i = 0
+
+            while i < len(line):
+                if line[i] == '"' and (line[i - 1] != '\\' and line[i - 2] != '\\'):
+                    done = True
+                    break
+                i = i + 1
+            
+            value += line[:i]
+            
+        file[name] = value
+
+    return file
+
+def wait_for_magic_word():
+    global magic_word_uart_ready_recived
+
+    while magic_word_uart_ready_recived == False:
+
+        if connection.available():
+            handle_uart_input()
+        
+
+    magic_word_uart_ready_recived = False
+        
+def uart_input_handle_magic_words(last_recived_char):
+    global magic_word_uart_ready_recive_offset
+    global magic_word_uart_ready_recived
+
+    if magic_word_uart_ready_recived == True:   # If data is sent after a ready message then it is invalid
+        magic_word_uart_ready_recived = False
+
+    if magic_word_uart_ready[magic_word_uart_ready_recive_offset] == last_recived_char:
+        magic_word_uart_ready_recive_offset = magic_word_uart_ready_recive_offset + 1
+
+        if magic_word_uart_ready_recive_offset == len(magic_word_uart_ready):
+            magic_word_uart_ready_recive_offset = 0
+            magic_word_uart_ready_recived = True
+    else:
+        magic_word_uart_ready_recive_offset = 0
+        magic_word_uart_ready_recived = False
+    
 def handle_uart_input():
     data = connection.read()
 
     if data == None:
         return
-
+    
+    for char in data:
+        uart_input_handle_magic_words(char)
+    
     lines = data.replace('\r', '\n\\r').split('\n')
 
     uart_output_log[len(uart_output_log) - 1] = uart_output_log[len(uart_output_log) - 1] + lines[0]
@@ -392,8 +487,8 @@ def handle_uart_input():
     for i in range(1, len(lines), 1):
         uart_output_log.append(lines[i])
 
-
-    draw_uart_output_window()
+    if not dont_update_output_window:
+        draw_uart_output_window()
     
 def draw_console_window():
     console_window.clear()
@@ -472,6 +567,18 @@ Currently thre are five commands:
   this command with the file path
   to the image file as the agument.
   (relitve paths are allowed)
+
+- run user app (:run_user_app /
+  :rua). Used to upload a user app,
+  run with out writing to the 
+  disk. 
+
+  1. Run uartrun on the AWG
+  2. Call :rua ${PATH TO CFG}
+"""[1:], """
+- save logs (:save \ :save_logs)
+  used to save the output log to a
+  file. Filepath is first argument
 """[1:]]
 
 def draw_help_page(page_number, window):
@@ -523,6 +630,7 @@ def show_help_window():
 
 def handle_console_input(key):
     global console_scroll_position_x
+    global console_scroll_position_y
     global console_text_input
     global console_error_text
 
@@ -539,6 +647,7 @@ def handle_console_input(key):
             console_text_input = console_text_input[:console_scroll_position_x] + console_text_input[console_scroll_position_x + 1:]
         elif key == curses.ascii.ESC and stdscr.getch() == -1: # Escape key (this is a weird one)
             console_scroll_position_x = 0
+            console_scroll_position_y = 0
             console_text_input = ""
             console_error_text = ""
             draw_console_window()
@@ -550,6 +659,7 @@ def handle_console_input(key):
                 else:
                     console_error_text = send_key_presses_from_string(console_text_input)
             console_scroll_position_x = 0
+            console_scroll_position_y = 0
             console_text_input = ""
         else:
             handle_console_scroling(key)
@@ -571,7 +681,6 @@ def console_set_text_to_history(possition):
 
     draw_console_window()
 
-
 def handle_console_scroling(input):
     global console_scroll_position_y
     global console_scroll_position_x
@@ -590,7 +699,7 @@ def handle_console_scroling(input):
         console_scroll_position_y = min(console_scroll_position_y + 1, len(config["command_history"]))
         console_set_text_to_history(console_scroll_position_y - 1)
     elif input == curses.KEY_DOWN:
-        new_y = max(console_scroll_position_x - 1, 0)
+        new_y = max(console_scroll_position_y - 1, 0)
 
         if new_y == console_scroll_position_y:
             return
@@ -598,14 +707,11 @@ def handle_console_scroling(input):
         if new_y > 0:
             console_set_text_to_history(console_scroll_position_y - 1)
         else:
-            console_scroll_position_x = 0
+            console_scroll_position_y = 0
             console_text_input = ""
             draw_console_window()
 
         console_scroll_position_y = new_y
-
-         
-
 
 def command_clear():
     global uart_output_log_scroll_y, uart_output_log_scroll_x
@@ -636,12 +742,32 @@ def command_key(argument):
     
     send_key_press_uart_message_from_string(command_split[1], state)
 
-def command_kenral_reload(filepath):
-    size = os.path.getsize(filepath)
+def upload_file(file, size, progress_bar: curses.window = None, progress_bar_size = 0):
+    uart_stop_tracking_input()
+    bytes_sent_per_ch = progress_bar_size / size
+    current_bar_size = 0
     bytes_read = 0
 
+    with open(file, "rb") as file:
+        while bytes_read < size:
+            uart_send_wrapper(file.read(1024))
+            bytes_read = bytes_read + 1024
+
+            new_bar_size = min(int(bytes_read * bytes_sent_per_ch), progress_bar_size)
+
+            
+
+            if progress_bar != None and current_bar_size < new_bar_size:
+                progress_bar.addstr(1, current_bar_size + 1, "█" * (new_bar_size - current_bar_size))
+                progress_bar.refresh()
+                current_bar_size = new_bar_size
+
+    uart_restart_tracking_input()
+
+def command_kenral_reload(filepath):
+    size = os.path.getsize(filepath)
+
     uart_send_wrapper(size.to_bytes(4, 'big'))
-    uart_stop_tracking_input()
 
     window_width = terminal_width // 3 * 2
     progress_bar_window = create_new_popup_window(9, window_width)
@@ -654,53 +780,190 @@ def command_kenral_reload(filepath):
     progress_bar.border()
     progress_bar.refresh()
 
+    
     max_bar_size = window_width - 6
-    bytes_sent_per_ch = max_bar_size / size
-    current_bar_size = 0
+    upload_file(filepath, size, progress_bar, max_bar_size)
 
-    with open(filepath, "rb") as file:
-        while bytes_read < size:
-            uart_send_wrapper(file.read(1024))
-            bytes_read = bytes_read + 1024
-
-            new_bar_size = int(bytes_read * bytes_sent_per_ch)
-
-            
-
-            if current_bar_size < new_bar_size:
-                progress_bar.addstr(1, current_bar_size + 1, "█" * (new_bar_size - current_bar_size))
-                progress_bar.refresh()
-                current_bar_size = new_bar_size
-
-    uart_restart_tracking_input()
     redraw_subwindows()
 
+def uartrun_execute_packet(address: int):
+    packet = b'\x01'    # Base header (specific header type)
+
+    packet += address.to_bytes(8, 'little')
+
+    uart_send_wrapper(packet)
+
+def uartrun_section_packet(start: int, size: int, flags: int):
+    packet = b'\x02'    # Base header (specific header type)
+
+    packet += start.to_bytes(8, 'little')
+    packet += size.to_bytes(8, 'little')
+    packet += flags.to_bytes(4, 'little')
+
+    uart_send_wrapper(packet)
+
+def uartrun_memset_packet(start: int, size: int, value: int):
+    packet = b'\x11\x03'    # Base header (specific header size, type)
+
+    packet += start.to_bytes(8, 'little')
+    packet += size.to_bytes(8, 'little')
+    packet += value.to_bytes(1, 'little')
+
+    uart_send_wrapper(packet)
+
+def uartrun_memcpy_packet(start: int, size: int, file: str, progress_bar: curses.window = None, progress_bar_size = 0, parent_window: curses.window = None):
+    packet = b'\x04'    # Base header (specific header type)
+
+    packet += start.to_bytes(8, 'little')
+    packet += size.to_bytes(8, 'little')
+
+    uart_send_wrapper(packet)
+
+    if parent_window != None:
+        parent_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+        parent_window.refresh()
+
+    wait_for_magic_word()
+
+    upload_file(file, size, progress_bar, progress_bar_size)
+
+# File path is in relation to the computer running this script
+def command_run_user_app(filepath): # TODO support ABI version controll
+    global dont_update_output_window
+    config_file = {}
+
+    if filepath[-1] != '/' or filepath[-1] != '\\':
+            filepath = f"{filepath}/"
+    
+    for file in os.listdir(filepath):   # Find the config file for the app
+        if not file.endswith(".cfg"):
+            continue
+        
+        config_file = parse_cfg_file(filepath + file)
+        break
+
+    if config_file["APPLICATION_TYPE"] != "MONOLITHIC": 
+        application_type = config_file["APPLICATION_TYPE"]
+        raise ValueError(f"Invalid application type: \"{application_type}\"")
+    
+    image_file_path = f"{filepath}bin/" + config_file["IMAGE_PATH"]  # Get the size of monolithic page
+    image_file_size = os.path.getsize(image_file_path)
+    
+    monolithic_page_start = int(config_file["PROGRAM_ADDRESS"], base=0)
+    monolithic_page_size = image_file_size
+    entry_address = int(config_file["PROGRAM_ENTRY"], base=0)
+
+    image_file_size = min(image_file_size, monolithic_page_size)    # Handles the case of the page size
+                                                                    # being smaller then the image
+    if "MONOLITHIC_PAGE_SIZE" in config_file: 
+        monolithic_page_size = int(config_file["MONOLITHIC_PAGE_SIZE"], base=0)
+
+    dont_update_output_window = True
+    program_memory_writability = False
+    if "PROGRAM_MEMORY_WRITABILITY" in config_file:
+        program_memory_writability = int(config_file["PROGRAM_MEMORY_WRITABILITY"], base=0) != 0
+
+    window_width = terminal_width // 3 * 2
+    progress_bar_window = create_new_popup_window(10, window_width)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    horizontaly_center_text(progress_bar_window, 0, " Uploading application ")
+    progress_bar_window.addnstr(1, 2, f"Uploading {os.path.basename(filepath)} ({(image_file_size // 1024)} KiB)", window_width - 4)
+    progress_bar_window.addnstr(2, 2, "Waiting on ready signal", window_width - 4)
+    progress_bar_window.refresh()
+
+    progress_bar = create_centered_window(3, window_width - 4, progress_bar_window, 2)
+    progress_bar.border()
+    progress_bar.refresh()
+
+    wait_for_magic_word()
+                                      
+    progress_bar_window.addnstr(2, 2, "Creating monolithic page", window_width - 4)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    progress_bar_window.refresh()
+
+    uartrun_section_packet(monolithic_page_start, monolithic_page_size, 1) # 1 is VMEMMAP_WRITABILITY
+
+    if monolithic_page_size > image_file_size:
+        progress_bar_window.addnstr(2, 2, "Zeroing extra bytes     ", window_width - 4)
+        progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+        progress_bar_window.refresh()
+
+        start_addresss = monolithic_page_start + image_file_size
+        size = monolithic_page_size - image_file_size
+
+        wait_for_magic_word()
+        uartrun_memset_packet(start_addresss, size, b'\x00')
+
+    progress_bar_window.addnstr(2, 2, "Uploading image         ", window_width - 4)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    progress_bar_window.refresh()
+
+    wait_for_magic_word()
+
+    max_bar_size = window_width - 6
+    uartrun_memcpy_packet(monolithic_page_start, image_file_size, image_file_path, progress_bar, max_bar_size, progress_bar_window)
+
+    progress_bar_window.addnstr(2, 2, "Enabling executablity", window_width - 4)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    progress_bar_window.refresh()
+
+    wait_for_magic_word()
+
+    uartrun_section_packet(monolithic_page_start, monolithic_page_size, 
+                           4 | (1 if program_memory_writability else 0)) # 1 is VMEMMAP_WRITABILITY, 4 is VMEMMAP_EXECUTABLE
+
+    wait_for_magic_word()
+
+    redraw_subwindows()
+
+    uartrun_execute_packet(entry_address)
+    dont_update_output_window = False
+
+def command_save_logs(filepath):
+    with open(filepath, 'w') as file:
+        file.truncate(0)
+        file.write('\n'.join(uart_output_log))
+
 def handle_console_command():
+    global dont_update_output_window
     global console_error_text
 
     console_error_text = console_error_text.lower()
     command_split = console_text_input.split(' ', 1)
     command = command_split[0][1:].lower()
+    curses.curs_set(0)
     argument = ""
     
+    console_window.clear()
+    console_window.addstr(0, 1, "^C", curses.A_REVERSE)
+    console_window.addstr(0, 3, " to abort command")
+    console_window.refresh()
+
     if len(command_split) > 1:
         argument = command_split[1]
 
     try:
         if command in ["q", "quit"]:
-            save_config()
-            exit(0)
+            exit_wrapper("Command", 0)
         elif command == "clear":
             command_clear()
         elif command == "key":
             command_key(argument)
         elif command in ["kreload", "kernal_reload"]:
             command_kenral_reload(argument)
+        elif command in ["rua", "run_user_app"]:
+            command_run_user_app(argument)
+        elif command in ["save", "save_logs"]:
+            command_save_logs(argument)
         elif command in ["h", "help"]:
             show_help_window()
         else:
             console_error_text = f"Unkown command \"{command}\""
             return
+    except KeyboardInterrupt:   # So you can exit commands with ^C
+        uart_restart_tracking_input()
+        dont_update_output_window = False
+        redraw_subwindows()
     except Exception as e:
         console_error_text = str(e)
 
@@ -708,7 +971,9 @@ def handle_console_command():
         return
 
     command_history = config["command_history"]
-    command_history.insert(0, command)
+
+    if console_text_input[1:] != command_history[0]:
+        command_history.insert(0, console_text_input[1:])
     
     if len(command_history) > config["command_history_max_size"]:
         command_history.pop()
@@ -851,6 +1116,12 @@ def save_config():
 
         json.dump(config, file, indent=4, sort_keys=True)
 
+def exit_wrapper(source: str, code: int):
+    curses.endwin()
+    print(f"Exited form {source}")
+    save_config()
+    exit(code)
+
 def main(_stdscr: curses.window):
     global config_file_path
     global stdscr
@@ -911,7 +1182,11 @@ def entry():
     arguments = argument_parser.parse_args()
 
     os.environ.setdefault('ESCDELAY', '25')
-    wrapper(main)
+
+    try:
+        wrapper(main)
+    except KeyboardInterrupt:
+        exit_wrapper("Keyboard interupt", -1)
 
 if __name__ == "__main__":
     entry()

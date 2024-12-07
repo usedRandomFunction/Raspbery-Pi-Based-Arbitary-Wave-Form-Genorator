@@ -60,6 +60,11 @@ void* memset(void* dst, size_t size, uint8_t value);
 // @return True if in kernal memory False if not
 bool is_kernal_memory(const void* ptr);
 
+// Checks if a memory address exists without rasing excptions
+// @param ptr The pointer to check
+// @return True if ptr is a vaild memory address
+bool is_valid_memory(const void* ptr);
+
 // Sets n bytes of dst to 0
 // @param dst The destination buffer
 // @param size The number of bytes to set

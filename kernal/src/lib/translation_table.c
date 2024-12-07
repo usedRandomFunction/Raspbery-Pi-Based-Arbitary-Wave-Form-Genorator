@@ -209,13 +209,17 @@ bool insert_translation_table_section(translation_table_info* table, translation
         break;
     }
     // Now we know where its going, we can check if it can fit there
-    size_t last_section_size = get_page_allocation_size(table->sections[target_section_id - 1].allocation);
-    size_t last_section_end = (size_t)table->sections[target_section_id - 1].section_start + last_section_size;
 
-    if (last_section_end > (size_t)section->section_start)
+    if (target_section_id > 0)  // Since section -1 doesnt exist we just wont check that case
     {
-        printf("Failed to insert section, virtual address clashes with section: %d,\n", target_section_id - 1);
-        return false;
+        size_t last_section_size = get_page_allocation_size(table->sections[target_section_id - 1].allocation);
+        size_t last_section_end = (size_t)table->sections[target_section_id - 1].section_start + last_section_size;
+
+        if (last_section_end > (size_t)section->section_start)
+        {
+            printf("Failed to insert section, virtual address clashes with section: %d,\n", target_section_id - 1);
+            return false;
+        }
     }
     // Now it fits, lets set up the buffers
 
