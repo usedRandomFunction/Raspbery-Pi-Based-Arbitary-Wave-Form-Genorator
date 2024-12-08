@@ -56,7 +56,7 @@ kernal_reloader_begin_relocatable:
 
 // x5 is number of bytes to load x1 is uart address
 kernal_reload_begin:
-    mov     x6,     xzr             // load address
+    mov     x6,     0x80000         // load address
     mov     x2,     (1 << 4)        // Bit flag for reading data
 .reload_loop:
 .wait_for_data:
@@ -71,7 +71,7 @@ kernal_reload_begin:
 
 
 
-    mov     x0,     xzr             // And jump to it
+    mov     x0,     0x80000         // And jump to it
     br      x0
 
 kernal_reloader_end_relocatable:

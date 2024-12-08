@@ -2,7 +2,7 @@ ENTRY(_start)
 
 SECTIONS
 {
-    . = 0xFFFF000000000000;
+    . = 0xFFFF000000080000;
 
     .text.boot : {          /* These are stored here since after boot they are not need to se let the stack overwrite them*/
         KEEP(*(.text.boot))

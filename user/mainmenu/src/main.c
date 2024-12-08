@@ -77,6 +77,7 @@ void main_app_loop()
 
         // This mess finds out what keys have just started to be pressed
         keypad_state key_down = (current_keypad_state ^ previous_keypad_state) & current_keypad_state;
+        previous_keypad_state = current_keypad_state;
         
         if (key_down == 0)  // TODO maby a delay here
             continue;       // Dont do anything if no keys are pressed

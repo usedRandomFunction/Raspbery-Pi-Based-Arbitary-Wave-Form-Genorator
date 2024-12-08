@@ -8,11 +8,16 @@
 #include "lib/alloc.h"
 
 
-extern char _start[]; // Linker will set this to point to the start of the program
+
+// extern char _start[]; // Linker will set this to point to the start of the program
 extern char __end[]; // Linker will set this to point to the end of the program
 
-#define PROGRAM_START_ADDRESS_POINTER (void*) &_start
-#define PROGRAM_START_ADDRESS_SIZE_T (size_t)&_start
+// Redfined from _start to 0xFFFF000000000000 to prevent issues
+// with the existing memory and translation code when removing 
+// the bootloader. Should be revisted when page_allocator uses 
+// pages with size <= 0x80000 See issue #23
+#define PROGRAM_START_ADDRESS_POINTER ((void*)0xFFFF000000000000)
+#define PROGRAM_START_ADDRESS_SIZE_T ((size_t)0xFFFF000000000000)
 
 #define PROGRAM_END_ADDRESS_POINTER (void*) &__end
 #define PROGRAM_END_ADDRESS_SIZE_T (size_t)&__end
