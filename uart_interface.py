@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.6"
+full_name = "AWG uart interface V 0.6.1"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -752,26 +752,36 @@ def upload_file(file, size, progress_bar: curses.window = None, progress_bar_siz
     uart_stop_tracking_input()
     bytes_sent_per_ch = progress_bar_size / size
     current_bar_size = 0
-    bytes_read = 0
+    bytes_sent = 0
 
     with open(file, "rb") as file:
-        while bytes_read < size:
-            uart_send_wrapper(file.read(1024))
-            bytes_read = bytes_read + 1024
+        while bytes_sent < size:
+            data = file.read(min(size - bytes_sent, 1024))
+            uart_send_wrapper(data)
+            bytes_sent = bytes_sent + len(data)
 
-            new_bar_size = min(int(bytes_read * bytes_sent_per_ch), progress_bar_size)
+            if len(data) == 0:  # End if there is no more file to read
+                break
 
-            
+            new_bar_size = min(int(bytes_sent * bytes_sent_per_ch), progress_bar_size)
 
             if progress_bar != None and current_bar_size < new_bar_size:
                 progress_bar.addstr(1, current_bar_size + 1, "█" * (new_bar_size - current_bar_size))
                 progress_bar.refresh()
                 current_bar_size = new_bar_size
 
+    if bytes_sent < size:   # Pad with zeros if needed
+        uart_send_wrapper(b'\x00' * (size - bytes_sent))
+
     uart_restart_tracking_input()
+
+    return bytes_sent
 
 def command_kenral_reload(filepath):
     size = os.path.getsize(filepath)
+
+    alignment_size = 4  # The kernal reloader app expects the memory to be a multiple of 4
+    size = size + ((alignment_size - size % alignment_size) if size % alignment_size > 0 else 0)
 
     uart_send_wrapper(size.to_bytes(4, 'big'))
 
@@ -786,6 +796,7 @@ def command_kenral_reload(filepath):
     progress_bar.border()
     progress_bar.refresh()
 
+    time.sleep(0.25)     # Give some time for the AWG to get ready
     
     max_bar_size = window_width - 6
     upload_file(filepath, size, progress_bar, max_bar_size)
