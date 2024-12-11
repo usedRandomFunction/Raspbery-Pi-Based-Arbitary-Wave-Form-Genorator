@@ -2,6 +2,7 @@
 #include "lib/config_file.h"
 #include "lib/exceptions.h"
 #include "io/file_access.h"
+#include "lib/interrupts.h"
 #include "lib/memory.h"
 #include "lib/string.h"
 #include "io/printf.h"
@@ -12,6 +13,7 @@ extern int system_call_exit_return_value;
 void system_call_exit(int status); 
 
 static user_program_info* s_active_user_program = NULL;
+static bool s_should_exit_on_interupt_end = false;
 char* use_program_requested_switch = NULL;
 
 // Used to load a load monolithic user program from the disk
@@ -30,6 +32,8 @@ void terminate_current_user_program()
 {
     if (!is_user_program_active())
         return;
+
+    printf("\nTerminating current user program\n");
 
     system_call_exit(INT32_MIN);
 }
@@ -375,8 +379,24 @@ void user_program_switch_to(const char* new_executable_path)
     terminate_current_user_program();
 }
 
+void user_program_on_interupt_end()
+{
+    if (s_should_exit_on_interupt_end)
+    {
+        s_should_exit_on_interupt_end = false;
+        terminate_current_user_program();
+    }
+}
+
 void defult_prg_exit_handler()
 {
-    printf("\nPRG_EXIT interupt raised!\n");
+    if (interupt_active)
+    {
+        printf("Waiting on interupt end before exiting program\n");
+        s_should_exit_on_interupt_end = true;
+
+        return;
+    }
+    
     terminate_current_user_program();
 }

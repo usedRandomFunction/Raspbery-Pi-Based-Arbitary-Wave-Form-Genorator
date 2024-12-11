@@ -25,8 +25,6 @@ void initialize_gpio_interupts()
     mmio_write(GPAREN1, 0);
     mmio_write(GPAFEN0, 0);
     mmio_write(GPAFEN1, 0);
-    mmio_write(GPEDS0, 0xFFFFFFFF);
-    mmio_write(GPEDS1, 0xFFFFFFFF);
 
     enable_irq(52);
 }
@@ -184,7 +182,7 @@ void gpio_interupt_handler_function()
 
             continue;
         }
-
+        
         s_interupt_hanlders[i](i);
     }
 

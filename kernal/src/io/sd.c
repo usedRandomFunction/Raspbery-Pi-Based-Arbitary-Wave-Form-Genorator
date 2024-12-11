@@ -127,7 +127,8 @@ int initialize_sd()
     mmio_write(GPPUD, 0);
     mmio_write(GPPUDCLK1, 0);
 
-    mmio_write_bitwise_or(GPHEN1, 1 << 15);
+    // I dont know why this line is here, but it works without it
+    // mmio_write_bitwise_or(GPHEN1, 1 << 15);
 
     gpio_function_select(48, GPFSEL_Alternate3);
     gpio_function_select(49, GPFSEL_Alternate3);

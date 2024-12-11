@@ -1,6 +1,13 @@
 #ifndef INTERPUTS_H
 #define INTERPUTS_H
 
+#include <stdbool.h>
+
+// Used by some handler functions to check
+// if they where called from a interupt or
+// dirrectly
+extern bool interupt_active;
+
 // Dissables all interupts incase they have not defulted to zero
 // and sets gpu irq routing
 void initialize_interupts();

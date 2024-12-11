@@ -1,10 +1,13 @@
 #include "lib/interrupts.h"
 
 #include "io/memoryMappedIO.h"
+#include "lib/user_program.h"
 #include "lib/exceptions.h"
 #include "io/keypad.h"
 #include "io/printf.h"
 #include "io/gpio.h"
+
+bool interupt_active;
 
 void initialize_interupts()
 {
@@ -42,6 +45,7 @@ void route_gpu_irqs(int core)
 void generic_irq_handler()
 {   
     uint32_t irq_source = mmio_read(CORE_0_IRQ_SOURCE); // TODO check if is core other then zero
+    interupt_active = true;
     int irq = -1;
 
     if (irq_source & (1 << 1))     // Handle physical timer
@@ -80,4 +84,7 @@ void generic_irq_handler()
         printf("\n!============================!\nUnkown IRQ %d\n", irq);
         kernel_panic();
     }
+
+    interupt_active = false;
+    user_program_on_interupt_end();
 }

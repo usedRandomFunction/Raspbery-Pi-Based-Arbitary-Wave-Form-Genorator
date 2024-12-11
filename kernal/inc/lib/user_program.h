@@ -95,6 +95,12 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
 // to where it would if the user called exit()
 void user_program_switch_to(const char* new_executable_path);
 
+// Called by generic_irq_handler on the end of a interupt
+// Used to reset anything that needs to after a interupt
+// and to handle prg_exit
+// @warning Do not call this function as it may resault in unintended behavor 
+void user_program_on_interupt_end();
+
 // ===================================================================
 // DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED
 // ===================================================================

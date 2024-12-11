@@ -54,7 +54,6 @@ void initialize_keypad()
     keypad_polling(-2);
 }
 
-
 int keypad_polling(int delay_milliseconds)
 {
     if (allow_physical_keypad == false)
@@ -312,7 +311,7 @@ void  keypad_poll()
         uint8_t keypad_data = 0xFE;
 
         if (recive_buffer[0] & 0x80)                                // The SPI hardware is not 100% compatible and no
-            keypad_data = (recive_buffer[0] << 1) | 0x1;        // matter the pull resistor it will recive C0 not 80
+            keypad_data = (recive_buffer[0] << 1) | 0x1;            // matter the pull resistor it will recive C0 not 80
 
         row_data[row] = keypad_data;
     }
@@ -339,5 +338,6 @@ void s_tigger_prg_exit_from_gpio(int pin)
 
 void tigger_prg_exit()
 {
+    printf("\nPRG_EXIT interupt raised!\n");
     prg_exit_handler();
 }
