@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.6.2"
+full_name = "AWG uart interface V 0.6.3"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -992,11 +992,16 @@ def handle_console_command():
         return
 
     command_history = config["command_history"]
-
-    if console_text_input[1:] != command_history[0]:
-        command_history.insert(0, console_text_input[1:])
     
-    if len(command_history) > config["command_history_max_size"]:
+    # command_history
+
+    if console_text_input[1:] in command_history:                   # If there allready is a occurrence
+        index = command_history.index(console_text_input[1:])       # Just move it to the fornt
+        command_history.pop(index)                                  # Remove the occurce from histroy
+
+    command_history.insert(0, console_text_input[1:])               # Add the current entry to the history
+    
+    if len(command_history) > config["command_history_max_size"]:   # remove entrys over size limit
         command_history.pop()
 
     config["command_history"] = command_history
