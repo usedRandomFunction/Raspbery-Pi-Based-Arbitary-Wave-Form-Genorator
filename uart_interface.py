@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.6.1"
+full_name = "AWG uart interface V 0.6.2"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -181,6 +181,7 @@ def uart_output_window_handle_input(input):
         draw_uart_output_window()
 
 def draw_uart_output_window():
+    cursor_y, cursor_x = stdscr.getyx() # Dont move the cursor
     uart_output_log_window.clear()
     uart_output_log_window.border("|", "|", "=", "=", "+", "+", "+", "+")
     horizontaly_center_text(uart_output_log_window, 0, " UART Output (From AWG) ")
@@ -207,6 +208,7 @@ def draw_uart_output_window():
 
 
     uart_output_log_window.refresh()
+    stdscr.move(cursor_y, cursor_x)
 
 def resize_uart_input_window(new_height):
     global uart_input_max_lines
@@ -233,7 +235,7 @@ def uart_send_wrapper(data):
     global uart_input_log
 
     connection.write(data)
-    
+
     if uart_input_hiddle_bytes_counter == -1:
         # we split into ten bytes each as ten fit on a line
         split_data = split_byte_array(data, 10)
@@ -252,6 +254,7 @@ def uart_send_wrapper(data):
         draw_uart_input_window()
     else:
         uart_input_hiddle_bytes_counter = uart_input_hiddle_bytes_counter + len(data)
+
 
 def uart_stop_tracking_input(): # Used while sending files as to not just delete the entrie log
     global uart_input_hiddle_bytes_counter
@@ -290,6 +293,7 @@ def uart_restart_tracking_input():
     uart_input_hiddle_bytes_counter = -1
 
 def draw_uart_input_window():
+    cursor_y, cursor_x = stdscr.getyx() # Dont move the cursor
     uart_input_log_window.clear()
 
     uart_input_log_window.border("|", "|", "=", "=", "+", "+", "+", "+")
@@ -302,8 +306,10 @@ def draw_uart_input_window():
         uart_input_log_window.addstr(1 + number_of_entrys - i, 2, line)
 
     uart_input_log_window.refresh()
+    stdscr.move(cursor_y, cursor_x)
 
 def draw_keypad_window():
+    cursor_y, cursor_x = stdscr.getyx() # Dont move the cursor
     keypad_details_window.attron(curses.A_BOLD)
     keypad_details_window.border("|", "|", "=", "=", "+", "+", "+", "+")
     horizontaly_center_text(keypad_details_window, 0, " Keypad Emmulation ")
@@ -326,11 +332,12 @@ def draw_keypad_window():
     horizontaly_center_text(keypad_details_window, 16, "+-----+-----+-----+----------+")
 
     keypad_details_window.refresh()
+    stdscr.move(cursor_y, cursor_x)
 
 def redraw_subwindows():
     draw_uart_output_window()
     draw_uart_input_window()
-    draw_keypad_window
+    draw_keypad_window()
 
 def create_new_popup_window(height, width, height_offest = 0, width_offset = 0) -> curses.window:
     # basicly they all follow the same rule for where they go so this function exists
@@ -632,7 +639,6 @@ def show_help_window():
 def handle_console_input(key):
     global console_scroll_position_y
     global console_scroll_position_x
-    global console_scroll_position_y
     global console_text_input
     global console_error_text
 
@@ -650,7 +656,6 @@ def handle_console_input(key):
         elif key == curses.ascii.ESC and stdscr.getch() == -1: # Escape key (this is a weird one)
             console_scroll_position_y = 0
             console_scroll_position_x = 0
-            console_scroll_position_y = 0
             console_text_input = ""
             console_error_text = ""
             draw_console_window()
@@ -663,7 +668,6 @@ def handle_console_input(key):
                     console_error_text = send_key_presses_from_string(console_text_input)
             console_scroll_position_y = 0
             console_scroll_position_x = 0
-            console_scroll_position_y = 0
             console_text_input = ""
         else:
             handle_console_scroling(key)
@@ -713,8 +717,8 @@ def handle_console_scroling(input):
             console_set_text_to_history(console_scroll_position_y - 1)
         else:
             console_scroll_position_y = 0
-            console_scroll_position_y = 0
-            console_text_input = ""
+            console_scroll_position_x = 1
+            console_text_input = ":"
             draw_console_window()
 
         console_scroll_position_y = new_y
