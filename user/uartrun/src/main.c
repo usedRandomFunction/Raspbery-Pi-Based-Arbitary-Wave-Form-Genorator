@@ -60,8 +60,6 @@ enum
     UART_PACKET_TYPE_MEMCPY     = 4,
 };
 
-extern char __text_start[]; // Linker will set this to point to the start of the program
-
 void handle_uart_execute_packet(uart_packet_header* base_header);
 void handle_uart_section_packet(uart_packet_header* base_header);
 void handle_uart_memset_packet(uart_packet_header* base_header);

@@ -1,6 +1,8 @@
 # Included uart apps
 
-Currently there is only one included uart app [`uartrun`](#uartrun).
+Currently there are two included uart apps 
+1. [`uartrun`](#uartrun).
+2. [`uartupld`](#uartupld)
 
 ## uartrun
 
@@ -45,7 +47,7 @@ Note all values in the packet headers are little edin
 #### Ignore packet
 
 This is a very simple packet, it is ignored.<br>
-There is non type specific header
+There is no type specific header
 
 #### Execute packet
 
@@ -87,3 +89,80 @@ Recives `size` bytes from the uart and writes then to `start`
 
 After sending the packet header, the user needs to wait for the next magic word, <br>
 befor sending the data over.
+
+## uartupld
+
+Uart UPloaD is a untill used to upload,<br> 
+delete and or / rename files over the uart.
+
+### Communication protocall
+
+Like `uartrun`, `uartupld` uses:<br>
+`55 41 52 54 52 44 59 0A`  "UARTRDY\n"<br>
+As its magic word to indicate when the system<br>
+is ready for incoming data <br>
+
+It also uses the same packet structure, with little edin numbers<br>
+Note that when `client` is mentioned it means the device connecting <br>
+to the AWG, not the AWG itself.
+
+#### Basic header
+
+| Offset<br>(bytes) | Size<br>(bytes)| Name | Description |
+|-------------------|----------------|------|-------------|
+| 0x00 | 0x01 | type | The packet type 
+
+#### Packet Types
+
+| Type | Packet |
+|------|--------|
+| 0 | [Ignore packet](#ignore-packet-1)
+| 1 | [File create / overwrite packet](#file-create--overwrite-packet)
+| 2 | [Rename file packet](#rename-file-packet)
+| 3 | [Delete file packet](#delete-file-packet)
+
+#### Ignore packet
+
+This is a very simple packet, it is ignored.<br>
+There is no type specific header
+
+#### File create / overwrite packet
+
+This packet will create a new file if it doesn't allready exist.<br>
+If the file allready exists it will completly overwite the old file.
+
+| Offset<br>(bytes) | Size<br>(bytes)| Name | Description |
+|-------------------|----------------|------|-------------|
+| 0x00 | 0x08 | file_size | The size of the file to write
+
+After this a ready signal should be sent.<br>
+The file path (No more the 256 bytes), should be sent, <br>
+as a null-terminated string.
+
+After this there will be, another ready, then the file its self,<br>
+Is to be sent. <br>
+
+Files are to be sent 32 KiB at a time. After sending a 32 KiB 'chunk'<br>
+the client must wait for a ready signal befor sending the next 32 KiB. <br>
+This is to give time for the app to write to the SD card.
+
+#### Rename file packet
+
+As the name implys this is  a wraper around [`rename`](./v0_abi.md#0x02---file-io). <br>
+Therefor can be used to rename or move a file into a different dirrectory.
+
+There is no type specific header
+
+After simply sending the packet type, the client must still wait for a ready signal<br>
+After which the old_path varible is sent, null-terminated no more then 256 bytes. <br>
+Then there will be another ready signal, and new_path is sent, <br>
+null-terminated no more then 256 bytes.
+
+#### Delete file packet
+
+This is just a wrapper for [`remove`](./v0_abi.md#0x02---file-io)
+
+There is no type specific header.
+
+After simply sending the packet type, the client must still wait for a ready signal<br>
+After which the path varible is sent, null-terminated no more then 256 bytes. <br>

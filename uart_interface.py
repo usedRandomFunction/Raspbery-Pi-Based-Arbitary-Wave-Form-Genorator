@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.6.3"
+full_name = "AWG uart interface V 0.7"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -254,7 +254,6 @@ def uart_send_wrapper(data):
         draw_uart_input_window()
     else:
         uart_input_hiddle_bytes_counter = uart_input_hiddle_bytes_counter + len(data)
-
 
 def uart_stop_tracking_input(): # Used while sending files as to not just delete the entrie log
     global uart_input_hiddle_bytes_counter
@@ -551,7 +550,7 @@ When ':' is prefixed it signals a
 command, these run on the interface
 not the AWG.
 
-Currently thre are five commands:
+Currently thre are ten commands:
 
 - help (:help / :h) shows this page
 
@@ -582,11 +581,32 @@ Currently thre are five commands:
   disk. 
 
   1. Run uartrun on the AWG
-  2. Call :rua ${PATH TO CFG}
+  2. Call :rua ${PATH TO DIR}
 """[1:], """
 - save logs (:save \ :save_logs)
   used to save the output log to a
   file. Filepath is first argument
+
+Note for the next three commands:
+  File paths on the AWG are limmited
+  to 255 characters, by uartupld.
+
+- file upload (:fupld \ 
+  :file_upload) Used with uartupld,
+  to upload a file. Arguments:
+  1. File path on client (this sys)
+  2. Destionation path on AWG,
+
+- file move (:fmove \ :file_move).
+  Used with uartupld to move a file.
+  Aguments:
+  1. Old path (On AWG)
+  2. New path (On AWG)
+
+- file remove (:fremove \ 
+  file_remove), Used with uartupld
+  to Delete a file Aguments:
+  1. File path (On AWG)
 """[1:]]
 
 def draw_help_page(page_number, window):
@@ -624,10 +644,10 @@ def show_help_window():
         
         if input == ord('q'):
             break
-        elif input == curses.KEY_UP or input == curses.KEY_RIGHT:
+        elif input == curses.KEY_DOWN or input == curses.KEY_RIGHT:
             page_number = min(page_number + 1, len(help_window_pages) - 1)
             draw_help_page(page_number, help_window)
-        elif input == curses.KEY_DOWN or input == curses.KEY_LEFT:
+        elif input == curses.KEY_UP or input == curses.KEY_LEFT:
             page_number = max(page_number - 1, 0)
             draw_help_page(page_number, help_window)
 
@@ -752,15 +772,40 @@ def command_key(argument):
     
     send_key_press_uart_message_from_string(command_split[1], state)
 
-def upload_file(file, size, progress_bar: curses.window = None, progress_bar_size = 0):
+def handle_chunk_boundarys(file, data, bytes_sent, chunk_size, wait_is_required):
+    if chunk_size == 0:
+        return data
+
+    chunk_offset = (bytes_sent % chunk_size) + len(data)
+
+    if chunk_offset < chunk_size:               # We havn't reached the chunk boundary yet
+        return data
+    
+    if wait_is_required != None:
+        wait_is_required[0] = True
+
+    chunk_offset = chunk_offset % chunk_size    # Now its just of bit after the chunk ends
+
+    if file != None:
+        file.seek(1, -chunk_offset)
+
+    return data[:-chunk_offset]
+    
+def upload_file(filename, size, progress_bar: curses.window = None, progress_bar_size = 0, chunk_size = 0):
     uart_stop_tracking_input()
     bytes_sent_per_ch = progress_bar_size / size
+    wait_is_required = [False]
     current_bar_size = 0
     bytes_sent = 0
 
-    with open(file, "rb") as file:
+    with open(filename, "rb") as file:
         while bytes_sent < size:
+            if wait_is_required[0] == True:
+                wait_is_required[0] = False
+                wait_for_magic_word()
+
             data = file.read(min(size - bytes_sent, 1024))
+            data = handle_chunk_boundarys(file, data, bytes_sent, chunk_size, wait_is_required)
             uart_send_wrapper(data)
             bytes_sent = bytes_sent + len(data)
 
@@ -774,8 +819,17 @@ def upload_file(file, size, progress_bar: curses.window = None, progress_bar_siz
                 progress_bar.refresh()
                 current_bar_size = new_bar_size
 
-    if bytes_sent < size:   # Pad with zeros if needed
-        uart_send_wrapper(b'\x00' * (size - bytes_sent))
+    while bytes_sent < size:   # Pad with zeros if needed
+        if wait_is_required[0] == True:
+            wait_is_required[0] = False
+            wait_for_magic_word()
+
+        data = b'\x00' * (size - bytes_sent)
+        data = handle_chunk_boundarys(None, data, bytes_sent, chunk_size, wait_is_required)
+
+        uart_send_wrapper(data)
+        bytes_sent = bytes_sent + len(data)
+
 
     uart_restart_tracking_input()
 
@@ -945,6 +999,122 @@ def command_save_logs(filepath):
         file.truncate(0)
         file.write('\n'.join(uart_output_log))
 
+def command_file_upload(source_file, destionation_path):
+    global dont_update_output_window
+
+    if len(destionation_path) > 255:
+        raise Exception("AWG File path must be < 255 characters")
+
+    path_bytes = destionation_path.encode("utf-8") + b'\x00'
+    size = os.path.getsize(source_file)
+    dont_update_output_window = True
+    
+    window_width = terminal_width // 3 * 2
+    progress_bar_window = create_new_popup_window(10, window_width)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    horizontaly_center_text(progress_bar_window, 0, " Uploading application ")
+    progress_bar_window.addnstr(1, 2, f"Uploading {os.path.basename(source_file)} ({(size // 1024)} KiB)", window_width - 4)
+    progress_bar_window.addnstr(2, 2, "Waiting on ready signal", window_width - 4)
+    progress_bar_window.refresh()
+
+    progress_bar = create_centered_window(3, window_width - 4, progress_bar_window, 2)
+    progress_bar.border()
+    progress_bar.refresh()
+
+    wait_for_magic_word()
+
+    header = b'\x01' + size.to_bytes(8, 'little')
+    uart_send_wrapper(header)
+
+    progress_bar_window.addnstr(2, 2, "Sending name           ", window_width - 4)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    progress_bar_window.refresh()
+
+    wait_for_magic_word()
+
+    uart_stop_tracking_input()
+    uart_send_wrapper(path_bytes)
+    uart_restart_tracking_input()
+
+    progress_bar_window.addnstr(2, 2, "Uploading file", window_width - 4)
+    progress_bar_window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    progress_bar_window.refresh()
+
+    wait_for_magic_word()
+
+    max_bar_size = window_width - 6
+    upload_file(source_file, size, progress_bar, max_bar_size, 32 * 1014)
+
+    dont_update_output_window = False
+    redraw_subwindows()
+
+def command_file_move(old_path, new_path):
+    global dont_update_output_window
+
+    dont_update_output_window = True
+
+    if len(old_path) > 255 or len(new_path) > 255:
+        raise Exception("AWG File path must be < 255 characters")
+
+    old_path_bytes = old_path.encode("utf-8") + b'\x00'
+    new_path_bytes = new_path.encode("utf-8") + b'\x00'
+    
+    window = create_new_popup_window(10, 40)
+    window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    horizontaly_center_text(window, 0, f"Renaming {os.path.basename(old_path)} to {os.path.basename(new_path)}")
+    window.addstr(2, 2, "Waiting on ready signal")
+    window.refresh()
+
+    uart_send_wrapper(b'\x02')  # The header for this one is just the number 2
+
+    window.addstr(2, 2, "Sending old_path       ")
+    window.refresh()
+
+    wait_for_magic_word()
+
+    uart_send_wrapper(old_path_bytes)
+
+    window.addstr(2, 2, "Sending new_path       ")
+    window.refresh()
+
+    wait_for_magic_word()
+
+    uart_send_wrapper(new_path_bytes)
+
+    dont_update_output_window = False
+    redraw_subwindows()
+
+def command_file_remove(file_path):
+    global dont_update_output_window
+
+    dont_update_output_window = True
+
+    if len(file_path) > 255:
+        raise Exception("AWG File path must be < 255 characters")
+
+    file_path_bytes = file_path.encode("utf-8") + b'\x00'
+    
+    window = create_new_popup_window(10, 40)
+    window.border("|", "|", "=", "=", "+", "+", "+", "+")
+    horizontaly_center_text(window, 0, f"Removing {os.path.basename(file_path)}")
+    window.addstr(2, 2, "Waiting on ready signal")
+    window.refresh()
+
+    uart_send_wrapper(b'\x02')  # The header for this one is just the number 2
+
+    window.addstr(2, 2, "Sending file_path      ")
+    window.refresh()
+
+    wait_for_magic_word()
+
+    uart_stop_tracking_input()
+    uart_send_wrapper(file_path_bytes)
+    uart_restart_tracking_input()
+
+    dont_update_output_window = False
+    redraw_subwindows()
+    
+
 def handle_console_command():
     global dont_update_output_window
     global console_error_text
@@ -953,7 +1123,7 @@ def handle_console_command():
     command_split = console_text_input.split(' ', 1)
     command = command_split[0][1:].lower()
     curses.curs_set(0)
-    argument = ""
+    arguments = [""]
     
     console_window.clear()
     console_window.addstr(0, 1, "^C", curses.A_REVERSE)
@@ -961,7 +1131,7 @@ def handle_console_command():
     console_window.refresh()
 
     if len(command_split) > 1:
-        argument = command_split[1]
+        arguments = command_split[1].split()
 
     try:
         if command in ["q", "quit"]:
@@ -969,13 +1139,19 @@ def handle_console_command():
         elif command == "clear":
             command_clear()
         elif command == "key":
-            command_key(argument)
+            command_key(arguments[0])
         elif command in ["kreload", "kernal_reload"]:
-            command_kenral_reload(argument)
+            command_kenral_reload(arguments[0])
         elif command in ["rua", "run_user_app"]:
-            command_run_user_app(argument)
+            command_run_user_app(arguments[0])
         elif command in ["save", "save_logs"]:
-            command_save_logs(argument)
+            command_save_logs(arguments[0])
+        elif command in ["fupld", "file_upload"]:
+            command_file_upload(arguments[0], arguments[1])
+        elif command in ["fmove", "file_move"]:
+            command_file_move(arguments[0], arguments[1])
+        elif command in ["fremove", "file_remove"]:
+            command_file_remove(arguments[0])
         elif command in ["h", "help"]:
             show_help_window()
         else:

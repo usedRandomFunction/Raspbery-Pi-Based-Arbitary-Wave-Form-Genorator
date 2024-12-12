@@ -665,7 +665,7 @@ int rename(const char* old_path, const char* new_path)
 
     size_t dirrectorys_length = new_path_name_begin - new_path;
 
-    if (s_format_file_name_8_3_standered(new_path_name_begin + 1, file->file_name) == -1)   // Failed to format name
+    if (s_format_file_name_8_3_standered(new_path_name_begin, file->file_name) == -1)   // Failed to format name
     {
         free(file);
         return -4;
