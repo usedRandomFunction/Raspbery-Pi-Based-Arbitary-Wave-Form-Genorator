@@ -31,12 +31,16 @@ enum
     UART_PACKET_TYPE_IGNORE         = 0,
     UART_PACKET_TYPE_FILE_CREATE    = 1,
     UART_PACKET_TYPE_RENAME         = 2,
-    UART_PACKET_TYPE_DELETE         = 3
+    UART_PACKET_TYPE_DELETE         = 3,
+    UART_PACKET_TYPE_LIST_DIR       = 4,
 };
 
 void handle_uart_file_create_packet(uart_packet_header* base_header);
 void handle_uart_rename_packet();
 void handle_uart_delete_packet();
+void handle_uart_list_dir_packet();
+
+int get_path_from_uart(char* path);
 
 void send_magic_word();
 
@@ -77,9 +81,8 @@ int parse_uart_packets()
             data_size = sizeof(uart_file_create_packet_header);
             break;
         case UART_PACKET_TYPE_RENAME:
-            data_size = 0;
-            break;
         case UART_PACKET_TYPE_DELETE:
+        case UART_PACKET_TYPE_LIST_DIR:
             data_size = 0;
             break;
         default:
@@ -105,6 +108,9 @@ int parse_uart_packets()
         case UART_PACKET_TYPE_DELETE:
             handle_uart_delete_packet();
             break;
+        case UART_PACKET_TYPE_LIST_DIR:
+            handle_uart_list_dir_packet();
+            break;
         default:
             printf("Uknown packet type: %d, aborting!\n", header.type);
             return -1;
@@ -121,21 +127,8 @@ void handle_uart_file_create_packet(uart_packet_header* base_header)
     uart_file_create_packet_header* header = (uart_file_create_packet_header*)base_header->data;
     
     char path[256];
-    memclr(path, 256);
 
-    send_magic_word();
-
-    int i = 0;
-
-    for ( ; i < 256; i++)
-    {
-        path[i] = uart_getc();
-
-        if (path[i] == '\0')
-            break;
-    }
-
-    if (path[i] != '\0') // Error out if path is not null terimnated
+    if (get_path_from_uart(path))
         exit(-1);
 
     int fd = open(path, FILE_FLAGS_CREATE | FILE_FLAGS_READ_WRITE);
@@ -144,6 +137,7 @@ void handle_uart_file_create_packet(uart_packet_header* base_header)
         exit(-2);
 
     uint64_t bytes_remaining = header->size;
+    int i;
 
     while (bytes_remaining)
     {
@@ -172,37 +166,12 @@ void handle_uart_rename_packet()
 {
     char old_path[256];
     char new_path[256];
-    memclr(old_path, 256);
-    memclr(new_path, 256);
 
-    send_magic_word();
-
-    int i = 0;
-
-    for ( ; i < 256; i++)
-    {
-        old_path[i] = uart_getc();
-
-        if (old_path[i] == '\0')
-            break;
-    }
-
-    if (old_path[i] != '\0') // Error out if path is not null terimnated
+    if (get_path_from_uart(old_path))
         exit(-1);
 
-    send_magic_word();
-
-    for (i = 0 ; i < 256; i++)
-    {
-        new_path[i] = uart_getc();
-
-        if (new_path[i] == '\0')
-            break;
-    }
-
-    if (new_path[i] != '\0') // Error out if path is not null terimnated
+    if (get_path_from_uart(new_path))
         exit(-1);
-
 
     int return_value = rename(old_path, new_path);
     if (return_value)
@@ -212,6 +181,40 @@ void handle_uart_rename_packet()
 void handle_uart_delete_packet()
 {
     char path[256];
+    
+    if (get_path_from_uart(path))
+        exit(-1);
+
+    if (remove(path) == -1)
+        exit(-2);
+}
+
+void handle_uart_list_dir_packet()
+{
+    char path[256];
+
+    if (get_path_from_uart(path))
+        exit(-1);
+
+    int dir = diropen(path);
+
+    if (dir == -1)
+        exit(-2);
+
+    dirrectory_entry dir_entry;
+    
+    printf("%s:\n", path);
+
+    while (dirread(dir, &dir_entry) > 0)
+    {
+        printf("    %s.%s: %d bytes\n", dir_entry.name, dir_entry.extention, dir_entry.size);
+    }
+
+    dirclose(dir);
+}
+
+int get_path_from_uart(char* path)
+{
     memclr(path, 256);
 
     send_magic_word();
@@ -227,8 +230,7 @@ void handle_uart_delete_packet()
     }
 
     if (path[i] != '\0') // Error out if path is not null terimnated
-        exit(-1);
+        return -1;
 
-    if (remove(path) == -1)
-        exit(-2);
+    return 0;
 }

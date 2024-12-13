@@ -120,6 +120,7 @@ to the AWG, not the AWG itself.
 | 1 | [File create / overwrite packet](#file-create--overwrite-packet)
 | 2 | [Rename file packet](#rename-file-packet)
 | 3 | [Delete file packet](#delete-file-packet)
+| 4 | [list directory packet](#list-directory-packet)
 
 #### Ignore packet
 
@@ -166,3 +167,12 @@ There is no type specific header.
 
 After simply sending the packet type, the client must still wait for a ready signal<br>
 After which the path varible is sent, null-terminated no more then 256 bytes. <br>
+
+#### List Directory Packet
+
+As the name states this is basicly just the linux command ls
+
+There is no type specific header.
+
+After simply sending the packet type, the client must still wait for a ready signal<br>
+After which the path is sent, null-terminated no more then 256 bytes. <br>

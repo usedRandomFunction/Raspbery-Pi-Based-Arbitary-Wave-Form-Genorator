@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.7"
+full_name = "AWG uart interface V 0.7.1"
 
 uart_output_log = ["Waiting for connection...", ""]
 uart_output_log_scroll_y = 0
@@ -84,10 +84,10 @@ class awg_connection:
 
     def read(self, size=1024):
         if self.connection_type == 1:
-            return self.conenction.read(size).decode()
+            return self.conenction.read(size).decode("utf-8", "replace")
         elif self.connection_type == 0 or 2:
             try:
-                return self.conenction.recv(size).decode()
+                return self.conenction.recv(size).decode("utf-8", "replace")
             except BlockingIOError:
                 return None
 
@@ -550,7 +550,7 @@ When ':' is prefixed it signals a
 command, these run on the interface
 not the AWG.
 
-Currently thre are ten commands:
+Currently thre are 11 commands:
 
 - help (:help / :h) shows this page
 
@@ -587,7 +587,7 @@ Currently thre are ten commands:
   used to save the output log to a
   file. Filepath is first argument
 
-Note for the next three commands:
+Note for the next four commands:
   File paths on the AWG are limmited
   to 255 characters, by uartupld.
 
@@ -607,6 +607,11 @@ Note for the next three commands:
   file_remove), Used with uartupld
   to Delete a file Aguments:
   1. File path (On AWG)
+"""[1:], """
+- list directory (:ls \ :list_dir \\
+  :list_directory), Used with 
+  uartupld to list a directory. Args:
+  1. Dirrectory path
 """[1:]]
 
 def draw_help_page(page_number, window):
@@ -1084,23 +1089,23 @@ def command_file_move(old_path, new_path):
     dont_update_output_window = False
     redraw_subwindows()
 
-def command_file_remove(file_path):
+def singal_path_packet(path, packet_id, window_name):
     global dont_update_output_window
 
     dont_update_output_window = True
 
-    if len(file_path) > 255:
+    if len(path) > 255:
         raise Exception("AWG File path must be < 255 characters")
 
-    file_path_bytes = file_path.encode("utf-8") + b'\x00'
+    file_path_bytes = path.encode("utf-8") + b'\x00'
     
     window = create_new_popup_window(10, 40)
     window.border("|", "|", "=", "=", "+", "+", "+", "+")
-    horizontaly_center_text(window, 0, f"Removing {os.path.basename(file_path)}")
+    horizontaly_center_text(window, 0, window_name)
     window.addstr(2, 2, "Waiting on ready signal")
     window.refresh()
 
-    uart_send_wrapper(b'\x03')  # The header for this one is just the number 3
+    uart_send_wrapper(packet_id)  # The header for this one is just the number 3
 
     window.addstr(2, 2, "Sending file_path      ")
     window.refresh()
@@ -1113,7 +1118,16 @@ def command_file_remove(file_path):
 
     dont_update_output_window = False
     redraw_subwindows()
+
+def command_file_remove(file_path):
+    singal_path_packet(file_path, b'\x03', f"Removing {os.path.basename(file_path)}")
     
+def command_list_directory(path):
+    if path[-1] != '/' and path[-1] != '\\':
+        path = path + "/"
+
+    singal_path_packet(path, b'\x04', f"List directory")
+
 
 def handle_console_command():
     global dont_update_output_window
@@ -1152,6 +1166,8 @@ def handle_console_command():
             command_file_move(arguments[0], arguments[1])
         elif command in ["fremove", "file_remove"]:
             command_file_remove(arguments[0])
+        elif command in ["ls", "list_dir", "list_list_directory"]:
+            command_list_directory(arguments[0])
         elif command in ["h", "help"]:
             show_help_window()
         else:

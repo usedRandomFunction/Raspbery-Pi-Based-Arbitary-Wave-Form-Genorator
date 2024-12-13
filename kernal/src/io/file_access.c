@@ -89,6 +89,11 @@ static bool s_equal_to_dd_table_entry(const void* A, const void* B);
 // @note path Does not start with '/' so "/a.txt" turns into "a.txt" (local paths are not supported)
 static fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new_entrys, uint32_t* directory_lba, uint32_t* directory_lba_offset);
 
+// Returns a fat_directory_entry for the root dirrectory
+// @return Pointer to roof entry
+// @note Entry is allocated and needs to be freed later
+static fat_directory_entry* s_make_root_entry();
+
 // Used by s_find_file_from_path to find a file
 // @param path Path to file form current dirrectory
 // @param current_dirrectory_cluster_number Cluster number of current dirrectory
@@ -744,6 +749,9 @@ int diropen(const char* path)
     if(path[0] == '/' || path[0] == '\\') 
         path++; // Just used so /a.txt becomes a.txt 
 
+    if (path[0] == '\0') // I.e we are trying to access / (root)
+        path = "/";
+
     int directory_discriptor = (int)djb2_hash_uppercase(path);
     
     if (directory_discriptor == -1)
@@ -882,6 +890,21 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
     int extention_offset = 3;
 
     memset(name_buffer, 11, (uint8_t)' ');
+
+    if (memcmp(path, "./", 2) == 0)
+    {
+        name_buffer[0] = '.';
+
+        return 2;
+    }
+
+    if (memcmp(path, "../", 3) == 0)
+    {
+        name_buffer[0] = '.';
+        name_buffer[1] = '.';
+
+        return 3;
+    }
 
     for (int i = 0 ; i < 12 && path[i] != '\0'; i++, size_of_current_entry_name++)
     {
@@ -1036,6 +1059,9 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
 
 fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new_entrys, uint32_t* directory_lba, uint32_t* directory_lba_offset)
 {
+    if ((path[0] == '/' || path[0] == '\\') && path[1] == '\0')
+        return s_make_root_entry();
+    
     fat_directory_entry* dirrectory_cluster = malloc(512 * root_file_system->number_of_sectors_per_cluster);
 
     if (dirrectory_cluster == NULL)
@@ -1045,6 +1071,22 @@ fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new
         fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
 
     free(dirrectory_cluster);
+
+    return entry;
+}
+
+fat_directory_entry* s_make_root_entry()
+{
+    fat_directory_entry* entry = malloc(sizeof(fat_directory_entry));
+
+    if (entry == NULL)
+        return NULL;
+
+    memclr(entry, sizeof(fat_directory_entry));
+
+    entry->first_cluster_number_higher_16_bits = (uint16_t)(root_file_system->root_cluster >> 16) & 0xFFFF;
+    entry->first_cluster_number_lowwer_16_bits = (uint16_t)root_file_system->root_cluster & 0xFFFF;
+    entry->attributes = FAT_DIRECTORY_ATTRIBUTES_DIRECTORY;
 
     return entry;
 }
