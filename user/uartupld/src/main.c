@@ -129,12 +129,18 @@ void handle_uart_file_create_packet(uart_packet_header* base_header)
     char path[256];
 
     if (get_path_from_uart(path))
-        exit(-1);
+    {
+        printf("Bad arguments\n");
+        return;
+    }
 
     int fd = open(path, FILE_FLAGS_CREATE | FILE_FLAGS_READ_WRITE);
 
     if (fd == -1)
-        exit(-2);
+    {
+        printf("Failed to open file\n");
+        return;
+    }
 
     uint64_t bytes_remaining = header->size;
     int i;
@@ -151,7 +157,10 @@ void handle_uart_file_create_packet(uart_packet_header* base_header)
         if (write(fd, file_buffer, i) == -1)
         {
             close(fd);
-            exit(-2);
+            {
+                printf("Failed to write file\n");
+                return;
+            }
         }
     }
 
@@ -168,14 +177,22 @@ void handle_uart_rename_packet()
     char new_path[256];
 
     if (get_path_from_uart(old_path))
-        exit(-1);
+    {
+        printf("Bad arguments\n");
+        return;
+    }
 
     if (get_path_from_uart(new_path))
-        exit(-1);
+    {
+        printf("Bad arguments\n");
+        return;
+    }
 
-    int return_value = rename(old_path, new_path);
-    if (return_value)
-        exit(return_value - 10000);
+    if (rename(old_path, new_path))
+    {
+        printf("Failed to rename file\n");
+        return;
+    }
 }
 
 void handle_uart_delete_packet()
@@ -183,10 +200,16 @@ void handle_uart_delete_packet()
     char path[256];
     
     if (get_path_from_uart(path))
-        exit(-1);
+    {
+        printf("Bad arguments\n");
+        return;
+    }
 
     if (remove(path) == -1)
-        exit(-2);
+    {
+        printf("Failed to remove file\n");
+        return;
+    }
 }
 
 void handle_uart_list_dir_packet()
@@ -194,12 +217,18 @@ void handle_uart_list_dir_packet()
     char path[256];
 
     if (get_path_from_uart(path))
-        exit(-1);
+    {
+        printf("Bad arguments\n");
+        return;
+    }
 
     int dir = diropen(path);
 
     if (dir == -1)
-        exit(-2);
+    {
+        printf("Failed to open dir\n");
+        return;
+    }
 
     dirrectory_entry dir_entry;
     
