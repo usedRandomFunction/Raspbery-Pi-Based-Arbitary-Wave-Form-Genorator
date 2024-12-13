@@ -112,7 +112,7 @@ int parse_uart_packets()
             data_size = sizeof(uart_memcpy_packet_header);
             break;
         default:
-            printf("Uknown packet type: %d, aborting!", header.type);
+            printf("Uknown packet type: %d, aborting!\n", header.type);
             return -1;
         }
 
@@ -138,10 +138,11 @@ int parse_uart_packets()
             handle_uart_memcpy_packet(&header);
             break;
         default:
-            printf("Uknown packet type: %d, aborting!", header.type);
+            printf("Uknown packet type: %d, aborting!\n", header.type);
             return -1;
         }
         
+        printf("Done!\n");
     }
 
     return 0;

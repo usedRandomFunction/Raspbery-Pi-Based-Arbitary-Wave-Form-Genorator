@@ -83,7 +83,7 @@ int parse_uart_packets()
             data_size = 0;
             break;
         default:
-            printf("Uknown packet type: %d, aborting!", header.type);
+            printf("Uknown packet type: %d, aborting!\n", header.type);
             return -1;
         }
 
@@ -106,10 +106,11 @@ int parse_uart_packets()
             handle_uart_delete_packet();
             break;
         default:
-            printf("Uknown packet type: %d, aborting!", header.type);
+            printf("Uknown packet type: %d, aborting!\n", header.type);
             return -1;
         }
         
+        printf("Done!\n");
     }
 
     return 0;
@@ -159,6 +160,10 @@ void handle_uart_file_create_packet(uart_packet_header* base_header)
             exit(-2);
         }
     }
+
+    ftruncate(fd, header->size);    // Shink the file
+    // Handles the case of overwriting a file that is bigger then
+    // what we are replacing it with
     
     close(fd);
 }

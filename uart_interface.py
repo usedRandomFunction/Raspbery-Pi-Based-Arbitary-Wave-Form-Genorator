@@ -1100,7 +1100,7 @@ def command_file_remove(file_path):
     window.addstr(2, 2, "Waiting on ready signal")
     window.refresh()
 
-    uart_send_wrapper(b'\x02')  # The header for this one is just the number 2
+    uart_send_wrapper(b'\x03')  # The header for this one is just the number 3
 
     window.addstr(2, 2, "Sending file_path      ")
     window.refresh()
