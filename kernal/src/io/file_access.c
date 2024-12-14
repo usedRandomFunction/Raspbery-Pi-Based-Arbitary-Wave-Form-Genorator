@@ -516,6 +516,9 @@ int ftruncate(int fd, size_t new_size)
 
     bool success = false;
 
+    if (new_size == old_size)
+        return 0;
+
     if (new_size < old_size)    // Handle seek pointer
     {                           // Reset if file was shrunk
         success = s_shink_file(file, new_size);
@@ -529,6 +532,7 @@ int ftruncate(int fd, size_t new_size)
 
         return success ? 0 : -1;
     }
+
 
     // Now zero extra bytes
     // This isn't the best methiod tbh but yea
@@ -1542,6 +1546,7 @@ fat_entry_update* s_find_free_clusters(uint32_t n)
         return NULL;
 
     memclr(allocation_table_updates, sizeof(fat_entry_update) * (n + 2));
+    const int clusters_per_fat_sector= 512 / 4;
 
     uint32_t fat_sector = root_file_system->first_fat_sector;
     uint32_t current_fat_sector_number = 0;
@@ -1559,13 +1564,15 @@ fat_entry_update* s_find_free_clusters(uint32_t n)
         }
         last_fat_sector = fat_sector;
         
-        for (int i = 0; (i < (512 / 4)) && (n > number_of_clusters_found); i++)
+        for (int i = 0; (i < clusters_per_fat_sector) && (n > number_of_clusters_found); i++)
         {
             if (fat_buffer[i] != 0)
                 continue; // If not free just ignore and keep searching for one
 
-            allocation_table_updates[number_of_clusters_found++].new_value = current_fat_sector_number * 4 + i;
-            allocation_table_updates[number_of_clusters_found].entry_number = current_fat_sector_number * 4 + i;
+            uint32_t current_clluster_number = current_fat_sector_number * clusters_per_fat_sector + i;
+
+            allocation_table_updates[number_of_clusters_found++].new_value = current_clluster_number;
+            allocation_table_updates[number_of_clusters_found].entry_number = current_clluster_number;
         }
 
         current_fat_sector_number++;
@@ -1737,7 +1744,10 @@ bool s_write_new_dirrectory_entry(uint32_t dirrectory_cluster_number, const fat_
             uint32_t lba = cluster_lba + (i / entrys_per_sector);
             uint32_t offset_entrys = (i % entrys_per_sector);
 
-            if (sd_writeblock(lba, dirrectory_cluster + (i / entrys_per_sector), 1) != 512)
+            // Logic here: SD card has limited life (number of writes)
+            // Only write what needs to be added, therefor the sector with the entry in question
+            // Offset in entrys for the write = i - i % entrys_per_sector = i - offset_entrys
+            if (sd_writeblock(lba, dirrectory_cluster + i - offset_entrys, 1) != 512)
             {
                 printf("Erorr: Failed to write to dirrecotry!\n");
                 printf("Warning: Dirrectory entry has not been written but clusters have been allocated!\n");
