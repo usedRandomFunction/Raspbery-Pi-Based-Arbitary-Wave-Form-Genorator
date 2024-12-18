@@ -119,6 +119,9 @@ size_t dynamic_array_find_closest_binary_shearch(const dynamic_array* header, co
         }
         else
         {
+            if (middle == 0)    // To stop roll over
+                break;
+
             right = middle - 1;
         }
     }
