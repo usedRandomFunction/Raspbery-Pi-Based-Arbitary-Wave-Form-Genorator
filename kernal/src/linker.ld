@@ -18,7 +18,11 @@ SECTIONS
     }
     _stack_top = .;
 
-    .text : { *(.text .text.* .gnu.linkonce.t*) }
+    .text : { 
+        *(.text.vectors)
+        *(.text .text.* .gnu.linkonce.t*) 
+    }
+
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     PROVIDE(_data = .);
     .data : { *(.data .data.* .gnu.linkonce.d*) }

@@ -1,4 +1,5 @@
 #include "lib/central_block_memory_allocator.h"
+#include "io/hardware_controll_register.h"
 #include "run_time_kernal_config.h"
 #include "lib/translation_table.h"
 #include "boot/boardDectetion.h"
@@ -7,9 +8,11 @@
 #include "io/memoryMappedIO.h"
 #include "io/pc_screen_font.h"
 #include "io/framebuffer.h"
+#include "io/data_output.h"
 #include "io/file_access.h"
 #include "lib/interrupts.h"
 #include "io/filesystem.h"
+#include "lib/events.h"
 #include "lib/memory.h"
 #include "lib/random.h"
 #include "io/printf.h"
@@ -68,6 +71,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
     
 	s_prepare_memory_manager();
     s_initialize_virtual_address_translation(); // Must be called before *ANY* calls to malloc are made
+    initialize_event_handler();
     initialize_interupts();
 
     if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
@@ -97,6 +101,9 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
         printf("Failed to load kernal configuration!\n");
         kernel_panic();
     }
+
+    initialize_hardware_controll_register();
+    initialize_dacs();
     
     initialize_keypad();
     

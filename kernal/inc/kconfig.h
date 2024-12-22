@@ -1,5 +1,5 @@
-#ifndef KConig_H
-#define KConig_H
+#ifndef KCONIG_H
+#define KCONIG_H
 
 #define USE_MINI_UART 0
 
@@ -23,5 +23,7 @@
 #define CONSOLE_MAX_HEIGHT 440
 
 // #define SD_VERBOSE_LOGGING
+
+#define INTERUPT_END_EVENT_MAX_HANDLERS 4
 
 #endif

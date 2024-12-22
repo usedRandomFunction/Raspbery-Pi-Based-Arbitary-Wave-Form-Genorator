@@ -1,11 +1,12 @@
 #include "io/keypad.h"
 
+#include "io/hardware_controll_register.h"
 #include "run_time_kernal_config.h"
 #include "lib/interrupts.h"
 #include "lib/timing.h"
+#include "lib/events.h"
 #include "io/uart.h"
 #include "io/gpio.h"
-#include "io/spi.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -21,7 +22,6 @@ static PRG_EXIT_HANDLER prg_exit_handler = &defult_prg_exit_handler;
 
 static void s_tigger_prg_exit_from_gpio(int pin);
 
-#define controll_data_latch_pin 5
 #define keypad_input_latch_pin 6
 
 #include "io/printf.h"
@@ -35,19 +35,13 @@ void initialize_keypad()
         gpio_function_select(13, GPFSEL_Input);
         gpio_enable_pin_interupt(13, s_tigger_prg_exit_from_gpio,
             true, false, false, false, false, false);
-        gpio_function_select(controll_data_latch_pin, GPFSEL_Output);   // Set controll pins as outputs
-        gpio_function_select(keypad_input_latch_pin, GPFSEL_Output);
+        gpio_function_select(keypad_input_latch_pin, GPFSEL_Output);    // Set controll pins as outputs
 
-        gpio_clear(controll_data_latch_pin);                            // Zero them
         gpio_set(keypad_input_latch_pin);                               // This one is active low so it gose high
 
-        initialize_spi0(30 * 1000 * 1000);
+        *hardware_controll_register_keypad_controll_byte = 0x02;        // Start at row 0 (1 << (1 + row))
+        hardware_controll_register_write();
 
-        uint8_t keypad_init_spi_buffer[] = {0x02, 0x00};                // Start at row 0 (1 << (1 + row))
-
-        spi0_write(3, keypad_init_spi_buffer, 2);                       // Save these valeus into the shift registers
-        gpio_set(controll_data_latch_pin);
-        gpio_clear(controll_data_latch_pin);
         s_physical_keypad_state = 0;
     }
 
@@ -71,6 +65,8 @@ int keypad_polling(int delay_milliseconds)
         dissable_timer_interrupt();
 
         s_physical_keypad_delay = 0;
+
+        return 0;
     }
     s_physical_keypad_delay = delay_milliseconds * 1000;
 
@@ -291,27 +287,24 @@ void  keypad_poll()
     if (is_running_in_qemu)                         // Since the emmulator does not understand the hw keypad, we cant work with it
         return;
 
-    uint8_t recive_buffer[] = {0x00, 0x00};
-    uint8_t send_buffer[] = {0x00, 0x00};
+    uint8_t recive_buffer[HARDWARE_CONTROLL_REGISTER_SIZE_BYTES];
 
     uint8_t row_data[] = {0x00, 0x00, 0x00, 0x00};
 
     for (int row = 0; row < 4; row++)
     {
         const uint8_t new_target_row = row < 3 ? row + 1 : 0;
-        send_buffer[0] = 1 << (new_target_row + 1);             // Get the next row ready
+        *hardware_controll_register_keypad_controll_byte = 1 << (new_target_row + 1);   // Get the next row ready
 
-        gpio_clear(keypad_input_latch_pin);                     // Save the current state of the keypad
+        gpio_clear(keypad_input_latch_pin);                                             // Save the current state of the keypad
         gpio_set(keypad_input_latch_pin);
 
-        spi0_write_read(3, send_buffer, recive_buffer, 2);      // Read current / set the next row.
-        gpio_set(controll_data_latch_pin);
-        gpio_clear(controll_data_latch_pin);
+        hardware_controll_register_write_read(recive_buffer);                           // Read current / set the next row.
 
         uint8_t keypad_data = 0xFE;
 
-        if (recive_buffer[0] & 0x80)                                // The SPI hardware is not 100% compatible and no
-            keypad_data = (recive_buffer[0] << 1) | 0x1;            // matter the pull resistor it will recive C0 not 80
+        if (recive_buffer[0] & 0x80)                                                    // The SPI hardware is not 100% compatible and no
+            keypad_data = (recive_buffer[0] << 1) | 0x1;                                // matter the pull resistor it will recive C0 not 80
 
         row_data[row] = keypad_data;
     }
@@ -339,5 +332,14 @@ void s_tigger_prg_exit_from_gpio(int pin)
 void tigger_prg_exit()
 {
     printf("\nPRG_EXIT interupt raised!\n");
+
+    if (interupt_active)
+    {
+        printf("Waiting on interupt end before running prg_exit handler\n");
+
+        event_handler_add_interupt_end(prg_exit_handler);
+
+        return;
+    }
     prg_exit_handler();
 }

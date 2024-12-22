@@ -1,8 +1,8 @@
 #include "lib/interrupts.h"
 
 #include "io/memoryMappedIO.h"
-#include "lib/user_program.h"
 #include "lib/exceptions.h"
+#include "lib/events.h"
 #include "io/keypad.h"
 #include "io/printf.h"
 #include "io/gpio.h"
@@ -86,5 +86,6 @@ void generic_irq_handler()
     }
 
     interupt_active = false;
-    user_program_on_interupt_end();
+
+    event_handler_on_interupt_end();
 }

@@ -1,4 +1,4 @@
-.section ".text"
+.section ".text.vectors"
 
 .global _vectors
 

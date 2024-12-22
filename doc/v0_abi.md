@@ -35,8 +35,8 @@ If any they should be [listed here](./project_specific_syscalls.md)
 | 0 | printf | const char* str, ... | void | Simple printf function, prints to UART and screen
 | 1 | putchar | char c | int | Puts a charector on to the UART and screen, returns EOF on failed
 | 2 | uart_putc | char c | void | Puts a charector onto the UART
-| 3 | uart_getc | N/A | char | Gets a charector from the UART and will wait for one to be avalible
-| 4 | uart_poll | N/A | int | Same as uart_getc but doesn't wait, and will return 0XFFFF, if nothing is avaible
+| 3 | uart_getc | void | char | Gets a charector from the UART and will wait for one to be avalible
+| 4 | uart_poll | void | int | Same as uart_getc but doesn't wait, and will return 0XFFFF, if nothing is avaible
 
 ## #0x02 - File IO
 

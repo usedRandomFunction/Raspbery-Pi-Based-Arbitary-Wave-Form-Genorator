@@ -1,2 +1,9 @@
 kernel=kernel8.img
 arm_64bit=1
+
+arm_freq=1410
+core_freq=535
+gpu_freq=200
+over_voltage=4
+sdram_freq=515
+force_turbo=1

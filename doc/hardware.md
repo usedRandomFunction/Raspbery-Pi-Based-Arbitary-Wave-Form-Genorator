@@ -56,8 +56,8 @@ Uses as the UI for the system
 
 | GPIO | Use |
 |------|-----|
-|  05  | Keypad input latch
-|  06  | Controll data latch
+|  05  | Controll data latch
+|  06  | Keypad input latch
 |  07  | SPI CE 1 [Unused, exposed via header]
 |  08  | SPI CE 0 [Unused, exposed via header]
 |  09  | SPI MISO (keypad in)[Also exposed via header] `WARNING this pin is pulled high at all times and is actived with a pull down`

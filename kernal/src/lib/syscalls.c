@@ -1,6 +1,7 @@
 #include "lib/user_program.h"
 #include "lib/exceptions.h"
 #include "io/file_access.h"
+#include "io/data_output.h"
 #include "lib/memory.h"
 #include "io/putchar.h"
 #include "io/printf.h"
@@ -225,6 +226,14 @@ void system_call_capture_prg_exit(void* handler)
     capture_prg_exit(handler);
 }
 
+int system_call_dac_output_start(void* buffer_start, size_t n, int flags)
+{
+    if (is_kernal_memory(buffer_start))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", buffer_start, "dac_output_start");
+
+    return dac_output_start(buffer_start, n, flags);
+}
+
 const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap,
     system_call_switch_to};
 const void* const os_syscall_baisc_io[] = {printf_user_memory_only, putchar, uart_putc, uart_getc, uart_poll};
@@ -239,8 +248,10 @@ const uint64_t os_syscall_tables_sizes_table[] = {sizeof(os_syscall_program_mana
 const uint64_t size_of_os_syscall_tables_sizes_table = sizeof(os_syscall_tables_sizes_table);
 
 
+const void* const hardware_outputs[] = {system_call_dac_output_start, dac_output_end, dac_resolution, dac_channel_buffering,
+    dac_get_sample_rate, dac_channel_supports_config};
 const void* const project_specfic_keypad[] = {keypad_polling, uart_keypad_emmulation, system_call_capture_prg_exit, get_keypad_state};
 
-const void* const project_specfic_syscall_tables_table[] = {NULL, project_specfic_keypad};
-const uint64_t project_specfic_syscall_tables_sizes_table[] = {0, sizeof(project_specfic_keypad)};
+const void* const project_specfic_syscall_tables_table[] = {hardware_outputs, project_specfic_keypad};
+const uint64_t project_specfic_syscall_tables_sizes_table[] = {sizeof(hardware_outputs), sizeof(project_specfic_keypad)};
 const uint64_t size_of_project_specfic_syscall_tables_sizes_table = sizeof(project_specfic_syscall_tables_sizes_table);

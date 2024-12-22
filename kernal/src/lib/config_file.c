@@ -205,6 +205,7 @@ bool s_read_config_file_from_disk(config_file* header, const char* path, char** 
     if (read(file, header->buffer, size) == -1)
     {
         printf("Failed to load config file %s: [%s]\n", path, "Failed to read file");
+        free(header->buffer);
         close(file);
         return false;
     }

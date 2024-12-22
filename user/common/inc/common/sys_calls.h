@@ -4,3 +4,4 @@
 #include "common/uart.h"
 
 #include "common/keypad.h"
+#include "common/output.h"

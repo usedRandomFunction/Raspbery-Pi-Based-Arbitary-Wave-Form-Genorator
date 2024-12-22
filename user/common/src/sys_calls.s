@@ -38,6 +38,14 @@ syscall diropen, 12, #2
 syscall dirread, 13, #2
 syscall dirclose, 14, #2
 
+// Output
+syscall dac_output_start, 0, #0x8000
+syscall dac_output_end, 1, #0x8000
+syscall dac_resolution, 2, #0x8000
+syscall dac_channel_buffering, 3, #0x8000
+syscall dac_get_sample_rate, 4, #0x8000
+syscall dac_channel_supports_config, 5, #0x8000
+
 // Keypad
 syscall keypad_polling 0, #0x8001
 syscall uart_keypad_emmulation 1, #0x8001
