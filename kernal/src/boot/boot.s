@@ -15,7 +15,7 @@ _start:
     
 
 prepare_for_el_switch:
-    ldr     x1, =(1 << 20) // allow el1 to use SIMD registers
+    ldr     x1, =(0b11 << 20) // allow el1 to use SIMD registers
     msr     cpacr_el1, x1  // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0500e/CIHBGEAB.html
 
     mrs     x1, currentel
