@@ -88,7 +88,7 @@ _vectors:
     lsl x24,    x24,    #3          // Sames as x24 = x24 * 8 (2^3)
                                     // Now we have the table offsets we can work
     cmp x24,    #0x40000            // Is it os or project syscalls
-    bgt .el0_svc_project_specfic
+    bge .el0_svc_project_specfic
 .el0_svc_os_functions:
     ldr x9,     =size_of_os_syscall_tables_sizes_table
     ldr x9,     [x9]
