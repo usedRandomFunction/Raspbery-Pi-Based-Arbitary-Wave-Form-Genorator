@@ -4,9 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Adds an entry to the buffer
-void write_buffer_one_channle_8_bit_samples(uint64_t* buffer_start, uint8_t sample, uint64_t offset);
-
 // initializes the dacs not much more to say
 void initialize_dacs();
 
@@ -17,7 +14,6 @@ void initialize_dacs();
 // @param flags Flags (DAC_OUTPUT_FLAGS)
 // @return zero if exited with dac_output_end or reached the end of the buffer, and non-zero on failer, the first two bits of return value state what channel is incompitible. If Bit 3 is set then the error is not specific to the channels.
 int dac_output_start(void* buffer_start, size_t n, int flags);
-
 
 // When called stops the DAC output on all threads.
 // @note This function is designed to be called at the end of a interut and will take over controll. If dac_output_start was not called this function will simply return 
