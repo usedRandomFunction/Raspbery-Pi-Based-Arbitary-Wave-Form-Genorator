@@ -98,7 +98,7 @@ int uart_poll()
 void enable_uart_receive_interupt()
 {
 	mmio_write_offset_of_size(UART0_IFLS,	// Interupt FIFO level select register
-		0b001,								// 1/4
+		0,									// Trigger at 1/8 full
 		3,									// Input FIFO
 		3);									// We're writing three bits
 	
