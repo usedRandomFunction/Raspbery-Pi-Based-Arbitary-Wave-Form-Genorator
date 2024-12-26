@@ -66,6 +66,9 @@ void generic_user_exception(const char* fmt, ...)
 
 void user_arm_exception_handler(unsigned long type)
 {
+    if (check_if_instruction_abort_is_user_program_function_return())
+        return;
+
     printf("\n\n\n\n!======== Arm excpetion detected in %s ========!\n\n", "user mode");
 
     s_print_arm_exception_details(type);

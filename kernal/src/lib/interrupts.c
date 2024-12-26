@@ -1,13 +1,17 @@
 #include "lib/interrupts.h"
 
 #include "io/memoryMappedIO.h"
+#include "lib/user_program.h"
 #include "lib/exceptions.h"
+#include "lib/memory.h"
 #include "lib/events.h"
 #include "io/keypad.h"
 #include "io/printf.h"
 #include "io/gpio.h"
 
 bool interupt_active;
+
+static USER_INTERUPT_HANDLER s_user_interupt_handlers[MAX_NUMBER_OF_USER_INTERUPT_HANDLERS];
 
 void initialize_interupts()
 {
@@ -16,7 +20,10 @@ void initialize_interupts()
     route_gpu_irqs(0);                          // Sets the core to handle gpu irqs
     
     mmio_write(CORE_0_TIMER_IRQ_CTRL, 0);       // Turn off the timer
+
+    memset(s_user_interupt_handlers, sizeof(s_user_interupt_handlers), 0xff);
 }
+
 void enable_irq(int id)
 {
     if (id <= 31)
@@ -41,7 +48,6 @@ void route_gpu_irqs(int core)
         2);                                     // 2 Bits
 }
 
-// Used by vectors.s so not static even though its not in the header
 void generic_irq_handler()
 {   
     uint32_t irq_source = mmio_read(CORE_0_IRQ_SOURCE); // TODO check if is core other then zero
@@ -88,4 +94,37 @@ void generic_irq_handler()
     interupt_active = false;
 
     event_handler_on_interupt_end();
+}
+
+void register_user_interupt_handler(USER_INTERUPT_HANDLER handler, int id)
+{
+    if (id < 0 || id > POINTER_MAX)
+    {
+        printf("Error: Invaild user interupt ID: %d\n", id);
+        return;
+    }
+
+    s_user_interupt_handlers[id] = handler;
+}
+
+void remove_user_interupt_handler(int id)
+{  
+    register_user_interupt_handler((USER_INTERUPT_HANDLER)POINTER_MAX, id);
+}
+
+void trigger_user_interupt_handler(int id)
+{
+    if (id < 0 || id > POINTER_MAX)
+    {
+        printf("Error: Invaild user interupt ID: %d\n", id);
+        return;
+    }
+
+    if (s_user_interupt_handlers[id] == (USER_INTERUPT_HANDLER)POINTER_MAX)
+    {
+        printf("Error: Invaild user interupt: %d", id);
+        return;
+    }
+
+    execute_function_as_user_program(get_active_user_program(), (USER_FUNCTION)s_user_interupt_handlers[id]);
 }

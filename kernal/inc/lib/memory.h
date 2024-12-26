@@ -30,6 +30,12 @@ extern char __end[]; // Linker will set this to point to the end of the program
 #define data_mem_barrier() 	asm volatile ("mcr p15, 0, %0, c7, c10, 5" : : "r" (0) : "memory")
 #endif
 
+#ifdef AARCH64
+#define POINTER_MAX UINT64_MAX
+#else
+#define POINTER_MAX UINT32_MAX
+#endif
+
 #define VC_address_to_arm(ptr) (void_ptr_bitwise_and(ptr, 0x3FFFFFFF))
 #define KERNEL_MEMORY_PREFIX 0xFFFF000000000000
 

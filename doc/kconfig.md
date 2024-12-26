@@ -18,4 +18,5 @@
 | SD_VERBOSE_LOGGING | Enable verbose logging for the SD functions if defined
 | MMIO_VIRUTAL_ADDRESS_BASE | Sets the base virtual addreess for the MMIO (must be a void*)
 | FRAMEBUFFER_VIRUTAL_ADDRESS_BASE | Sets the base virtual addreess for the framebuffer (must be a void*)
-| INTERUPT_END_EVENT_MAX_HANDLERS | Sets the maxium number of handlers for the `interupt_end` event
+| INTERUPT_END_EVENT_MAX_HANDLERS | Sets the maximum number of handlers for the `interupt_end` event
+| MAX_NUMBER_OF_USER_INTERUPT_HANDLERS | Sets the maximum number of handlers avaible to the user interupt functions

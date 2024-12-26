@@ -14,6 +14,8 @@ struct user_program_info
 
 typedef struct user_program_info user_program_info;
 
+typedef void (*USER_FUNCTION)(void);
+
 enum
 {
     VMEMMAP_WRITABILITY     =   1 << 0,     /* If set the allocation will be writeable*/
@@ -95,6 +97,21 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
 // to where it would if the user called exit()
 void user_program_switch_to(const char* new_executable_path);
 
+// Runs the given function as the user and contiues execution after the user function has returned
+// @param program The program to run as
+// @param function The function to run
+void execute_function_as_user_program(user_program_info* program, USER_FUNCTION function);
+
+// =====================================
+// DO NOT CALL THIS FUNCTION DIRRECTLY
+// =====================================
+// Called by user_arm_exception_handler, to check if
+// a instruction abort was casued by _execute_function_as_user_program
+// and return acordingly
+// @return True, if the statment in the name is true, and _prepare_return_from_user_function was called, False if not
+// @warning DO NOT CALL THIS FUNCTION DIRRECTLY
+bool check_if_instruction_abort_is_user_program_function_return();
+
 // ===================================================================
 // DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED
 // ===================================================================
@@ -102,6 +119,20 @@ void user_program_switch_to(const char* new_executable_path);
 // @param entry Address to switch to (In EL0)
 // @param stack Address to set sp_el0 to
 // @warning DO NOT CALL THIS FUNCTION DIRRECTLY USE execute_user_program INSTED
-void user_program_internal_use_program_excute(void* entry, void* stack);
+void _execute_user_program(void* entry, void* stack);
 
+// ================================================================================
+// DO NOT CALL THIS FUNCTION DIRRECTLY USE _execute_function_as_user_program INSTED
+// ================================================================================
+// Used internaly to run the user function, and handle return
+// @param function The function to run
+// @warning DO NOT CALL THIS FUNCTION DIRRECTLY USE _execute_function_as_user_program INSTED
+void _execute_function_as_user_program(USER_FUNCTION function);
+
+// =====================================
+// DO NOT CALL THIS FUNCTION DIRRECTLY
+// =====================================
+// ASM function for check_if_instruction_abort_is_user_program_function_return
+// @warning DO NOT CALL THIS FUNCTION DIRRECTLY
+void _return_from_user_function();
 #endif

@@ -41,28 +41,28 @@ bl enter_from_interupt_internal
 .align	11
 _vectors:
     // Exceptions for EL1t
-    exception_handler_kernal_error #0 // synchronous
-    vector_table_entry .irq           // IRQ
-    exception_handler_kernal_error #2 // FIQ
-    exception_handler_kernal_error #3 // SError
+    exception_handler_kernal_error #0   // synchronous
+    vector_table_entry .irq             // IRQ
+    exception_handler_kernal_error #2   // FIQ
+    exception_handler_kernal_error #3   // SError
 
     // Exceptions for EL1h
-    exception_handler_kernal_error #0 // synchronous
-    vector_table_entry .irq           // IRQ
-    exception_handler_kernal_error #2 // FIQ
-    exception_handler_kernal_error #3 // SError
+    exception_handler_kernal_error #0   // synchronous
+    vector_table_entry .irq             // IRQ
+    exception_handler_kernal_error #2   // FIQ
+    exception_handler_kernal_error #3   // SError
 
     // Exceptions for EL0 (AArch64)
-    vector_table_entry .el0_svn // synchronous
-    vector_table_entry .irq           // IRQ
-    exception_handler_user_error #2 // FIQ
-    exception_handler_user_error #3 // SError
+    vector_table_entry .el0_svn         // synchronous
+    vector_table_entry .irq             // IRQ
+    exception_handler_user_error #2     // FIQ
+    exception_handler_user_error #3     // SError
 
     // Exceptions for EL0 (AArch32)
-    exception_handler_user_error #0 // synchronous
-    vector_table_entry .irq         // IRQ
-    exception_handler_user_error #2 // FIQ
-    exception_handler_user_error #3 // SError
+    exception_handler_user_error #0     // synchronous
+    vector_table_entry .irq             // IRQ
+    exception_handler_user_error #2     // FIQ
+    exception_handler_user_error #3     // SError
 
 .irq:
     enter_from_interupt
@@ -79,8 +79,8 @@ _vectors:
 	cmp	x24,    #0x15			    // SVC in 64-bit state
 	b.eq	    .el0_svc
     mov x0,     0
-    b       user_arm_exception_handler
-
+    bl       user_arm_exception_handler
+    b exit_from_syscall
 .el0_svc:
     lsl x8,    x8,     #3          // Sames as x8 = x8 * 8 (2^3)
     mrs x24,    esr_el1            
@@ -128,7 +128,7 @@ _vectors:
     b       system_call_undefined_handler
 
 enter_from_interupt_internal:
-    sub	sp, sp, #16 * 15
+    sub	sp,     sp,     #16 * 15
 
     str x0,             [sp, #16 * 0]
     stp x1,     x2,     [sp, #16 * 1]
@@ -156,7 +156,7 @@ exit_from_interupt:
 
 
 enter_from_syscall_internal:
-    sub	sp, sp, #16 * 14
+    sub	sp,     sp,     #16 * 14
 
     stp x1,     x2,     [sp, #16 * 0]
     stp x3,     x4,     [sp, #16 * 1]

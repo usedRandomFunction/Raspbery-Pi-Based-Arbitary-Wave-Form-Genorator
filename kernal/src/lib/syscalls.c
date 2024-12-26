@@ -1,5 +1,6 @@
 #include "lib/user_program.h"
 #include "lib/exceptions.h"
+#include "lib/interrupts.h"
 #include "io/file_access.h"
 #include "io/data_output.h"
 #include "lib/memory.h"
@@ -218,12 +219,27 @@ void system_call_switch_to(const char* new_executable_path)
     user_program_switch_to(new_executable_path);
 }
 
+void _trigger_user_prg_exit_handler()
+{
+    trigger_user_interupt_handler(0);
+}
+
 void system_call_capture_prg_exit(void* handler)
 {
     if (is_kernal_memory(handler))
         generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", handler, "capture_prg_exit");
 
-    capture_prg_exit(handler);
+    if (handler == NULL)                // Handle dissabling the function
+    {
+        handler = (void*)POINTER_MAX;
+        capture_prg_exit(NULL);
+
+        return;
+    }
+
+    register_user_interupt_handler(handler, 0);
+
+    capture_prg_exit(_trigger_user_prg_exit_handler);
 }
 
 int system_call_dac_output_start(void* buffer_start, size_t n, int flags)
@@ -231,7 +247,21 @@ int system_call_dac_output_start(void* buffer_start, size_t n, int flags)
     if (is_kernal_memory(buffer_start))
         generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", buffer_start, "dac_output_start");
 
-    return dac_output_start(buffer_start, n, flags);
+    size_t spsr_el1;
+    size_t elr_el1;
+    asm volatile ( "mrs %0, spsr_el1" : "=r"(spsr_el1));    // Save these so they dont get corrupted
+    asm volatile ( "mrs %0, elr_el1" : "=r"(elr_el1));
+
+    asm volatile ("msr daifclr, #2 ");  // Enable IRQs since dac_output_start is designed to be exited with system calls
+
+    int return_value = dac_output_start(buffer_start, n, flags);
+
+    asm volatile ("msr daifset, #2 ");  // Dissable IRQs so interupts to mess up syscalls in the future.
+
+    asm volatile ( "msr spsr_el1, %0" : : "r"(spsr_el1));    // Reset them
+    asm volatile ( "msr elr_el1, %0" : : "r"(elr_el1));
+
+    return return_value;
 }
 
 const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap,

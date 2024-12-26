@@ -10,6 +10,8 @@
 #include "io/keypad.h"
 #include "lib/mmu.h"
 
+#define RETURN_VALUE_MAGIC_NUMBER 0xF55F433AE4D230F4
+
 extern int system_call_exit_return_value;
 void system_call_exit(int status); 
 
@@ -275,7 +277,7 @@ int execute_user_program(user_program_info* program)
 
     // We use the function here, also it exists as a function
     // As it needs to be writen in asm
-    user_program_internal_use_program_excute(program->entry, program->stack_end);
+    _execute_user_program(program->entry, program->stack_end);
     
     s_active_user_program = NULL;
 
@@ -379,6 +381,17 @@ void user_program_switch_to(const char* new_executable_path)
     terminate_current_user_program();
 }
 
+void execute_function_as_user_program(user_program_info* program, USER_FUNCTION function)
+{
+    if (program != s_active_user_program)
+    {
+        printf("Error: execute_function_as_user_program, does not current suport switching programs\n");
+        kernel_panic();
+    }
+
+    _execute_function_as_user_program(function);
+}
+
 void defult_prg_exit_handler()
 {
     if (interupt_active)
@@ -391,4 +404,23 @@ void defult_prg_exit_handler()
     }
     
     terminate_current_user_program();
+}
+
+bool check_if_instruction_abort_is_user_program_function_return()
+{
+    size_t esr_el1;
+    asm volatile ( "mrs %0, esr_el1" : "=r"(esr_el1));
+
+    if ((esr_el1 >> 26) != 0b100000) // UNDONE, if it does not work try 0b100001
+        return false;           // Check if it is a instruction abort from el0
+
+    size_t far_el1;
+    asm volatile ( "mrs %0, far_el1" : "=r"(far_el1));
+
+    if (far_el1 != RETURN_VALUE_MAGIC_NUMBER)
+        return false;           // Make sure its from execute_function_as_user_program
+
+    _return_from_user_function();
+
+    return true; 
 }
