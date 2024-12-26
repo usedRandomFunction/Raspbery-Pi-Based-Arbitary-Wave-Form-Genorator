@@ -89,7 +89,7 @@ void spi0_write_read(int cs, const void* send_buffer, void* recive_buffer, size_
     uint32_t controll = mmio_read(SPI0_CS);
 
     controll &= ~SPI0_CS_CS_MASK;
-    controll |= SPI0_CS_CLEAR_RX_FIFO | SPI0_CS_CLEAR_TX_FIFO | SPI0_CS_TA | cs;
+    controll |= SPI0_CS_CLEAR_RX_FIFO | SPI0_CS_CLEAR_TX_FIFO | SPI0_CS_TA | SPI0_CS_CPOL | SPI0_CS_CPHA | cs;
 
     mmio_write(SPI0_CS, controll);
 

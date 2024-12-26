@@ -301,18 +301,20 @@ void  keypad_poll()
 
         hardware_controll_register_write_read(recive_buffer);                           // Read current / set the next row.
 
-        uint8_t keypad_data = 0xFE;
+        uint8_t raw_data = ~(recive_buffer[0]);
+        uint8_t keypad_data = raw_data & 0b01111110;                                    // Only include bits dirrectly mapped to pins
 
-        if (recive_buffer[0] & 0x80)                                                    // The SPI hardware is not 100% compatible and no
-            keypad_data = (recive_buffer[0] << 1) | 0x1;                                // matter the pull resistor it will recive C0 not 80
+        if (raw_data & 0x80)                                                            // A while ago i had trubble with pin 1 of the 74165
+            keypad_data |= 1;                                                           // So i moved it to pin 8, so we need to do this
 
         row_data[row] = keypad_data;
     }
-    s_physical_keypad_state =   ~((keypad_state)row_data[3] | 
+
+
+    s_physical_keypad_state =   ((keypad_state)row_data[3] | 
                                 ((keypad_state) row_data[2] << 8) | 
                                 ((keypad_state)row_data[1] << 16) | 
                                 ((keypad_state)row_data[0] << 24));
-
 }
 
 void keypad_poll_from_timer()
