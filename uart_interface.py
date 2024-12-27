@@ -32,9 +32,9 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.7.1"
+full_name = "AWG uart interface V 0.7.2"
 
-uart_output_log = ["Waiting for connection...", ""]
+uart_output_log = [""]
 uart_output_log_scroll_y = 0
 uart_output_log_scroll_x = 0
 
@@ -487,7 +487,7 @@ def handle_uart_input():
     for char in data:
         uart_input_handle_magic_words(char)
     
-    lines = data.replace('\r', '\n\\r').split('\n')
+    lines = data.replace('\r', '\n\\r').replace('\b','\n\\b').split('\n')
 
     uart_output_log[len(uart_output_log) - 1] = uart_output_log[len(uart_output_log) - 1] + lines[0]
 

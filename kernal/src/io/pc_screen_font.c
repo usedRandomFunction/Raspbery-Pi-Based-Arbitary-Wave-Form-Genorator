@@ -33,6 +33,13 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
         {
             *x = x_min;
             continue;
+        } else if (*str == '\b' && special_characters_enabled)
+        {
+            uint32_t new_x = *x - current_font->width;
+            if (new_x > *x || new_x < x_min) // If overflow or past boundarys
+                new_x = x_min;
+
+            *x = new_x;
         }
 
         if (*str == '\\' && special_characters_enabled)
