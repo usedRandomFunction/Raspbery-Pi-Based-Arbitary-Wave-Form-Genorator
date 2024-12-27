@@ -41,7 +41,7 @@
 // 	char* buffer = alloca(digits + 1);
 // 	buffer[digits] = '\0';
 
-// 	number *= pow(10, (unsigned int)decimals);
+// 	number *= powl(10, (unsigned int)decimals);
 
 // 	for (int i = digits - 1; i >= 0 ; i--)
 // 	{

@@ -19,13 +19,13 @@
 // @param base The base of the power
 // @param exp The power its self
 // @return base to the power of exp
-int pow(int base, unsigned int exp);
+int powl(int base, unsigned int exp);
 
 // Calcautes base to the power of exp
 // @param base The base of the power
 // @param exp The power its self
 // @return base to the power of exp
-unsigned int powu(unsigned int base, unsigned int exp);
+unsigned int powul(unsigned int base, unsigned int exp);
 
 
 // Taylor series cosine function for floating point numbers

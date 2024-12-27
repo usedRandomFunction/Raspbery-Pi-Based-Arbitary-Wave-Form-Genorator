@@ -2,7 +2,7 @@
 
 
 
-int pow(int base, unsigned int exp)
+int powl(int base, unsigned int exp)
 {
     if (exp == 0)
         return 1;
@@ -13,7 +13,7 @@ int pow(int base, unsigned int exp)
     return base;
 }
 
-unsigned int powu(unsigned int base, unsigned int exp)
+unsigned int powul(unsigned int base, unsigned int exp)
 {
     if (exp == 0)
         return 1;
