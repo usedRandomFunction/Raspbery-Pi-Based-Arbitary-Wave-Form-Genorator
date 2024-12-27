@@ -147,7 +147,7 @@ _return_from_user_function:
 
     add     sp,         sp,     #16 * 6
 
-    ret
+    eret
 
 .section .bss
 .align 3 
