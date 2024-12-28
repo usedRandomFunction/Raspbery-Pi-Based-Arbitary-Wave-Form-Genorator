@@ -12,6 +12,8 @@ int physical_keypad_default_delay;
 bool allow_uart_keypad_emmulation;
 bool uart_keypad_emmulation_default_state;
 uint32_t spi_clock_frequency;
+int prg_exit_debounce_time;
+
 bool is_running_in_qemu = false;
 
 
@@ -31,6 +33,8 @@ bool load_kernal_configuration()
     allow_uart_keypad_emmulation = get_u64_from_config_file_entry_with_defult_by_name(&config, "ALLOW_UART_KEYPAD_EMMULATION", 0) > 0;
     uart_keypad_emmulation_default_state = get_u64_from_config_file_entry_with_defult_by_name(&config, "UART_KEYPAD_EMMULATION_DEFAULT_STATE", 0) > 0;
     spi_clock_frequency = get_u64_from_config_file_entry_with_defult_by_name(&config, "SPI_CLOCK_FREQUENCY", 30000000);
+    prg_exit_debounce_time = get_u64_from_config_file_entry_with_defult_by_name(&config, "PRG_EXIT_DEBOUNCE_TIME", 200);
+
     is_running_in_qemu = get_u64_from_config_file_entry_with_defult_by_name(&config, "IS_RUNNING_IN_QEMU", 0) != 0;
 
     free_loaded_config_file(&config);

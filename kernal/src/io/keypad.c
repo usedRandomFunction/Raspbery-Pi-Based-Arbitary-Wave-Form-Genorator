@@ -15,6 +15,7 @@ static keypad_state s_uart_emmulation_forced_off;
 static keypad_state s_uart_emmulation_forced_on;
 static keypad_state s_uart_emmulation_standed;
 static keypad_state s_physical_keypad_state;
+static uint64_t s_prg_exit_last_triggered;
 static bool s_uart_emmulation_enabled;
 static int s_physical_keypad_delay;
 
@@ -334,6 +335,18 @@ void s_tigger_prg_exit_from_gpio(int pin)
 void tigger_prg_exit()
 {
     printf("\nPRG_EXIT interupt raised!\n");
+
+    const uint64_t current_time = get_timer_count();
+    const uint64_t delta = current_time - s_prg_exit_last_triggered;
+    const int delta_milliseconds = delta / (get_timer_frequency() / 1000);
+
+    if (delta_milliseconds < prg_exit_debounce_time)
+    {
+        printf("Debounce time has not been reached yet, ignoring\n");
+    }
+
+    s_prg_exit_last_triggered = current_time;
+
 
     if (interupt_active)
     {

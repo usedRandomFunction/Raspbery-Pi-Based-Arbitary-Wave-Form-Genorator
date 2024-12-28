@@ -27,4 +27,6 @@ there currently is only one system config file `system.cfg` and it is as follows
 | `PHYSICAL_KEYPAD_DEFAULT_DELAY` | Tells the kernal the defult delay between keypad frames (in milliseconds),<br>0 dissables the keypad/| <center> 50 </center> |
 | `ALLOW_UART_KEYPAD_EMMULATION` | Tells the kernal whether or not to allow the uart keypad emmulation to be enabled.<br>If set to 0 the uart keypad emmulation is completly dissabled, 1 enables it. | <center> 0 </center> |
 | `UART_KEYPAD_EMMULATION_DEFAULT_STATE` | Tells the kernal what the defult state of uart keypad emmulation is.<br>If set to 0 the uart keypad emmulation is dissabled de defult, 1 enables it. | <center> 0 </center> |
+| `SPI_CLOCK_FREQUENCY` | Tells the kernal what frequency, to run SPI0 at. The value is provided in hertz | <center>30 MHz</center>
+| `PRG_EXIT_DEBOUNCE_TIME`| Adds a "cooldown" to the PRG_EXIT interupt, to help with debounce. The given value<br>decides the minimum time between interupts in milliseconds | <center>200</center> 
 | `IS_RUNNING_IN_QEMU` | Used to tell the kernal if its running in qemu as some functions will hang if qemu<br>0 is not on qemu, any other value is qemu | <center> 0 </center> |
