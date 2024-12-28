@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.7.2"
+full_name = "AWG uart interface V 0.7.3"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
@@ -1252,9 +1252,9 @@ def get_button_code_from_string(button):
     elif button == 'd':
         return 0x44
     elif button == '+' or button == '-':
-        return int('+')
+        return 0x2B
     elif button == ".":
-        return int('.')
+        return 0x2E
     elif button == "del" or button == "delete":
         return 0x7F
     elif button == "clr" or button == "clear":
