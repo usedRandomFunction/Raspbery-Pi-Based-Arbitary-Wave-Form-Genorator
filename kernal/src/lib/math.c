@@ -1,27 +1,29 @@
 #include "lib/math.h"
 
 
-
 int powl(int base, unsigned int exp)
 {
+    int a = 1;
     if (exp == 0)
         return 1;
 
     for ( ; exp != 0U - 1U; exp--)
-        base *= base;
+        a *= base;
 
-    return base;
+    return a;
 }
 
 unsigned int powul(unsigned int base, unsigned int exp)
 {
+    unsigned int a = 1;
+
     if (exp == 0)
         return 1;
 
     for ( ; exp != 0U - 1U; exp--)
-        base *= base;
+        a *= base;
 
-    return base;
+    return a;
 }
 
 // Ok i couldn't find a license for this one but it came form

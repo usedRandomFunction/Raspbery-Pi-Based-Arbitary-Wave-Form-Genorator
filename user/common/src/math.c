@@ -1,25 +1,64 @@
 #include "common/math.h"
 
+double pow(double a, double b)
+{
+    const double base = a;
+    a = 1;
+
+    if (b == 0)
+        return 1;
+
+    if (b < 0)
+        return 1 / pow(a, -b);
+
+
+    for ( ; b > 0; b--)
+        a *= base;
+
+    return a;
+}
+
 int powl(int base, unsigned int exp)
 {
+    int a = 1;
     if (exp == 0)
         return 1;
 
     for ( ; exp != 0U - 1U; exp--)
-        base *= base;
+        a *= base;
 
-    return base;
+    return a;
 }
 
 unsigned int powul(unsigned int base, unsigned int exp)
 {
+    unsigned int a = 1;
+
     if (exp == 0)
         return 1;
 
     for ( ; exp != 0U - 1U; exp--)
-        base *= base;
+        a *= base;
 
-    return base;
+    return a;
+}
+
+double fmod(double a, double b)
+{
+    return a - floor(a/b) * b;
+}
+
+double fabs(double x)
+{
+    if (x < 0)
+        return -x;
+
+    return x;
+}
+
+double floor(double x)
+{
+    return __builtin_floor(x);
 }
 
 // Ok i couldn't find a license for this one but it came form
