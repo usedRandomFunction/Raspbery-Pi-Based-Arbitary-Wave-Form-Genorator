@@ -112,7 +112,7 @@ static fat_directory_entry* s_find_file_recursive(const char* path, uint32_t cur
 // @return -1 if failed int32_max if file or the number of bytes taken (including traling /) if dirrectory
 static int32_t s_format_file_name_8_3_standered(const char* path, char* buffer);
 
-// Allocates new clusters to file after a write
+// Allocates new clusters to file after a write, it also handles the edage case where the offset is at EOF
 // @param file Pointer to file discriptor of the file
 // @param bytes_written bytes written to the file, (used to caculate new size)
 // @return True if succesful or false if failed
@@ -403,7 +403,7 @@ size_t read(int fd, void* buf, size_t n)
         return (file->file_size_bytes == file->current_offset) ? 0 : n;
     }
 
-    uint32_t number_of_clusters_to_read = number_of_middle_clusters + (number_of_bytes_to_read_from_last_clsuter == 0) ? 0 : 1;
+    uint32_t number_of_clusters_to_read = number_of_middle_clusters + ((number_of_bytes_to_read_from_last_clsuter == 0) ? 0 : 1);
 
     for ( ; number_of_clusters_to_read > 0; number_of_clusters_to_read--)
     {
@@ -1175,6 +1175,7 @@ bool s_expand_file_internal(file_discriptor_metadata* file, size_t new_size)
 
     if (allocation_table_updates == NULL)
         return false;
+
     allocation_table_updates[0].entry_number = last_cluster; // Set the entry to the last cluster of the file
        
     success = s_write_fat_updates(allocation_table_updates);
@@ -1203,7 +1204,7 @@ bool s_shink_file(file_discriptor_metadata* file, size_t new_size)
     return success;
 }
 
-static bool s_shink_file_internal(file_discriptor_metadata* file, size_t new_size)
+bool s_shink_file_internal(file_discriptor_metadata* file, size_t new_size)
 {
      if (file->write_permissions == false || file->file_size_bytes < new_size)
         return false;
@@ -1327,7 +1328,7 @@ ptrdiff_t s_lseek_internal(file_discriptor_metadata* file, ptrdiff_t offset, int
 
     while (number_of_clusters_skip > 0)
     {
-        current_cluster_number = s_get_next_cluster_in_chain(current_cluster_number);//fat_buffer[fat_offset] & 0x0FFFFFFF;
+        current_cluster_number = s_get_next_cluster_in_chain(current_cluster_number);
 
         if (current_cluster_number >= 0x0FFFFFF8)
         {
@@ -1381,8 +1382,8 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
 
         if (sd_write_section(cluster_lba,                           // LBA to write to
             buffer,                                                 // Bytes to write
-            file->current_offset % cluster_size,           // Offset from start
-            number_of_bytes_to_write_to_first_clsuter,             // Number of bytes
+            file->current_offset % cluster_size,                    // Offset from start
+            number_of_bytes_to_write_to_first_clsuter,              // Number of bytes
             root_file_system->number_of_sectors_per_cluster,        // Ammount of from the SD to work with
             tempoary_buffer) == 0)                                  // Working buffer
         {
@@ -1403,7 +1404,7 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
         return n;
     }
 
-    uint32_t number_of_clusters_to_write_to = number_of_middle_clusters + (number_of_bytes_to_write_to_last_clsuter == 0) ? 0 : 1;
+    uint32_t number_of_clusters_to_write_to = number_of_middle_clusters + ((number_of_bytes_to_write_to_last_clsuter == 0) ? 0 : 1);
 
     for ( ; number_of_clusters_to_write_to > 0; number_of_clusters_to_write_to--)
     {
@@ -1413,11 +1414,14 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
         {
             printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
             free(tempoary_buffer);
-            free (fat_buffer);
+            free(fat_buffer);
 
             return -1;
         }
         file->current_cluster_number = new_cluster_number;
+
+        // Please dont delete, if you do the universe will punish you by making you need this print statment
+        // printf("Moved cluster to %x while writing\n", new_cluster_number);
 
         if (number_of_middle_clusters > 0)
         {
@@ -1428,7 +1432,7 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
             {
                 printf("Erorr: Failed to write to SD!\n");
                 free(tempoary_buffer);
-                free (fat_buffer);
+                free(fat_buffer);
 
                 return -1;
             }
@@ -1447,7 +1451,7 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
         if (sd_write_section(cluster_lba,                           // LBA to write to
             buffer,                                                 // Bytes to write
             0,                                                      // Offset from start
-            number_of_bytes_to_write_to_last_clsuter,              // Number of bytes
+            number_of_bytes_to_write_to_last_clsuter,               // Number of bytes
             root_file_system->number_of_sectors_per_cluster,        // Ammount of from the SD to work with
             tempoary_buffer) == 0)                                  // Working buffer
         {
@@ -1461,8 +1465,6 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
 
 
     free(tempoary_buffer);
-
-    file->current_offset += n;
 
     return n;
 }
@@ -1499,10 +1501,21 @@ int s_fremove_internal(file_discriptor_metadata* file)
 
 bool s_allocate_new_clusters_if_necessary(file_discriptor_metadata* file, size_t bytes_written)
 {
-    size_t new_size = file->current_offset + bytes_written;
+    const size_t old_size = file->file_size_bytes;
+    const size_t new_size = file->current_offset + bytes_written;
 
-    if (new_size > file->file_size_bytes)
-        return s_expand_file(file, new_size);
+    if (new_size <= file->file_size_bytes)
+        return true;
+
+    if (!s_expand_file(file, new_size))
+        return false;
+
+    if (file->current_offset != old_size || old_size == 0)
+         return true;
+
+    // handle edge case where the file is at EOF
+
+    file->current_cluster_number = s_get_next_cluster_in_chain(file->current_cluster_number);
     
     return true;
 }
@@ -1626,6 +1639,9 @@ bool s_write_fat_updates(fat_entry_update* updates)
         // We have reached the end of the updates we can make
         if (updates->entry_number == UINT32_MAX)
                 break;
+        
+        // Please dont delete, if you do the universe will punish you by making you need this print statment
+        //printf("Changing FAT entry: %x form %x to %x\n", current_cluster_number, fat_buffer[fat_offset], updates->new_value);
 
         fat_buffer[fat_offset] = updates->new_value;
 

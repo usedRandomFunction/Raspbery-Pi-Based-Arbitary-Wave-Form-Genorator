@@ -1,4 +1,4 @@
-kernel=kernel8.img
+kernel=KERNEL8.IMG
 arm_64bit=1
 
 arm_freq=1410

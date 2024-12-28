@@ -32,7 +32,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.7.3"
+full_name = "AWG uart interface V 0.7.4"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
@@ -791,8 +791,11 @@ def handle_chunk_boundarys(file, data, bytes_sent, chunk_size, wait_is_required)
 
     chunk_offset = chunk_offset % chunk_size    # Now its just of bit after the chunk ends
 
+    if chunk_offset == 0:                       # In the event that we reached a boundary, but haven't exceeded it
+        return data                             # we dont after the data we send, just wait before sending more
+
     if file != None:
-        file.seek(1, -chunk_offset)
+        file.seek(-chunk_offset, 1)
 
     return data[:-chunk_offset]
     
@@ -1048,7 +1051,7 @@ def command_file_upload(source_file, destionation_path):
     wait_for_magic_word()
 
     max_bar_size = window_width - 6
-    upload_file(source_file, size, progress_bar, max_bar_size, 32 * 1014)
+    upload_file(source_file, size, progress_bar, max_bar_size, 32 * 1024)
 
     dont_update_output_window = False
     redraw_subwindows()
