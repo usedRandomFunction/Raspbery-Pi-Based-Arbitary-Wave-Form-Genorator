@@ -85,7 +85,7 @@ void destroy_user_program(user_program_info* program);
 // Used to manage virtual address translation within a user program
 // @param program The program to change the mappings of
 // @param ptr The address for the allocaion to goto
-// @param size The size of the allocation (to create / modify), or set to zero to delete
+// @param size The size of the allocation (to create / modify), or set to zero to delete, a value of -1 will return the current size
 // @param flags flags
 // @return The size of the allocation in bytes / 0 if failed, or if deleting > 0 on success
 size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, int flags);

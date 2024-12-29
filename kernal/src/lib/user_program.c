@@ -329,9 +329,11 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
 
         if (size == 0)
         {
-            remove_translation_table_section(&program->translation_table, i, false);
-            return 1;
+            return remove_translation_table_section(&program->translation_table, i, false) ? 1 : 0;
         }
+
+        if (size == -1)
+            return get_page_allocation_size(section->allocation);
 
         if (!resize_page_allocation(section->allocation, size))
             return 0;
