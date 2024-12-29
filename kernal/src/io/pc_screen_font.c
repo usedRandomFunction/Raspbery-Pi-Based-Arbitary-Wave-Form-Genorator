@@ -11,21 +11,25 @@ pc_screen_font_header* current_font = &_binary_data_font_psf_start;
 
 void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y)
 {
-    pc_screen_font_darw_ex(str, x, y, 0, get_framebuffer_width(), true);
+    pc_screen_font_darw_ex(str, x, y, 0, get_framebuffer_width(), true, current_font);
 }
 
-void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, bool are_special_characters_enabled)
+void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, 
+    bool are_special_characters_enabled, pc_screen_font_header* font)
 {
-    int bytesperline = (current_font->width+7)/8;
+    if (font == NULL)
+        font = current_font;
+
+    int bytesperline = (font->width+7)/8;
     bool special_characters_enabled = are_special_characters_enabled;
     
     for ( ; *str != '\0' ; str++)
     {
-        if ((*x + current_font->width) >= x_max ||
+        if ((*x + font->width) >= x_max ||
             (*str == '\n' && special_characters_enabled))
         {
             *x = x_min;
-            *y += current_font->height;
+            *y += font->height;
             continue;
         }
 
@@ -35,7 +39,7 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
             continue;
         } else if (*str == '\b' && special_characters_enabled)
         {
-            uint32_t new_x = *x - current_font->width;
+            uint32_t new_x = *x - font->width;
             if (new_x > *x || new_x < x_min) // If overflow or past boundarys
                 new_x = x_min;
 
@@ -51,14 +55,14 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
             special_characters_enabled = are_special_characters_enabled;
 
         
-        int glyph_number = *((uint8_t*)str) < current_font->numglyph ? *((uint8_t*)str) : 0;
-        uint8_t* glyph = &current_font->glyphs + glyph_number * current_font->bytesperglyph;
+        int glyph_number = *((uint8_t*)str) < font->numglyph ? *((uint8_t*)str) : 0;
+        uint8_t* glyph = &font->glyphs + glyph_number * font->bytesperglyph;
 
-        for (int y_offset = 0 ; y_offset < current_font->height; y_offset++)
+        for (int y_offset = 0 ; y_offset < font->height; y_offset++)
         {
             uint64_t current_line_glyph = *(uint64_t*)glyph;
 
-            for (int x_offset = 0 ; x_offset < current_font->width; x_offset++)
+            for (int x_offset = 0 ; x_offset < font->width; x_offset++)
             {
                 bool mask = ((current_line_glyph) & (1 << (8 -x_offset))) != 0;
 
@@ -71,6 +75,6 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
             glyph += bytesperline;
         }
 
-        *x += current_font->width;
+        *x += font->width;
     }
 }

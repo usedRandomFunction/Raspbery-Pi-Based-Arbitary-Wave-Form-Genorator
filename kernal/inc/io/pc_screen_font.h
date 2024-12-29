@@ -35,7 +35,9 @@ void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y);
 // @param x_min The value x will be set to on a new line
 // @param x_max The value used by word wraping
 // @param are_special_characters_enabled, enables or dissables special characters i.e '\n'
-void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, bool are_special_characters_enabled);
+// @param font Font to be used
+void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, 
+    bool are_special_characters_enabled, pc_screen_font_header* font);
 
 
 
