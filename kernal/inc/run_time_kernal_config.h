@@ -13,6 +13,13 @@ extern uint32_t spi_clock_frequency;
 extern int prg_exit_debounce_time;
 extern bool is_running_in_qemu;
 
+extern bool allways_shirnk_frame_buffer_if_possible;
+extern uint32_t maximum_number_of_frame_buffers;
+extern uint32_t minimum_number_of_frame_buffers;
+extern uint32_t minimum_height;
+extern uint32_t display_height;
+extern uint32_t display_width;
+
 // Loads infomation stored in system.cfg
 // @return True if success, False if failed
 bool load_kernal_configuration();

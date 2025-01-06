@@ -74,7 +74,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags)
     initialize_event_handler();
     initialize_interupts();
 
-    if (!initialize_framebuffer(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT))
+    if (!initialize_framebuffer())
     {
         kernel_panic();
     }

@@ -5,7 +5,7 @@ The config files are based of .ini files and are simuler except:
 
 ## format
 
-'#' repsents a comment
+'#' represents a comment
 
 KEY_NAME = value
 
@@ -29,4 +29,11 @@ there currently is only one system config file `system.cfg` and it is as follows
 | `UART_KEYPAD_EMMULATION_DEFAULT_STATE` | Tells the kernal what the defult state of uart keypad emmulation is.<br>If set to 0 the uart keypad emmulation is dissabled de defult, 1 enables it. | <center> 0 </center> |
 | `SPI_CLOCK_FREQUENCY` | Tells the kernal what frequency, to run SPI0 at. The value is provided in hertz | <center>30 MHz</center>
 | `PRG_EXIT_DEBOUNCE_TIME`| Adds a "cooldown" to the PRG_EXIT interupt, to help with debounce. The given value<br>decides the minimum time between interupts in milliseconds | <center>200</center> 
+| `ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE` | States wherever or not, the frame buffer should shink if possible applys when reducing<br> the number of virtual buffers. A value `> 0` represents `true`, while `0` represents `false` | <center><i>see kconfig.h</i></center>
+| `MAXIMUM_NUMBER_OF_FRAME_BUFFERS` | Stores the maximum allowed number of virtual frame buffers | <center><i>see kconfig.h</i></center>
+| `MINIMUM_NUMBER_OF_FRAME_BUFFERS` | Stores the minimum allowed number of virtual frame buffers | <center><i>see kconfig.h</i></center>
+| `DISPLAY_HEIGHT` | Stores the height of the display in pixels | <center><i>see kconfig.h</i></center>
+| `DISPLAY_WIDTH` | Stores the width of the display in pixels | <center><i>see kconfig.h</i></center>
 | `IS_RUNNING_IN_QEMU` | Used to tell the kernal if its running in qemu as some functions will hang if qemu<br>0 is not on qemu, any other value is qemu | <center> 0 </center> |
+
+Note: Defult value is the value assemed by the kernel if it cannot find the entry while loading<br>the config file. If `N/A` is given the kernel will refuse to load if the entry is not pressent.

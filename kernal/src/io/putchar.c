@@ -12,12 +12,12 @@ int putchar(int ch)
 {
     uart_putc((uint8_t)ch);
 
-    if (is_frambuffer_initialized)
+    if (is_frambuffer_initialized())
     {
         char buffer[2];
         buffer[0] = (char)ch;
         buffer[1] = 0;
-        pc_screen_font_darw(buffer, &console_output_x, &console_output_y); // TODO switch a draw char function
+        pc_screen_font_darw(buffer, &console_output_x, &console_output_y, 0); // TODO switch a draw char function
 
         if (console_output_y > CONSOLE_MAX_HEIGHT)  
         {
@@ -31,13 +31,13 @@ int putchar(int ch)
 
             uint32_t new_last_line_bottom = last_line_bottom - copy_area_start;
 
-            framebuffer_screen_copy(0, copy_area_start,                         // Copy area Start x, y
-                get_framebuffer_width(), last_line_bottom - copy_area_start,    // Copy area size x, y
-                0, 0);                                                          // Paste area Start x, y
+            display_screen_copy(0, copy_area_start,                         // Copy area Start x, y
+                get_display_width(), last_line_bottom - copy_area_start,    // Copy area size x, y
+                0, 0, 0);                                                   // Paste area Start x, y and buffer ID
 
-            framebuffer_fill_rect(0, new_last_line_bottom,                      // Fill in the old area with black
-                get_framebuffer_width(), get_framebuffer_height(),
-                0, 0, 0); // R G B
+            display_fill_rect(0, new_last_line_bottom,                      // x0, y0
+                get_display_width(), get_display_height(),                  // x1, y1
+                FRAMEBUFFER_RGB(0, 0, 0), 0);                               // color and buffer
 
             console_output_y = new_last_line_bottom;
         }

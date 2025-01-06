@@ -12,8 +12,11 @@
 | CENTRAL_BLOCK_MEMORY_ALLOCATOR_KERNEL_PANIC_FAILED | If defined a central_block_memory_allocator<br>will trigger a kernel panic if it fails
 | PAGE_ALLOCATOR_PAGE_SIZE_AS_POWER_OF_TWO | Sets the size of pages to be used by the page allocator 
 | UART_BASE_CLOCK_FREQUENCY | Sets the base clock freqency of the UART
-| FRAMEBUFFER_HEIGHT | Sets the height of the frame buffer
-| FRAMEBUFFER_WIDTH | Sets the width of the frame buffer 
+| ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE | States wherever or not, the frame buffer should shink if possible<br>applys when reducing the number of virtual buffers<br><br>Note: This value is also included system.cfg, this header value only<br>controlls the defults, and is also used before the config is loaded,<br>since the frame buffer is initialized before the config file is loaded.
+| MAXIMUM_NUMBER_OF_FRAME_BUFFERS | Stores the maximum allowed number of virtual frame buffers<br><br>Note: This value is also included system.cfg, this header value only<br>controlls the defults, and is also used before the config is loaded,<br>since the frame buffer is initialized before the config file is loaded.
+| MINIMUM_NUMBER_OF_FRAME_BUFFERS | Stores the minimum allowed number of virtual frame buffers<br><br>Note: This value is also included system.cfg, this header value only<br>controlls the defults, and is also used before the config is loaded,<br>since the frame buffer is initialized before the config file is loaded.
+| DISPLAY_HEIGHT | Stores the height of the display in pixels<br><br>Note: This value is also included system.cfg, this header value only<br>controlls the defults, and is also used before the config is loaded,<br>since the frame buffer is initialized before the config file is loaded.
+| DISPLAY_WIDTH | Stores the width of the display in pixels<br><br>Note: This value is also included system.cfg, this header value only<br>controlls the defults, and is also used before the config is loaded,<br>since the frame buffer is initialized before the config file is loaded.
 | CONSOLE_MAX_HEIGHT | Max y valye of the console (in pixels)
 | SD_VERBOSE_LOGGING | Enable verbose logging for the SD functions if defined
 | MMIO_VIRUTAL_ADDRESS_BASE | Sets the base virtual addreess for the MMIO (must be a void*)

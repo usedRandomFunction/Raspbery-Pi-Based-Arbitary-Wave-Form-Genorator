@@ -1,31 +1,275 @@
 #include "io/framebuffer.h"
 
+#include "run_time_kernal_config.h"
 #include "lib/translation_table.h"
 #include "lib/page_allocator.h"
 #include "io/propertyTags.h"
 #include "lib/memory.h"
 #include "io/printf.h"
+#include "lib/math.h"
 #include "lib/mmu.h"
 
-bool is_frambuffer_initialized = false;
+// !======== Note about naming !========!
+// While outside of this file frame buffers
+// are abstract objects given as a ID to write
+// functions, that apear on the display;
+// in this file they are called virtual frame
+// buffers. This is becouse the videocard
+// only has one frame buffer and we are just using
+// offsets
+// !======== Note about naming !========!
+
+bool s_is_frambuffer_initialized = false;
 
 extern translation_table_info kernel_translation_table;
 
 static uint32_t s_framebuffer_bytes_per_line;
 static uint8_t* s_framebuffer_pointer;
 static uint32_t s_framebuffer_height;
+static uint32_t s_framebuffer_size;
 static uint32_t s_framebuffer_width;
+static int s_number_of_framebuffers;
+static int s_active_framebuffer;
 static bool s_framebuffer_is_rgb; // True if RGB false if BGR
 
-bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
+// Uses the property tags to set up the hardware frame buffer
+// @param physical_width Display width
+// @param physical_height Display height
+// @param virtual_width Width of the frame buffer its self
+// @param virtual_height Height of the frame buffer its self
+// @param virtual_offset_x Offset of the physical display inside the virtual buffer
+// @param virtual_offset_y Offset of the physical display inside the virtual buffer
+// @param overscan_left Overscan controll
+// @param overscan_right Overscan controll
+// @param overscan_top Overscan controll
+// @param overscan_bottom Overscan controll
+// @return Base address of the frame buffer, or NULL if failed
+static void* s_create_framebuffer(uint32_t physical_width, uint32_t physical_height, uint32_t virtual_width, uint32_t virtual_height,
+    uint32_t virtual_offset_x, uint32_t virtual_offset_y, uint32_t overscan_left, uint32_t overscan_right,
+    uint32_t overscan_top, uint32_t overscan_bottom);
+
+// Creatse or moves the physical address of the virtual memory mapping used by the frame buffer
+// @param base_address Pointer to start of frame buffer (Physcial address)
+// @return True if success false if failed
+static bool s_create_or_move_framebuffer_vmem_mapping(void* base_address);
+
+bool initialize_framebuffer()
 {
-    s_framebuffer_bytes_per_line = 0;
-    s_framebuffer_pointer = NULL;
-    s_framebuffer_is_rgb = false;
-    s_framebuffer_height = FRAMEBUFFER_HEIGHT;
-    s_framebuffer_width = FRAMEBUFFER_WIDTH;
+    s_is_frambuffer_initialized = false;
+    uint32_t buffer_height = display_height * minimum_number_of_frame_buffers;
+    uint32_t buffer_width = display_width;
 
     printf("Initializing frame buffer!\n");
+
+    void* base_address = s_create_framebuffer(
+        display_width, display_height,    // Physical display size
+        buffer_width, buffer_height,    // Virtual buffer size
+        0, 0, 0, 0, 0, 0);              // Offsets and overscan
+
+    if (base_address == NULL)
+        return false;
+
+    if (s_create_or_move_framebuffer_vmem_mapping(base_address) == false)
+        return false;
+
+    // Blank the screen
+    framebuffer_fill_rect(0, 0, s_framebuffer_width, s_framebuffer_height, FRAMEBUFFER_RGB(0, 0, 0));
+    
+    s_is_frambuffer_initialized = true;
+    s_number_of_framebuffers = minimum_number_of_frame_buffers;
+    s_active_framebuffer = 0;
+    printf("Successfully initialized frame buffer\n");
+
+
+    return true;
+}
+
+int active_framebuffer(int buffer)
+{
+    if (buffer == -1)
+        return s_active_framebuffer;
+
+    if (buffer >= s_number_of_framebuffers)
+        return s_active_framebuffer;
+
+    property_tag_set_virtual_offset offset_tag;
+    offset_tag.header.buffersize = PROPERTY_TAG_SET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE;
+    offset_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    offset_tag.header.tagID = PROPERTY_TAG_ID_SET_VIRTUAL_OFFSET;
+    offset_tag.X = 0;
+    offset_tag.Y = display_height * buffer;
+
+
+    property_tag_set_virtual_offset_responce* responce = 
+        (property_tag_set_virtual_offset_responce*)get_property_tag((property_tag*)&offset_tag, aligned_alloc, free);
+    
+    if (responce == NULL || responce->X != offset_tag.X || responce->Y != offset_tag.Y)
+    {
+        printf("Failed to set virtual buffer offset.\n");
+        free(responce);
+
+        return s_active_framebuffer;
+    }
+
+    free(responce);
+
+    printf("Set framebuffer active buffer to %d (0, %d)\n", buffer, display_height * buffer);
+
+    s_active_framebuffer = buffer;
+    return s_active_framebuffer;
+}
+
+int request_frame_buffers(int nbuffers)
+{
+     if (nbuffers == -1)
+        return s_number_of_framebuffers;
+
+    nbuffers = clamp(nbuffers, maximum_number_of_frame_buffers, minimum_number_of_frame_buffers);
+
+    if (nbuffers == s_number_of_framebuffers)
+        return s_number_of_framebuffers;
+
+    if (nbuffers < s_number_of_framebuffers && (!allways_shirnk_frame_buffer_if_possible))
+    {
+        s_number_of_framebuffers = nbuffers;
+        return s_number_of_framebuffers;
+    }
+
+    int new_active_framebuffer_id = s_active_framebuffer >= nbuffers ? 0 : s_active_framebuffer;
+
+    s_is_frambuffer_initialized = false;
+    uint32_t buffer_height = display_height * nbuffers;
+    uint32_t buffer_width = display_width;
+
+    printf("Creating video card frame buffer!\n");
+
+    void* base_address = s_create_framebuffer(
+        display_width, display_height,                  // Physical display size
+        buffer_width, buffer_height,                    // Virtual buffer size
+        0, display_height * new_active_framebuffer_id,  // Offsets
+        0, 0, 0, 0);                                    // Overscan
+
+    if (base_address == NULL)
+        return s_number_of_framebuffers;
+
+    if (s_create_or_move_framebuffer_vmem_mapping(base_address) == false)
+        return s_number_of_framebuffers;
+
+    // Blank the screen
+    framebuffer_fill_rect(0, 0, s_framebuffer_width, s_framebuffer_height, FRAMEBUFFER_RGB(0, 0, 0));
+    
+    s_is_frambuffer_initialized = true;
+    s_number_of_framebuffers = nbuffers;
+    s_active_framebuffer = new_active_framebuffer_id;
+
+    printf("Success!\n");
+    return s_number_of_framebuffers;
+}
+
+void set_framebuffer_pixel(uint32_t x, uint32_t y, display_color color)
+{
+    if (x >= s_framebuffer_width || y >= s_framebuffer_height)
+    {
+        return;
+    }
+
+
+    if (!s_framebuffer_is_rgb)
+    {
+        uint32_t red  = color & 0xFF;
+        uint32_t blue = (color >> 16) & 0xFF; 
+        color = (color & 0xFF00FF00) | blue | (red << 16); 
+    }
+
+    size_t offset = x * 4 + y * s_framebuffer_bytes_per_line;
+    
+    uint32_t* pixel = (uint32_t*)(s_framebuffer_pointer + offset);
+    *pixel = color;
+}
+
+void set_display_pixel(uint32_t x, uint32_t y, display_color color, int buffer)
+{
+    if (buffer < 0 || buffer >= s_number_of_framebuffers)
+        return;
+
+    set_framebuffer_pixel(x, y + display_height * buffer, color);
+}
+
+void framebuffer_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y, uint32_t copy_area_size_x, uint32_t copy_area_size_y, uint32_t paste_area_start_x, uint32_t paste_area_start_y)
+{
+    for (int y_offset = 0; y_offset < copy_area_size_y; y_offset++)
+    {
+        uint32_t copy_offset_start = (copy_area_start_x) * 4 + 
+            (copy_area_start_y + y_offset) * s_framebuffer_bytes_per_line;
+        
+        uint32_t paste_offset_start = (paste_area_start_x) * 4 + 
+            (paste_area_start_y + y_offset) * s_framebuffer_bytes_per_line;
+
+        memcpy(s_framebuffer_pointer + paste_offset_start, s_framebuffer_pointer + copy_offset_start, copy_area_size_x * 4);
+    }
+}
+
+void display_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y, uint32_t copy_area_size_x, uint32_t copy_area_size_y, uint32_t paste_area_start_x, uint32_t paste_area_start_y, int buffer)
+{
+    if (buffer < 0 || buffer >= s_number_of_framebuffers)
+        return;
+
+    uint32_t buffer_offset = display_height * buffer;
+
+    framebuffer_screen_copy(copy_area_start_x, copy_area_start_y + buffer_offset,
+        copy_area_size_x, copy_area_size_y,
+        paste_area_start_x, paste_area_start_y + buffer_offset);
+}
+
+void framebuffer_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, display_color color)
+{
+    for (int y = y0 ; y < y1; y++)
+    {
+        for (int x = x0 ; x < x1; x++)
+        {
+            set_framebuffer_pixel(x, y, color);
+        }
+    }
+}
+
+void display_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, display_color color, int buffer)
+{
+    if (buffer < 0 || buffer >= s_number_of_framebuffers)
+        return;
+
+    uint32_t buffer_offset = display_height * buffer;
+
+    framebuffer_fill_rect(x0, y0 + buffer_offset, x1, y1 + buffer_offset, color);
+}
+
+uint32_t get_display_height()
+{
+    return display_height;
+}
+
+uint32_t get_display_width()
+{
+    return display_width;
+}
+
+bool is_frambuffer_initialized()
+{
+    return s_is_frambuffer_initialized;
+}
+
+ void* s_create_framebuffer(uint32_t physical_width, uint32_t physical_height, uint32_t virtual_width, uint32_t virtual_height,
+    uint32_t virtual_offset_x, uint32_t virtual_offset_y, uint32_t overscan_left, uint32_t overscan_right,
+    uint32_t overscan_top, uint32_t overscan_bottom)
+{
+    printf("Creating new frame buffer.\n"
+        "Physical size: %d by %d px,\n"
+        "Virtual size: %d by %d px\n"
+        "Virtual offset: (%d, %d) px\n"
+        "Overscan: %d top, %d bottom, %d left, %d right\n", 
+        physical_width, physical_height,
+        virtual_width, virtual_height,
+        virtual_offset_x, virtual_offset_y,
+        overscan_top, overscan_bottom, overscan_left, overscan_right);
 
     const uint32_t tag_buffer_size_bytes = sizeof(property_tag_set_physical_display_width_height) +
         sizeof(property_tag_set_virtual_buffer_width_height) +
@@ -86,28 +330,28 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     set_physical_display_width_height->header.buffersize = PROPERTY_TAG_SET_PHYSICAL_DISPLAY_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE;
     set_physical_display_width_height->header.tagID = PROPERTY_TAG_ID_SET_PHYS_WIDTH_HEIGHT;
     set_physical_display_width_height->header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_physical_display_width_height->height = s_framebuffer_height;
-    set_physical_display_width_height->width = s_framebuffer_width;
+    set_physical_display_width_height->height = physical_height;
+    set_physical_display_width_height->width = physical_width;
 
     set_virtual_buffer_width_height->header.buffersize = PROPERTY_TAG_SET_VIRTUAL_BUFFER_WIDTH_HEIGHT_REQUEST_RESPONSE_SIZE;
     set_virtual_buffer_width_height->header.tagID = PROPERTY_TAG_ID_SET_VIRT_WIDTH_HEIGHT;
     set_virtual_buffer_width_height->header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_virtual_buffer_width_height->height = s_framebuffer_height;
-    set_virtual_buffer_width_height->width = s_framebuffer_width;
+    set_virtual_buffer_width_height->height = virtual_height;
+    set_virtual_buffer_width_height->width = virtual_width;
 
     set_virtual_offset->header.buffersize = PROPERTY_TAG_SET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE;
     set_virtual_offset->header.tagID = PROPERTY_TAG_ID_SET_VIRTUAL_OFFSET;
     set_virtual_offset->header.request = PROPERTY_TAG_PROCESS_REQUEST;
-    set_virtual_offset->X = 0;
-    set_virtual_offset->Y = 0;
+    set_virtual_offset->X = virtual_offset_x;
+    set_virtual_offset->Y = virtual_offset_y;
 
     set_overscan->header.buffersize = PROPERTY_TAG_SET_OVERSCAN_REQUEST_RESPONSE_SIZE;
     set_overscan->header.request = PROPERTY_TAG_PROCESS_REQUEST;
     set_overscan->header.tagID = PROPERTY_TAG_ID_SET_OVERSCAN;
-    set_overscan->bottom = 0;
-    set_overscan->right = 0;
-    set_overscan->left = 0;
-    set_overscan->top = 0;
+    set_overscan->bottom = overscan_bottom;
+    set_overscan->right = overscan_right;
+    set_overscan->left = overscan_left;
+    set_overscan->top = overscan_top;
 
     set_depth->header.buffersize = PROPERTY_TAG_SET_DEPTH_REQUEST_RESPONSE_SIZE;
     set_depth->header.request = PROPERTY_TAG_PROCESS_REQUEST;
@@ -133,7 +377,7 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     if (property_tag_return == NULL)
     {
         printf("Failed to initialize frame buffer: get_property_tags() failed!\n");
-        return false;
+        return NULL;
     }
 
 
@@ -160,8 +404,8 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
     //  (property_tag_set_virtual_offset_responce*) (property_tag_return + buffer_offset);
     buffer_offset += sizeof(property_tag_set_virtual_offset_responce);
 
-    property_tag_set_overscan_responce* set_overscan_responce =
-        (property_tag_set_overscan_responce*) (property_tags_to_send + buffer_offset);
+    // property_tag_set_overscan_responce* set_overscan_responce =
+        // (property_tag_set_overscan_responce*) (property_tags_to_send + buffer_offset);
     buffer_offset += sizeof(property_tag_set_overscan_responce);
 
     // Commented out to make gcc happy (unused variable)
@@ -190,96 +434,70 @@ bool initialize_framebuffer(uint32_t target_width, uint32_t target_height)
 
 
     s_framebuffer_is_rgb = set_pixel_order_responce->state == PROPERTY_TAG_PIXEL_ORDER_RGB;
-    s_framebuffer_height = set_physical_display_width_height_responce->height;
-    s_framebuffer_width = set_physical_display_width_height_responce->width;
+    s_framebuffer_height = set_virtual_buffer_width_height->height;
+    s_framebuffer_width = set_virtual_buffer_width_height->width;
+    display_height = set_physical_display_width_height_responce->height;
+    display_width = set_physical_display_width_height_responce->width;
     s_framebuffer_bytes_per_line = get_pitch_responce->bytes_per_line;
+    s_framebuffer_size = allocate_buffer_responce->size;
 
-    ptrdiff_t framebuffer_offset = 0;
+    void* base_address = (void*)(size_t)allocate_buffer_responce->base_address;
 
-    size_t base_address_as_int = (size_t)allocate_buffer_responce->base_address; // Do like this to make GCC happy
-
-    page_allocation_info* framebuffer_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(
-        VC_address_to_arm((void*)base_address_as_int), allocate_buffer_responce->size, &framebuffer_offset);
     free(property_tag_return);
 
-    translation_table_section_info table_section;
-    table_section.allocation = framebuffer_allocation;
-    table_section.attributes = MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER;
-    table_section.section_start = FRAMEBUFFER_VIRUTAL_ADDRESS_BASE; // We dont include the FFFF prefix here
-    insert_translation_table_section(&kernel_translation_table, &table_section, true);
-
-    s_framebuffer_pointer = void_ptr_offset_bytes(FRAMEBUFFER_VIRUTAL_ADDRESS_BASE, framebuffer_offset + KERNEL_MEMORY_PREFIX);
-
-    is_frambuffer_initialized = true;
-
-    // Blank the screen
-    framebuffer_fill_rect(0, 0, get_framebuffer_width(), get_framebuffer_height(), 0, 0, 0);
-    
-    printf("Successfully initialized frame buffer of size: %d x %d\nwith overscan of %d, %d, %d, %d (Top, bottom, left, right)\n", 
-        s_framebuffer_width, 
-        s_framebuffer_height, 
-        set_overscan_responce->top,
-        set_overscan_responce->bottom,
-        set_overscan_responce->left,
-        set_overscan_responce->right);
-
-    return true;
+    return base_address;
 }
 
-void set_framebuffer_pixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b)
-{
-    if (x >= s_framebuffer_width || y >= s_framebuffer_height)
+bool s_create_or_move_framebuffer_vmem_mapping(void* base_address)
+{   
+    translation_table_section_info table_section;
+    translation_table_section_info* target_section = &table_section;
+    table_section.attributes = MMU_ATTRIBUTES_NON_CACHABLE | MMU_ATTRIBUTES_ACCESS_BIT | MMU_ATTRIBUTES_EXECUTE_NEVER;
+    table_section.section_start = FRAMEBUFFER_VIRUTAL_ADDRESS_BASE; // We dont include the FFFF prefix here
+    int target_section_id = -1;
+
+    for (int i = 0; i < kernel_translation_table.number_of_sections; i++)               // First we check if the section allready exists
     {
-        return;
+        translation_table_section_info* section = kernel_translation_table.sections + i;
+
+        if (section->section_start < FRAMEBUFFER_VIRUTAL_ADDRESS_BASE)         // Skip if its not the target section
+            continue; 
+        else if (section->section_start > FRAMEBUFFER_VIRUTAL_ADDRESS_BASE)
+            break;                                                              // No need to keep going after we're above it
+
+        printf("Remaking frame buffer vem memory mapping\n");
+        destroy_page_allocation(section->allocation);
+
+        target_section_id = i;
+        break;
     }
+    
+    ptrdiff_t framebuffer_offset = 0;
+    page_allocation_info* framebuffer_allocation = create_new_page_allocation_for_unmanaged_continuous_physical_address(
+        VC_address_to_arm(base_address), s_framebuffer_size, &framebuffer_offset);
 
-    uint32_t offset = x * 4 + y * s_framebuffer_bytes_per_line;
+    target_section->allocation = framebuffer_allocation;
 
-    if (s_framebuffer_is_rgb)
+    if (target_section_id >= 0)
     {
-        s_framebuffer_pointer[offset] = r;
-        s_framebuffer_pointer[offset + 2] = b;
+        if (remake_translation_table_section(&kernel_translation_table, target_section_id, true) == false)
+        {
+            printf("Failed to %s vmem mappings for frame buffer\n", "remake");
+            return false;
+        }
     }
     else
     {
-        s_framebuffer_pointer[offset] = b;
-        s_framebuffer_pointer[offset + 2] = r;
-    }
-    s_framebuffer_pointer[offset + 1] = g;
-}
-
-void framebuffer_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y, uint32_t copy_area_size_x, uint32_t copy_area_size_y, uint32_t paste_area_start_x, uint32_t paste_area_start_y)
-{
-    for (int y_offset = 0; y_offset < copy_area_size_y; y_offset++)
-    {
-        uint32_t copy_offset_start = (copy_area_start_x) * 4 + 
-            (copy_area_start_y + y_offset) * s_framebuffer_bytes_per_line;
-        
-        uint32_t paste_offset_start = (paste_area_start_x) * 4 + 
-            (paste_area_start_y + y_offset) * s_framebuffer_bytes_per_line;
-
-        memcpy(s_framebuffer_pointer + paste_offset_start, s_framebuffer_pointer + copy_offset_start, copy_area_size_x * 4);
-    }
-}
-
-
-void framebuffer_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint8_t r, uint8_t g, uint8_t b)
-{
-    for (int y = y0 ; y < y1; y++)
-    {
-        for (int x = x0 ; x < x1; x++)
+        if (insert_translation_table_section(&kernel_translation_table, target_section, true)== false)
         {
-            set_framebuffer_pixel(x, y, r, g, b);
+            printf("Failed to %s vmem mappings for frame buffer\n", "create");
+            return false;
         }
     }
-}
 
-uint32_t get_framebuffer_height()
-{
-    return s_framebuffer_height;
-}
+    s_framebuffer_pointer = void_ptr_offset_bytes(FRAMEBUFFER_VIRUTAL_ADDRESS_BASE, framebuffer_offset + KERNEL_MEMORY_PREFIX);
 
-uint32_t get_framebuffer_width()
-{
-    return s_framebuffer_width;
+    printf("Success!\n");
+
+    return true;
 }

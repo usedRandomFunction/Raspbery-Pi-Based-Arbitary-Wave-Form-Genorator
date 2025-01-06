@@ -36,7 +36,7 @@ If any they should be [listed here](./project_specific_syscalls.md)
 | 1 | putchar | char c | int | Puts a charector on to the UART and screen, returns EOF on failed
 | 2 | uart_putc | char c | void | Puts a charector onto the UART
 | 3 | uart_getc | void | char | Gets a charector from the UART and will wait for one to be avalible
-| 4 | uart_poll | void | int | Same as uart_getc but doesn't wait, and will return 0XFFFF, if nothing is avaible
+| 4 | uart_poll | void | int | Same as uart_getc but doesn't wait, and will return 0XFFFF, if nothing is available
 
 ## #0x02 - File IO
 
@@ -90,3 +90,56 @@ struct dirrectory_entry
     char extention[8];
 };
 ```
+
+## #0x03 - Display controll
+
+| w8 Value | Name | Arguements | Return | Description |
+|----------|------|------------|--------|-------------|
+| 0 | set_display_pixel | uint32_t x, uint32_t y,<br>display_color color,<br> int buffer | void | Sets the color of the pixel at (x, y) to `color`.<br>`buffer` is the ID of the frame buffer to write to,<br> If -1 is given, the active frame buffer will be used.
+| 1 | display_fill_rect | uint32_t x1, uint32_t x2,<br>uint32_t y1, uint32_t y2,<br>display_color color,<br>int buffer | void | Fills a rectangle from (x1, y1) [top left] to<br>(x2, y2) bottom right, setting the color to `color`.<br>`buffer` is the ID of the frame buffer to write to,<br>If -1 is given, the active frame buffer will be used.
+| 2 | copy_to_display | uint32_t x, uint32_t size_x,<br>uint32_t y, uint32_t size_y,<br> display_color* buffer, <br> int pixels_per_line, int buffer | void | Copys [size_x, size_y] pixels from `buffer` to the<br> screen with (x, y) as the top left corner. `pixels_per_line`<br> stores the number of pixels in a line for the `source` buffer.<br>`buffer` is the ID of the frame buffer to write to,<br>If -1 is given, the active frame buffer will be used.
+| 3 | display_draw_string | const char* str, uint32_t* x, uint32_t* y<br> uint32_t x_min, uint32_t x_max,<br>bool are_special_characters_enabled,<br>pc_screen_font_header* font,<br> display_color foreground,<br>display_color background<br>int buffer | void | Draws the given (null terminated) string starting at (x, y), [top left].<br>Word wraping is enabled using `x_max` and `x_min`.<br>If `are_special_characters_enabled` is set to true characters like<br>'\n' or '\r' work, if set to false they are ignored. The font is configurable<br>using `font`, if null is given the kernel defult is used. The foreground<br>and background colors are also configurable.<br>`buffer` is the ID of the frame buffer to write to,<br>If -1 is given, the active frame buffer will be used.
+| 4 | get_display_width | void | uint32_t | Returns the width of the display in pixels
+| 5 | get_display_height | void | uint32_t  | Returns the height of the display in pixels
+| 6 | active_frame_buffer | int buffer | int | Gets / set the active frame buffer, if `-1` is given no action will be taken.<br>`-2` is the printf / stdout buffer, user programs cant edit it dirrectly.<br>`0` up to `nbuffers - 1` is available to set to and these buffers are editable.<br><br>The return value is simply the active output buffer at the end of the operation.
+| 7 | request_frame_buffers | int nbuffers | int | Gets / set the number of frmae buffers allocated to the user program.<br>Like other functions if `-1` is given no action will be taken, and the current<br>value will be returned.<br><br>Return the number of frame buffers available to the user program at the <br>end of the operation.
+
+#### Note about frame buffers
+
+While the raspberry pi only has one frame buffer, the kernel uses a singal<br>
+large buffer with virtual offsets to emulaute multiple frame buffers.<br>
+Also note, frame buffer `-2` does exist and can be switched to, however<br>
+however it can not be written to, as it is used by the kernel to display,<br>
+`putchar` and `printf`.
+
+#### display_color
+
+`display_color` is defined as
+```c
+typedef uint32_t display_color;
+```
+
+Starting from the left most bit, it is stored as red, blue, green, alpha,<br>
+all the values are 8 bit. For alpha 0 is opaque, and 255 is completely transparent.<br>
+Note that alpha is only used when writing to the frame buffer and is not stored. 
+
+#### pc_screen_font_header struct
+
+```c
+struct pc_screen_font_header
+{
+    uint32_t magic;
+    uint32_t version;
+    uint32_t headersize;
+    uint32_t flags;
+    uint32_t numglyph;
+    uint32_t bytesperglyph;
+    uint32_t height;
+    uint32_t width;
+    uint8_t glyphs;
+};
+```
+
+This struct is simply the header of a `PSF2` file.<br>
+Note that the glyphs must start immediately after the struct in memory.
+

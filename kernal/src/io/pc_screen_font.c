@@ -9,13 +9,14 @@ extern pc_screen_font_header _binary_data_font_psf_start;
 
 pc_screen_font_header* current_font = &_binary_data_font_psf_start;
 
-void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y)
+void pc_screen_font_darw(const char* str, uint32_t* x, uint32_t* y, int buffer)
 {
-    pc_screen_font_darw_ex(str, x, y, 0, get_framebuffer_width(), true, current_font);
+    pc_screen_font_darw_ex(str, x, y, 0, get_display_width(), true, current_font, FRAMEBUFFER_RGB(255, 255, 255), FRAMEBUFFER_RGB(0,0,0), buffer);
 }
 
 void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t x_min, uint32_t x_max, 
-    bool are_special_characters_enabled, pc_screen_font_header* font)
+    bool are_special_characters_enabled, pc_screen_font_header* font, display_color foreground, 
+    display_color background, int buffer)
 {
     if (font == NULL)
         font = current_font;
@@ -66,10 +67,8 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
             {
                 bool mask = ((current_line_glyph) & (1 << (8 -x_offset))) != 0;
 
-                if (mask)
-                    set_framebuffer_pixel(*x + x_offset, *y + y_offset, 225, 225, 225);
-                else
-                    set_framebuffer_pixel(*x + x_offset, *y + y_offset, 0, 0, 0);
+
+                set_display_pixel(*x + x_offset, *y + y_offset, mask ? foreground : background, buffer);
             }
 
             glyph += bytesperline;
