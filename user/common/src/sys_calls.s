@@ -38,6 +38,17 @@ syscall diropen, 12, #2
 syscall dirread, 13, #2
 syscall dirclose, 14, #2
 
+// Display
+
+syscall set_display_pixel, 0, #3
+syscall display_fill_rect, 1, #3
+syscall copy_to_display, 2, #3
+syscall display_draw_string, 3, #3
+syscall get_display_width, 4, #3
+syscall get_display_height, 5, #3
+syscall active_frame_buffer, 6, #3
+syscall request_frame_buffers, 7, #3
+
 // Output
 syscall dac_output_start, 0, #0x8000
 syscall dac_output_end, 1, #0x8000
