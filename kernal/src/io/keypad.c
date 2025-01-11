@@ -291,6 +291,9 @@ void  keypad_poll()
     uint8_t recive_buffer[HARDWARE_CONTROLL_REGISTER_SIZE_BYTES];
 
     uint8_t row_data[] = {0x00, 0x00, 0x00, 0x00};
+    // By the power of never deleting these test lines, i keep the bug away
+    // static uint64_t last = 0; 
+    // uint64_t temp = 0;
 
     for (int row = 0; row < 4; row++)
     {
@@ -302,15 +305,25 @@ void  keypad_poll()
 
         hardware_controll_register_write_read(recive_buffer);                           // Read current / set the next row.
 
-        uint8_t raw_data = ~(recive_buffer[0]);
+
+        uint8_t raw_data = ~(recive_buffer[0]) << 1;
         uint8_t keypad_data = raw_data & 0b01111110;                                    // Only include bits dirrectly mapped to pins
+
+        // temp <<= 8;
+        // temp |= raw_data;
 
         if (raw_data & 0x80)                                                            // A while ago i had trubble with pin 1 of the 74165
             keypad_data |= 1;                                                           // So i moved it to pin 8, so we need to do this
-
+        
+        // temp <<= 8;
+        // temp |= keypad_data;
         row_data[row] = keypad_data;
     }
+    // if (temp != last)
+    //     printf("\n%x\n", temp);
 
+    // last = temp;
+    
 
     s_physical_keypad_state =   ((keypad_state)row_data[3] | 
                                 ((keypad_state) row_data[2] << 8) | 
