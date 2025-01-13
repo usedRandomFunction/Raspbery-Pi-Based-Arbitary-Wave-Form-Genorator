@@ -301,6 +301,7 @@ void  keypad_poll()
         *hardware_controll_register_keypad_controll_byte = 1 << (new_target_row + 1);   // Get the next row ready
 
         gpio_clear(keypad_input_latch_pin);                                             // Save the current state of the keypad
+        wait_cycles(keypad_input_latch_delay);
         gpio_set(keypad_input_latch_pin);
 
         hardware_controll_register_write_read(recive_buffer);                           // Read current / set the next row.
@@ -356,6 +357,7 @@ void tigger_prg_exit()
     if (delta_milliseconds < prg_exit_debounce_time)
     {
         printf("Debounce time has not been reached yet, ignoring\n");
+        return;
     }
 
     s_prg_exit_last_triggered = current_time;

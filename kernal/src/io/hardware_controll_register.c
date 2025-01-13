@@ -1,6 +1,7 @@
 #include "io/hardware_controll_register.h"
 #include "run_time_kernal_config.h"
 #include "lib/memory.h"
+#include "lib/timing.h"
 #include "io/gpio.h"
 #include "io/spi.h"
 
@@ -40,5 +41,6 @@ void hardware_controll_register_write_read(void* recive_buffer)
     spi0_write_read(3, hardware_controll_register, recive_buffer, HARDWARE_CONTROLL_REGISTER_SIZE_BYTES);
 
     gpio_set(controll_data_latch_pin);
+    wait_cycles(hardware_controll_register_latch_delay);
     gpio_clear(controll_data_latch_pin);
 }

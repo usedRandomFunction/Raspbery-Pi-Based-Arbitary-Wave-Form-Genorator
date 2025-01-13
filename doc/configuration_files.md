@@ -29,6 +29,8 @@ there currently is only one system config file `system.cfg` and it is as follows
 | `UART_KEYPAD_EMMULATION_DEFAULT_STATE` | Tells the kernal what the defult state of uart keypad emmulation is.<br>If set to 0 the uart keypad emmulation is dissabled de defult, 1 enables it. | <center> 0 </center> |
 | `SPI_CLOCK_FREQUENCY` | Tells the kernal what frequency, to run SPI0 at. The value is provided in hertz | <center>30 MHz</center>
 | `PRG_EXIT_DEBOUNCE_TIME`| Adds a "cooldown" to the PRG_EXIT interupt, to help with debounce. The given value<br>decides the minimum time between interupts in milliseconds | <center>200</center> 
+| `HARDWARE_CONTROLL_REGISTER_LATCH_DELAY` | Sets the delay time were the HCR's latch is active. This value is in cycles,<br>(see `wait_cycles` in lib/timing.h) insted of a specific unit of time | <center> 1000 </center>
+| `KEYPAD_INPUT_LATCH_DELAY` | Sets the delay time were the keypad inputs's latch is active. This value is in cycles,<br>(see `wait_cycles` in lib/timing.h) insted of a specific unit of time | <center> 1000 </center>
 | `ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE` | States wherever or not, the frame buffer should shink if possible applys when reducing<br> the number of virtual buffers. A value `> 0` represents `true`, while `0` represents `false` | <center><i>see kconfig.h</i></center>
 | `MAXIMUM_NUMBER_OF_FRAME_BUFFERS` | Stores the maximum allowed number of virtual frame buffers | <center><i>see kconfig.h</i></center>
 | `MINIMUM_NUMBER_OF_FRAME_BUFFERS` | Stores the minimum allowed number of virtual frame buffers | <center><i>see kconfig.h</i></center>
