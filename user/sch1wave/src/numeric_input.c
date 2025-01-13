@@ -169,6 +169,8 @@ void s_handle_delete()
 
         if (s_decimal_multiplyer == 1)
             s_working_data.value /= 10;
+        else
+            s_decimal_multiplyer *= 10;
     }
 
 
@@ -297,6 +299,7 @@ void s_handle_digits(keypad_state key_down)
 
     if (s_decimal_multiplyer != 1)
         s_decimal_multiplyer /= 10;
+
     s_working_data.value = new_value;
 
     s_print_input_object();
