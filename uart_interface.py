@@ -1332,6 +1332,10 @@ def load_config_or_create_new():
     }
 
 def save_config():
+
+    if config == None:      # To hopefully stop it from deleting my config history again
+        return
+
     with open(config_file_path, 'w') as file:
         file.truncate(0)
 
