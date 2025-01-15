@@ -6,6 +6,7 @@
 #include "lib/memory.h"
 #include "lib/string.h"
 #include "lib/events.h"
+#include "io/framebuffer.h"
 #include "io/printf.h"
 #include "io/keypad.h"
 #include "lib/mmu.h"
@@ -286,6 +287,7 @@ int execute_user_program(user_program_info* program)
     file_access_on_user_app_exit(); // To deal with any open files
     uart_keypad_emmulation(-2);
     capture_prg_exit(NULL);
+    framebuffer_on_user_app_exit();
     keypad_polling(-2);
 
     return system_call_exit_return_value;

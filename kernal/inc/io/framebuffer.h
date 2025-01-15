@@ -87,5 +87,7 @@ uint32_t get_display_width();
 // @return True if frmae buffer is initialized
 bool is_frambuffer_initialized();
 
+// Resets the frame buffers after a app exits
+void framebuffer_on_user_app_exit();
 
 #endif

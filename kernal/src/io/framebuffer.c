@@ -312,7 +312,17 @@ bool is_frambuffer_initialized()
     return s_is_frambuffer_initialized;
 }
 
- void* s_create_framebuffer(uint32_t physical_width, uint32_t physical_height, uint32_t virtual_width, uint32_t virtual_height,
+void framebuffer_on_user_app_exit()
+{
+    active_framebuffer(0);
+    
+    if (allways_shirnk_frame_buffer_if_possible)
+        request_frame_buffers(minimum_number_of_frame_buffers);
+
+    framebuffer_fill_rect(0, display_height, display_width - 1, s_framebuffer_height - 1, FRAMEBUFFER_RGB(0, 0, 0));
+}
+
+void* s_create_framebuffer(uint32_t physical_width, uint32_t physical_height, uint32_t virtual_width, uint32_t virtual_height,
     uint32_t virtual_offset_x, uint32_t virtual_offset_y, uint32_t overscan_left, uint32_t overscan_right,
     uint32_t overscan_top, uint32_t overscan_bottom)
 {

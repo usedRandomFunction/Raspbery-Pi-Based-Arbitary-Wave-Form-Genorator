@@ -42,7 +42,7 @@ int putchar(int ch)
                 0, 0, 0);                                                   // Paste area Start x, y and buffer ID
 
             display_fill_rect(0, new_last_line_bottom,                      // x0, y0
-                get_display_width(), get_display_height(),                  // x1, y1
+                get_display_width() - 1, get_display_height() - 1,          // x1, y1
                 FRAMEBUFFER_RGB(0, 0, 0), 0);                               // color and buffer
 
             console_output_y = new_last_line_bottom;
