@@ -46,7 +46,7 @@ syscall copy_to_display, 2, #3
 syscall display_draw_string, 3, #3
 syscall get_display_width, 4, #3
 syscall get_display_height, 5, #3
-syscall active_frame_buffer, 6, #3
+syscall active_framebuffer, 6, #3
 syscall request_frame_buffers, 7, #3
 
 // Output
