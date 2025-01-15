@@ -45,6 +45,7 @@ bool load_kernal_configuration()
     prg_exit_debounce_time = get_u64_from_config_file_entry_with_defult_by_name(&config, "PRG_EXIT_DEBOUNCE_TIME", 200);
     hardware_controll_register_latch_delay = get_u64_from_config_file_entry_with_defult_by_name(&config, "HARDWARE_CONTROLL_REGISTER_LATCH_DELAY", 1000);
     keypad_input_latch_delay = get_u64_from_config_file_entry_with_defult_by_name(&config, "KEYPAD_INPUT_LATCH_DELAY", 1000);
+    is_running_in_qemu = get_u64_from_config_file_entry_with_defult_by_name(&config, "IS_RUNNING_IN_QEMU", 0) != 0;
 
     allways_shirnk_frame_buffer_if_possible = get_u64_from_config_file_entry_with_defult_by_name(&config, "ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE", ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE) > 0;
     maximum_number_of_frame_buffers = get_u64_from_config_file_entry_with_defult_by_name(&config, "MAXIMUM_NUMBER_OF_FRAME_BUFFERS", MAXIMUM_NUMBER_OF_FRAME_BUFFERS);
@@ -55,10 +56,10 @@ bool load_kernal_configuration()
     if ((maximum_number_of_frame_buffers != MAXIMUM_NUMBER_OF_FRAME_BUFFERS) |
         (minimum_number_of_frame_buffers != MINIMUM_NUMBER_OF_FRAME_BUFFERS) |
         (display_height != DISPLAY_HEIGHT) |
-        (display_width != DISPLAY_WIDTH)) // I.e one of these configs have been changed from defult, remake frame buffer
+        (display_width != DISPLAY_WIDTH) |  // If one of these configs have been changed from defult, remake frame buffer
+        is_running_in_qemu)                 // Or if we are in a emmulator as more 1 more buffer is needed
         initialize_framebuffer();
 
-    is_running_in_qemu = get_u64_from_config_file_entry_with_defult_by_name(&config, "IS_RUNNING_IN_QEMU", 0) != 0;
 
     free_loaded_config_file(&config);
     printf("Successfuly loaded kernal configuration\n");

@@ -8,6 +8,12 @@
 static uint32_t console_output_y = 0;
 static uint32_t console_output_x = 0;
 
+void putchar_on_frame_buffer_blanked()
+{
+    console_output_y = 0;
+    console_output_x = 0;
+}
+
 int putchar(int ch)
 {
     uart_putc((uint8_t)ch);

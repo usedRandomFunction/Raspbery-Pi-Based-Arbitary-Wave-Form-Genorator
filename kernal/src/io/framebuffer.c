@@ -5,6 +5,7 @@
 #include "lib/page_allocator.h"
 #include "io/propertyTags.h"
 #include "lib/memory.h"
+#include "io/putchar.h"
 #include "io/printf.h"
 #include "lib/math.h"
 #include "lib/mmu.h"
@@ -56,7 +57,7 @@ static bool s_create_or_move_framebuffer_vmem_mapping(void* base_address);
 bool initialize_framebuffer()
 {
     s_is_frambuffer_initialized = false;
-    uint32_t buffer_height = display_height * minimum_number_of_frame_buffers;
+    uint32_t buffer_height = display_height * (minimum_number_of_frame_buffers + (is_running_in_qemu ? 1 : 0));
     uint32_t buffer_width = display_width;
 
     printf("Initializing frame buffer!\n");
@@ -74,6 +75,7 @@ bool initialize_framebuffer()
 
     // Blank the screen
     framebuffer_fill_rect(0, 0, s_framebuffer_width, s_framebuffer_height, FRAMEBUFFER_RGB(0, 0, 0));
+    putchar_on_frame_buffer_blanked();
     
     s_is_frambuffer_initialized = true;
     s_number_of_framebuffers = minimum_number_of_frame_buffers;
@@ -84,13 +86,30 @@ bool initialize_framebuffer()
     return true;
 }
 
-int active_framebuffer(int buffer)
+int active_framebuffer(int buffer) // UNDONE handle qemu work around
 {
     if (buffer == -1)
+        return s_active_framebuffer;                            // Handle explicit case if buffer -1
+
+    if (buffer >= s_number_of_framebuffers || buffer < 0)       // Handle case of buffer being out of rnage
         return s_active_framebuffer;
 
-    if (buffer >= s_number_of_framebuffers)
+    if (buffer == s_active_framebuffer)                         // Handle case of switching to active buffer
         return s_active_framebuffer;
+
+    int last_active_frame_buffer = s_active_framebuffer;        // This has to be done otherwise printf will 
+    s_active_framebuffer = -1;                                  // Write on top of the frame buffer, if switching from 0 to anything
+
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    buffer += is_running_in_qemu ? 1 : 0;
+
+    if (is_running_in_qemu)     // Since the offset function isn't working in QEMU, we will use screen copys to fake it
+    {                           // and a few other ticks in other functions (Issue #24)
+        printf("Copying buffer (%d + 1), to buffer 0 (workaround for issue #24)\n", buffer - 1);
+
+        framebuffer_screen_copy(0, display_height * buffer,     // Copy new buffer
+            get_display_width(), get_display_height(), 0, 0);   // Paste it to buffer 0
+    }
 
     property_tag_set_virtual_offset offset_tag;
     offset_tag.header.buffersize = PROPERTY_TAG_SET_VIRTUAL_OFFSET_REQUEST_RESPONSE_SIZE;
@@ -108,12 +127,16 @@ int active_framebuffer(int buffer)
         printf("Failed to set virtual buffer offset.\n");
         free(responce);
 
+        s_active_framebuffer = last_active_frame_buffer;
         return s_active_framebuffer;
     }
 
     free(responce);
 
     printf("Set framebuffer active buffer to %d (0, %d)\n", buffer, display_height * buffer);
+
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    buffer -= is_running_in_qemu ? 1 : 0;
 
     s_active_framebuffer = buffer;
     return s_active_framebuffer;
@@ -124,6 +147,8 @@ int request_frame_buffers(int nbuffers)
      if (nbuffers == -1)
         return s_number_of_framebuffers;
 
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    nbuffers += is_running_in_qemu ? 1 : 0;
     nbuffers = clamp(nbuffers, maximum_number_of_frame_buffers, minimum_number_of_frame_buffers);
 
     if (nbuffers == s_number_of_framebuffers)
@@ -136,6 +161,8 @@ int request_frame_buffers(int nbuffers)
     }
 
     int new_active_framebuffer_id = s_active_framebuffer >= nbuffers ? 0 : s_active_framebuffer;
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    new_active_framebuffer_id += is_running_in_qemu ? 1 : 0;
 
     s_is_frambuffer_initialized = false;
     uint32_t buffer_height = display_height * nbuffers;
@@ -157,10 +184,12 @@ int request_frame_buffers(int nbuffers)
 
     // Blank the screen
     framebuffer_fill_rect(0, 0, s_framebuffer_width, s_framebuffer_height, FRAMEBUFFER_RGB(0, 0, 0));
+    putchar_on_frame_buffer_blanked();
     
     s_is_frambuffer_initialized = true;
-    s_number_of_framebuffers = nbuffers;
-    s_active_framebuffer = new_active_framebuffer_id;
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    s_number_of_framebuffers = nbuffers - (is_running_in_qemu ? 1 : 0);
+    s_active_framebuffer = new_active_framebuffer_id - (is_running_in_qemu ? 1 : 0);
 
     printf("Success!\n");
     return s_number_of_framebuffers;
@@ -192,7 +221,15 @@ void set_display_pixel(uint32_t x, uint32_t y, display_color color, int buffer)
     if (buffer < 0 || buffer >= s_number_of_framebuffers)
         return;
 
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    buffer += is_running_in_qemu ? 1 : 0;
+
     set_framebuffer_pixel(x, y + display_height * buffer, color);
+
+    if (buffer == (s_active_framebuffer + 1) && is_running_in_qemu) // Write to buffer zero as well, if selected buffer is active, issue #24
+    {
+        set_framebuffer_pixel(x, y, color);
+    }
 }
 
 void framebuffer_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y, uint32_t copy_area_size_x, uint32_t copy_area_size_y, uint32_t paste_area_start_x, uint32_t paste_area_start_y)
@@ -214,11 +251,20 @@ void display_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y,
     if (buffer < 0 || buffer >= s_number_of_framebuffers)
         return;
 
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    buffer += is_running_in_qemu ? 1 : 0;
     uint32_t buffer_offset = display_height * buffer;
 
     framebuffer_screen_copy(copy_area_start_x, copy_area_start_y + buffer_offset,
         copy_area_size_x, copy_area_size_y,
         paste_area_start_x, paste_area_start_y + buffer_offset);
+
+    if (buffer == (s_active_framebuffer + 1) && is_running_in_qemu)   // Copy to buffer zero as well if selected buffer is active, issue #24
+    {
+        framebuffer_screen_copy(copy_area_start_x, copy_area_start_y + buffer_offset,
+        copy_area_size_x, copy_area_size_y,
+        paste_area_start_x, paste_area_start_y);
+    }
 }
 
 void framebuffer_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, display_color color)
@@ -237,9 +283,18 @@ void display_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, displ
     if (buffer < 0 || buffer >= s_number_of_framebuffers)
         return;
 
+    // Buffer 0 is used to fix issue #24, but it is not exposed in the API
+    buffer += is_running_in_qemu ? 1 : 0;
     uint32_t buffer_offset = display_height * buffer;
 
     framebuffer_fill_rect(x0, y0 + buffer_offset, x1, y1 + buffer_offset, color);
+
+    if (buffer == (s_active_framebuffer + 1) && is_running_in_qemu) // Write to buffer zero as well, if selected buffer is active, issue #24
+    {
+        framebuffer_fill_rect(x0, y0, x1, y1, color);
+    }
+
+
 }
 
 uint32_t get_display_height()
