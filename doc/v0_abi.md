@@ -143,3 +143,14 @@ struct pc_screen_font_header
 This struct is simply the header of a `PSF2` file.<br>
 Note that the glyphs must start immediately after the struct in memory.
 
+# 0x04 - Runtime Editing of config settings
+
+## Note
+
+These functions <i><b>do not</b></i> edit the underlying config files e.g `system.cfg`.<br>
+They only edit the values stored in ram, and are to be used to test new values
+
+| w8 Value | Name | Arguements | Return | Description |
+|----------|------|------------|--------|-------------|
+| 0 | Reserved | N/A | N/A | N/A |
+| 1 | set_display_overscan | uint32_t top, uint32_t bottom,<br>uint32_t left, uint32_t right | void | As the name says, sets the display overscan

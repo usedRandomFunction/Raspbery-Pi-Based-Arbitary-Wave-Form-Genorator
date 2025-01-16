@@ -297,6 +297,34 @@ void display_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, displ
 
 }
 
+void set_display_overscan(uint32_t top, uint32_t bottom, uint32_t left, uint32_t right)
+{
+    property_tag_set_overscan overscan_tag;
+    overscan_tag.header.buffersize = PROPERTY_TAG_SET_OVERSCAN_REQUEST_RESPONSE_SIZE;
+    overscan_tag.header.request = PROPERTY_TAG_PROCESS_REQUEST;
+    overscan_tag.header.tagID = PROPERTY_TAG_ID_SET_OVERSCAN;
+    overscan_tag.top = top;
+    overscan_tag.bottom = bottom;
+    overscan_tag.left = left;
+    overscan_tag.right = right;
+
+    printf("Setting overscan to %d, %d, %d, %d (top, bottom, left, right)\n", top, bottom, left, right);
+
+    property_tag_set_overscan_responce* responce = 
+        (property_tag_set_overscan_responce*)get_property_tag((property_tag*)&overscan_tag, aligned_alloc, free);
+    
+    
+    if (responce == NULL || responce->top != top || responce->bottom != bottom || responce->left != left || responce->right != right )
+    {
+        printf("Failed to set overscan.\n");
+        free(responce);
+
+        return;
+    }
+
+    free(responce);
+}
+
 uint32_t get_display_height()
 {
     return display_height;

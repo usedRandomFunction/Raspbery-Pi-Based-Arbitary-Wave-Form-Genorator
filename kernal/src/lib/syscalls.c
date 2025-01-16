@@ -394,10 +394,12 @@ const void* const os_syscall_display_controll[] = {system_call_set_display_pixel
     system_call_copy_to_display, system_call_display_draw_string, get_display_width, get_display_height,
     system_call_active_framebuffer, system_call_request_frame_buffers};
 
+const void* const os_syscall_runtime_config_edits[] = {system_call_undefined_handler, set_display_overscan};
+
 const void* const os_syscall_tables_table[] = {os_syscall_program_managment, os_syscall_baisc_io, os_syscall_file_io, 
-    os_syscall_display_controll};
+    os_syscall_display_controll, os_syscall_runtime_config_edits};
 const uint64_t os_syscall_tables_sizes_table[] = {sizeof(os_syscall_program_managment), sizeof(os_syscall_baisc_io), 
-    sizeof(os_syscall_file_io), sizeof(os_syscall_display_controll)};
+    sizeof(os_syscall_file_io), sizeof(os_syscall_display_controll), sizeof(os_syscall_runtime_config_edits)};
 const uint64_t size_of_os_syscall_tables_sizes_table = sizeof(os_syscall_tables_sizes_table);
 
 

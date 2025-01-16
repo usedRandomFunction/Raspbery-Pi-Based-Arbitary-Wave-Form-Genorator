@@ -75,6 +75,12 @@ void framebuffer_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, d
 // @param buffer The ID of the target frame buffer, 0 to nbuffers - 1,
 void display_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, display_color color, int buffer);
 
+// Sets the over scan values of the display
+// @param top Overscan in pixels
+// @param bottom Overscan in pixels
+// @param left Overscan in pixels
+// @param right Overscan in pixels
+void set_display_overscan(uint32_t top, uint32_t bottom, uint32_t left, uint32_t right);
 
 // Get the width in pixels of the display
 // @returns display height in pixels

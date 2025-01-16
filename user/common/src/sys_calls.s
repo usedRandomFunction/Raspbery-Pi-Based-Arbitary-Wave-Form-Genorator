@@ -49,6 +49,10 @@ syscall get_display_height, 5, #3
 syscall active_framebuffer, 6, #3
 syscall request_frame_buffers, 7, #3
 
+// Runtime config
+
+syscall set_display_overscan, 1, #4
+
 // Output
 syscall dac_output_start, 0, #0x8000
 syscall dac_output_end, 1, #0x8000
