@@ -343,6 +343,12 @@ void system_call_display_draw_string(const char* str, uint32_t* x, uint32_t* y, 
         generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", font, "display_draw_string",
         "font");
 
+    // Get the last two arguments from the stack
+    uint64_t sp_el0;
+    asm volatile("mrs %0, sp_el0" : "=r"(sp_el0));
+    background = *(display_color*)(sp_el0);
+    buffer = *(int*)(sp_el0 + 8);
+
     if (!s_prepair_buffer_id_from_user(&buffer))
         return;
 

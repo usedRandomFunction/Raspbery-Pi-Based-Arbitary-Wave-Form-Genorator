@@ -24,6 +24,7 @@ typedef uint32_t display_color;
 #define FRAMEBUFFER_RGBA(r, g, b, a) ((r) | (g << 8) | (b << 16) | (a << 24))
 #define FRAMEBUFFER_RGB(r, g, b) (FRAMEBUFFER_RGBA(r, g, b, 0))
 
+#define DISPLAY_DRAW_STR_SIMPLE(str, x, y, buffer) display_draw_string(str, x, y, *x, UINT32_MAX, true, NULL, FRAMEBUFFER_RGB(255, 255, 255), FRAMEBUFFER_RGB(0, 0, 0), buffer)
 
 // Sets the given pixel to the given RGB value
 // @param x The X coordinate 
