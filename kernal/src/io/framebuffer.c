@@ -63,9 +63,10 @@ bool initialize_framebuffer()
     printf("Initializing frame buffer!\n");
 
     void* base_address = s_create_framebuffer(
-        display_width, display_height,    // Physical display size
-        buffer_width, buffer_height,    // Virtual buffer size
-        0, 0, 0, 0, 0, 0);              // Offsets and overscan
+        display_width, display_height,      // Physical display size
+        buffer_width, buffer_height,        // Virtual buffer size
+        0, 0,                               // Offsets
+        display_overscan_left, display_overscan_right, display_overscan_top, display_overscan_bottom);    // Overscan          
 
     if (base_address == NULL)
         return false;
@@ -174,7 +175,7 @@ int request_frame_buffers(int nbuffers)
         display_width, display_height,                  // Physical display size
         buffer_width, buffer_height,                    // Virtual buffer size
         0, display_height * new_active_framebuffer_id,  // Offsets
-        0, 0, 0, 0);                                    // Overscan
+        display_overscan_left, display_overscan_right, display_overscan_top, display_overscan_bottom);    // Overscan  
 
     if (base_address == NULL)
         return s_number_of_framebuffers;
@@ -330,6 +331,11 @@ void set_display_overscan(uint32_t top, uint32_t bottom, uint32_t left, uint32_t
 
         return;
     }
+
+    display_overscan_top = responce->top;
+    display_overscan_bottom = responce->bottom;
+    display_overscan_left = responce->left;
+    display_overscan_right = responce->right;
 
     free(responce);
 }

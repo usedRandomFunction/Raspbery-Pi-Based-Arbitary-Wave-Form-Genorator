@@ -22,6 +22,10 @@ extern uint32_t minimum_number_of_frame_buffers;
 extern uint32_t minimum_height;
 extern uint32_t display_height;
 extern uint32_t display_width;
+extern uint32_t display_overscan_top;
+extern uint32_t display_overscan_bottom;
+extern uint32_t display_overscan_left;
+extern uint32_t display_overscan_right;
 
 // Loads infomation stored in system.cfg
 // @return True if success, False if failed

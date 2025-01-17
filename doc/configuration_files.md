@@ -36,6 +36,10 @@ there currently is only one system config file `system.cfg` and it is as follows
 | `MINIMUM_NUMBER_OF_FRAME_BUFFERS` | Stores the minimum allowed number of virtual frame buffers | <center><i>see kconfig.h</i></center>
 | `DISPLAY_HEIGHT` | Stores the height of the display in pixels | <center><i>see kconfig.h</i></center>
 | `DISPLAY_WIDTH` | Stores the width of the display in pixels | <center><i>see kconfig.h</i></center>
+| `DISPLAY_OVERSCAN_TOP` | Overscan in pixels | <center>0</center>
+| `DISPLAY_OVERSCAN_BOTTOM` | Overscan in pixels | <center>0</center>
+| `DISPLAY_OVERSCAN_LEFT` | Overscan in pixels | <center>0</center>
+| `DISPLAY_OVERSCAN_RIGHT` | Overscan in pixels | <center>0</center>
 | `IS_RUNNING_IN_QEMU` | Used to tell the kernal if its running in qemu as some functions will hang if qemu<br>0 is not on qemu, any other value is qemu | <center> 0 </center> |
 
 Note: Defult value is the value assemed by the kernel if it cannot find the entry while loading<br>the config file. If `N/A` is given the kernel will refuse to load if the entry is not pressent.

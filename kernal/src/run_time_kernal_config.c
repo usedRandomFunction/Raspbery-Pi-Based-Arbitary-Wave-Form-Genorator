@@ -25,6 +25,10 @@ uint32_t maximum_number_of_frame_buffers = MAXIMUM_NUMBER_OF_FRAME_BUFFERS;
 uint32_t minimum_number_of_frame_buffers = MINIMUM_NUMBER_OF_FRAME_BUFFERS;
 uint32_t display_height = DISPLAY_HEIGHT;
 uint32_t display_width = DISPLAY_WIDTH;
+uint32_t display_overscan_top = 0;
+uint32_t display_overscan_bottom = 0;
+uint32_t display_overscan_left = 0;
+uint32_t display_overscan_right = 0;
 
 bool load_kernal_configuration()
 {
@@ -52,6 +56,12 @@ bool load_kernal_configuration()
     minimum_number_of_frame_buffers = get_u64_from_config_file_entry_with_defult_by_name(&config, "MINIMUM_NUMBER_OF_FRAME_BUFFERS", MINIMUM_NUMBER_OF_FRAME_BUFFERS);
     display_height = get_u64_from_config_file_entry_with_defult_by_name(&config, "DISPLAY_HEIGHT", DISPLAY_HEIGHT);
     display_width = get_u64_from_config_file_entry_with_defult_by_name(&config, "DISPLAY_WIDTH", DISPLAY_WIDTH);
+    display_overscan_top = get_u64_from_config_file_entry_with_defult_by_name(&config, "DISPLAY_OVERSCAN_TOP", 0);
+    display_overscan_bottom = get_u64_from_config_file_entry_with_defult_by_name(&config, "DISPLAY_OVERSCAN_BOTTOM", 0);
+    display_overscan_left = get_u64_from_config_file_entry_with_defult_by_name(&config, "DISPLAY_OVERSCAN_LEFT", 0);
+    display_overscan_right = get_u64_from_config_file_entry_with_defult_by_name(&config, "DISPLAY_OVERSCAN_RIGHT", 0);
+
+    
 
     if ((maximum_number_of_frame_buffers != MAXIMUM_NUMBER_OF_FRAME_BUFFERS) |
         (minimum_number_of_frame_buffers != MINIMUM_NUMBER_OF_FRAME_BUFFERS) |
@@ -59,6 +69,8 @@ bool load_kernal_configuration()
         (display_width != DISPLAY_WIDTH) |  // If one of these configs have been changed from defult, remake frame buffer
         is_running_in_qemu)                 // Or if we are in a emmulator as more 1 more buffer is needed
         initialize_framebuffer();
+    else if (display_overscan_top || display_overscan_bottom || display_overscan_left || display_overscan_right)
+        set_display_overscan(display_overscan_top, display_overscan_bottom, display_overscan_left, display_overscan_right);
 
 
     free_loaded_config_file(&config);
