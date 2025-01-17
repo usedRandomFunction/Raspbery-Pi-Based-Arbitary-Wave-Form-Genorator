@@ -7,8 +7,6 @@ typedef void (*PRG_EXIT_HANDLER)(void);
 
 typedef uint32_t keypad_state;
 
-// TODO hardware keypad and GPIO interupt
-
 // Initializes the keypad and keypad emmulation to defult values from system.cfg
 void initialize_keypad();
 

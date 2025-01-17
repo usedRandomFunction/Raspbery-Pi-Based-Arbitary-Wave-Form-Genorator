@@ -121,8 +121,7 @@ init_mmu: // TODO when i have a better understanding of arm asm and the mmu rema
     add     x3, x3, x5
 	create_block_map x0, x1, x2, x3, MMU_FLAGS, x4
 
-	/* Mapping device memory*/
-    // TODO make this detect device base address	                    
+	/* Mapping device memory*/	                    
     mov     x1, x5                                              // start mapping from device base address 
 	mov 	x2, #VA_START						                // first virtual address
     add     x2, x2, x5
