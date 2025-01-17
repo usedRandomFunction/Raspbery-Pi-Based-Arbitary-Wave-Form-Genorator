@@ -218,7 +218,7 @@ void set_framebuffer_pixel(uint32_t x, uint32_t y, display_color color)
 
 void set_display_pixel(uint32_t x, uint32_t y, display_color color, int buffer)
 {
-    if (buffer < 0 || buffer >= s_number_of_framebuffers)
+    if (buffer < 0 || buffer >= s_number_of_framebuffers || x >= display_width || x >= display_height)
         return;
 
     // Buffer 0 is used to fix issue #24, but it is not exposed in the API
@@ -255,6 +255,12 @@ void display_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y,
     buffer += is_running_in_qemu ? 1 : 0;
     uint32_t buffer_offset = display_height * buffer;
 
+    if (copy_area_size_x + copy_area_start_x >= display_width)
+        copy_area_size_x = display_width - copy_area_start_x - 1;
+
+    if (copy_area_size_y + copy_area_start_y >= display_height)
+        copy_area_size_y = display_width - copy_area_start_y - 1;
+
     framebuffer_screen_copy(copy_area_start_x, copy_area_start_y + buffer_offset,
         copy_area_size_x, copy_area_size_y,
         paste_area_start_x, paste_area_start_y + buffer_offset);
@@ -282,6 +288,9 @@ void display_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, displ
 {
     if (buffer < 0 || buffer >= s_number_of_framebuffers)
         return;
+
+    x1 = min(x1, display_width - 1);
+    y1 = min(y1, display_height - 1);
 
     // Buffer 0 is used to fix issue #24, but it is not exposed in the API
     buffer += is_running_in_qemu ? 1 : 0;
