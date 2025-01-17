@@ -7,3 +7,8 @@ gpu_freq=200
 over_voltage=4
 sdram_freq=515
 force_turbo=1
+
+hdmi_cvt=800 480 60 6
+hdmi_group=2
+hdmi_mode=87
+hdmi_drive=2
