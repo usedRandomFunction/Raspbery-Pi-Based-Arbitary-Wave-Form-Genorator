@@ -212,8 +212,33 @@ void set_framebuffer_pixel(uint32_t x, uint32_t y, display_color color)
     }
 
     size_t offset = x * 4 + y * s_framebuffer_bytes_per_line;
-    
     uint32_t* pixel = (uint32_t*)(s_framebuffer_pointer + offset);
+
+    if (color & 0xFF000000) // Alpha
+    {
+        uint8_t alpha = color >> 24;
+
+        if (alpha == 0xFF)
+            return;
+
+        float falpha = alpha / 255.0f;
+
+        display_color current_color = *pixel;
+        float current_ch1 = current_color & 0xFF;
+        float current_ch2 = (current_color >> 8) & 0xFF; 
+        float current_ch3 = (current_color >> 16) & 0xFF; 
+
+        float target_ch1 = color & 0xFF;
+        float target_ch2 = (color >> 8) & 0xFF; 
+        float target_ch3 = (color >> 16) & 0xFF; 
+
+        display_color new_ch1 = (display_color)(target_ch1 * falpha + current_ch1 * (1 - falpha));
+        display_color new_ch2 = (display_color)(target_ch2 * falpha + current_ch2 * (1 - falpha));
+        display_color new_ch3 = (display_color)(target_ch3 * falpha + current_ch3 * (1 - falpha));
+
+        color = new_ch1 | (new_ch2 << 8) | (new_ch3 << 16);
+    }
+    
     *pixel = color;
 }
 
