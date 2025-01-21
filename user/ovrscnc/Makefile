@@ -49,6 +49,15 @@ $(OBJDIR)/%.s.o: $(SRCDIR)/%.s
 	@mkdir -p $(dir $@)
 	$(CC) $(ASMFLAGS) -c -o $@ $<
 
+run_emmulator:
+	x-terminal-emulator -e 'cd ../../kernal; make run_serial_over_tcp_display'&
+	sleep 0.5	# This isn't the best, should try something better
+	python3 ../../uart_interface.py tcp:localhost:4444 --config_file "../../uart_interface_config.json" --exec "rua ./" 
+run_halt_emmulator:
+	x-terminal-emulator -e 'cd ../../kernal; make run_halt_serial_over_tcp_display'&
+	sleep 0.5	# This isn't the best, should try something better
+	python3 ../../uart_interface.py tcp:localhost:4444 --config_file "../../uart_interface_config.json" --exec "rua ./" 
+
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(TARGET)
 

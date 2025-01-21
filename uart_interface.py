@@ -10,6 +10,7 @@ import time
 import json
 import os
 
+dont_save_edit_command_history = False
 dont_update_output_window = False
 uart_output_log_window = None
 uart_input_log_window = None
@@ -32,7 +33,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.7.4"
+full_name = "AWG uart interface V 0.8"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
@@ -1131,7 +1132,6 @@ def command_list_directory(path):
 
     singal_path_packet(path, b'\x04', f"List directory")
 
-
 def handle_console_command():
     global dont_update_output_window
     global console_error_text
@@ -1182,6 +1182,9 @@ def handle_console_command():
         redraw_subwindows()
     except Exception as e:
         console_error_text = str(e)
+
+    if dont_save_edit_command_history:
+        return
 
     if command in ["q", "quit"]:        # Dont include closing the app in the command history
         return
@@ -1348,6 +1351,8 @@ def exit_wrapper(source: str, code: int):
     exit(code)
 
 def main(_stdscr: curses.window):
+    global dont_save_edit_command_history
+    global console_text_input
     global config_file_path
     global stdscr
     stdscr = _stdscr
@@ -1368,6 +1373,14 @@ def main(_stdscr: curses.window):
         connect_to(connection_argument[0], connection_argument[1:])
     except Exception as e:
         show_excption_window(e, 4)
+
+    if arguments.exec != "":
+        dont_save_edit_command_history = True
+        console_text_input = ":" + arguments.exec
+        handle_console_command()
+        console_text_input = ""
+        draw_console_window()
+        dont_save_edit_command_history = False
 
 
     while running:
@@ -1402,7 +1415,11 @@ def entry():
         default="./uart_interface_config.json",
         metavar="config_file",
         type=str)
-    
+    argument_parser.add_argument("-e", "--exec",
+        help="Used to provide a command to auto run when the connection to the AWG is made",
+        default="",
+        metavar="execute",
+        type=str)
 
     arguments = argument_parser.parse_args()
 
