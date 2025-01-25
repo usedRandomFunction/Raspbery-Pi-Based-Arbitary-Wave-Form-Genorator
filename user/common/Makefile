@@ -10,6 +10,8 @@ CC := $(COMPILERPREFIX)gcc
 AR := $(COMPILERPREFIX)ar
 C_DEFINITIONS := -DAARCH64
 
+LIB_NAME := common
+
 OPATMANISER_SETTING = -O2
 
 DEBUGFLAGS := -g
@@ -29,7 +31,7 @@ ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
 DATA_OBJECTS := $(patsubst $(DATADIR)/%, $(OBJDIR)/%.o, $(DATA_SOURCES))
 
 # Targets
-TARGET := $(BINDIR)/libcommon.a
+TARGET := $(BINDIR)/lib$(LIB_NAME).a
 
 all: $(TARGET)
 

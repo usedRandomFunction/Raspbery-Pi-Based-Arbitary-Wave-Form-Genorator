@@ -10,12 +10,14 @@ CC := $(COMPILERPREFIX)gcc
 AR := $(COMPILERPREFIX)ar
 C_DEFINITIONS := -DAARCH64
 
+LIB_NAME := abstracted_outputs
+
 OPATMANISER_SETTING = -O2
 
 DEBUGFLAGS := -g
 
-ASMFLAGS := -Iinc/abstracted_outputs $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc/abstracted_outputs -I$(COMMONDIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
+ASMFLAGS := -Iinc/$(LIB_NAME) $(DEBUGFLAGS)
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc/$(LIB_NAME) -I$(COMMONDIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
 ARFLAGS := rcs
 
 # Source files
@@ -27,7 +29,7 @@ C_OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.c.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
 
 # Targets
-TARGET := $(BINDIR)/libabstracted_outputs.a
+TARGET := $(BINDIR)/lib$(LIB_NAME).a
 
 all: $(TARGET)
 
