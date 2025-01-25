@@ -20,7 +20,8 @@ enum
 {
     VMEMMAP_WRITABILITY     =   1 << 0,     /* If set the allocation will be writeable*/
     VMEMMAP_NON_CACHABLE    =   1 << 1,     /* If set the allocation wont be cachable*/
-    VMEMMAP_EXECUTABLE      =   1 << 2      /* If set the allocation will be executable*/
+    VMEMMAP_EXECUTABLE      =   1 << 2,     /* If set the allocation will be executable*/
+    VMEMMAP_RETURN_POINTER  =   1 << 3,     /* If set vmemmap will use `ptr` as a void** given the kernal the abllity to chose the virtual address the address the mapping is given is returned use ptr. By defult the section will be placed in the first free block of memory, not including `0x000000000000`*/
 };
 
 // Used to indicate if switch_to was called

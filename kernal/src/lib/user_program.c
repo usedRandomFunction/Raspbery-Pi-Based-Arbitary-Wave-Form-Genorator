@@ -31,6 +31,11 @@ static bool s_load_monolithic_user_program_from_disk(user_program_info* program,
 // @return The image path to the program
 static char* s_get_program_image_path(const config_file* config, const char* config_path);
 
+// Finds a location for a new section in the translation table, as descibed for VMEMMAP_RETURN_POINTER
+// @param translation_table Translation_table for the target app
+// @returns The target location for section_start as a size_t
+static size_t s_vmemmap_find_pointer(translation_table_info* translation_table);
+
 void terminate_current_user_program()
 {
     if (!is_user_program_active())
@@ -302,6 +307,15 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
 {
     if (is_kernal_memory(ptr))
         generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", ptr, "vmemmap");
+        
+    if (flags & VMEMMAP_RETURN_POINTER)
+    {
+        const size_t target = s_vmemmap_find_pointer(&program->translation_table);
+
+        *((void**)ptr) = (void*)target;
+
+        ptr = (void*)target;
+    }
 
     if (((size_t)ptr) % (1 << PAGE_ALLOCATOR_PAGE_SIZE_AS_POWER_OF_TWO))
     {
@@ -366,6 +380,32 @@ size_t user_program_vmemmap(user_program_info* program, void* ptr, size_t size, 
         return 0;
 
     return get_page_allocation_size(section.allocation);
+}
+
+size_t s_vmemmap_find_pointer(translation_table_info* translation_table)
+{
+    const size_t minimum_section_offset = 0x40000000;
+    size_t new_start = minimum_section_offset;
+
+    for (int i = 0; i < translation_table->number_of_sections; i++)
+    {
+        const translation_table_section_info* section = &translation_table->sections[i];
+        const size_t section_start = (size_t)section->section_start;
+
+        if (new_start < section_start)
+            break;
+
+        const size_t section_end = section_start + get_page_allocation_size(section->allocation);
+
+        // round up
+        new_start = section_end / minimum_section_offset;
+        new_start += section_end % minimum_section_offset ? 1 : 0;
+        new_start *= minimum_section_offset;
+    }
+
+    printf("vmemmap: found space in translation table 0x%x:\n    at: 0x%x\n", translation_table, new_start);
+
+    return new_start;
 }
 
 void user_program_switch_to(const char* new_executable_path)

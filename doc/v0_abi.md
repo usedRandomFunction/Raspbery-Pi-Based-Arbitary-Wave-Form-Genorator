@@ -27,6 +27,7 @@ If any they should be [listed here](./project_specific_syscalls.md)
 | 1 | VMEMMAP_WRITABILITY | If set the memory will be writeable
 | 2 | VMEMMAP_NON_CACHABLE | If set the memory will be non-cachable
 | 4 | VMEMMAP_EXECUTABLE | If set the memory will be executable 
+| 8 | VMEMMAP_RETURN_POINTER | If set vmemmap will use `ptr` as a void** given the kernal the abllity to chose the virtual address<br> the address the mapping is given is returned use ptr. By defult the section will be placed in the<br>first free block of memory, not including `0x000000000000`.
 
 ## #0x01 - Basic IO
 
