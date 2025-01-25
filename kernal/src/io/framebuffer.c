@@ -148,12 +148,12 @@ int request_frame_buffers(int nbuffers)
      if (nbuffers == -1)
         return s_number_of_framebuffers;
 
+    if (nbuffers == s_number_of_framebuffers)
+        return s_number_of_framebuffers;
+        
     // Buffer 0 is used to fix issue #24, but it is not exposed in the API
     nbuffers += is_running_in_qemu ? 1 : 0;
     nbuffers = clamp(nbuffers, maximum_number_of_frame_buffers, minimum_number_of_frame_buffers);
-
-    if (nbuffers == s_number_of_framebuffers)
-        return s_number_of_framebuffers;
 
     if (nbuffers < s_number_of_framebuffers && (!allways_shirnk_frame_buffer_if_possible))
     {
