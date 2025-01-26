@@ -7,3 +7,4 @@ bootloader.py
 kernal/bin
 uart_interface_config.json
 uart_log.txt
+user/libarys/inc/

@@ -1,7 +1,6 @@
 # Directories
 SRCDIR := src
 BINDIR := bin
-DATADIR := data
 OBJDIR := $(BINDIR)/obj
 
 # Compiler and linker options
@@ -10,34 +9,34 @@ CC := $(COMPILERPREFIX)gcc
 AR := $(COMPILERPREFIX)ar
 C_DEFINITIONS := -DAARCH64
 
-LIB_NAME := common
+LIB_NAME := abstracted_outputs
 
 OPATMANISER_SETTING = -O2
 
 DEBUGFLAGS := -g
 
-ASMFLAGS := -Iinc $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
+ASMFLAGS := -Iinc/$(LIB_NAME) $(DEBUGFLAGS)
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc/$(LIB_NAME) -I../inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
 ARFLAGS := rcs
 
 # Source files
 C_SOURCES := $(shell find $(SRCDIR) -name '*.c')
 ASM_SOURCES := $(shell find $(SRCDIR) -name '*.s')
-DATA_SOURCES := $(shell find $(DATADIR) -type f)
 
 # Object files
 C_OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.c.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.s.o,$(ASM_SOURCES))
-DATA_OBJECTS := $(patsubst $(DATADIR)/%, $(OBJDIR)/%.o, $(DATA_SOURCES))
 
 # Targets
 TARGET := $(BINDIR)/lib$(LIB_NAME).a
 
 all: $(TARGET)
 
-$(TARGET): $(C_OBJECTS) $(ASM_OBJECTS) $(DATA_OBJECTS)
+$(TARGET): $(C_OBJECTS) $(ASM_OBJECTS)
 	@echo !==== linking ====!
 	$(AR) $(ARFLAGS) $@ $^
+	ln -sf ../$(LIB_NAME)/bin/lib$(LIB_NAME).a ../bin/lib$(LIB_NAME).a
+	ln -sf ../$(LIB_NAME)/inc/$(LIB_NAME) ../inc/$(LIB_NAME)
 
 $(OBJDIR)/%.c.o: $(SRCDIR)/%.c
 	@echo !==== Compiling $^ ====!
@@ -48,11 +47,6 @@ $(OBJDIR)/%.s.o: $(SRCDIR)/%.s
 	@echo !==== Compiling $^ ====!
 	@mkdir -p $(dir $@)
 	$(CC) $(ASMFLAGS) -c -o $@ $<
-
-$(OBJDIR)/%.o: $(DATADIR)/%
-	@echo !==== Embeding $^ ====!
-	@mkdir -p $(dir $@)
-	aarch64-elf-ld -r -b binary -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(TARGET)

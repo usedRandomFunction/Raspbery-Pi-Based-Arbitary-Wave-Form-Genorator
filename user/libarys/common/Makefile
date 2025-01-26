@@ -2,7 +2,6 @@
 SRCDIR := src
 BINDIR := bin
 OBJDIR := $(BINDIR)/obj
-COMMONDIR = ../common
 
 # Compiler and linker options
 COMPILERPREFIX = aarch64-elf-
@@ -10,14 +9,14 @@ CC := $(COMPILERPREFIX)gcc
 AR := $(COMPILERPREFIX)ar
 C_DEFINITIONS := -DAARCH64
 
-LIB_NAME := abstracted_outputs
+LIB_NAME := common
 
 OPATMANISER_SETTING = -O2
 
 DEBUGFLAGS := -g
 
-ASMFLAGS := -Iinc/$(LIB_NAME) $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc/$(LIB_NAME) -I$(COMMONDIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
+ASMFLAGS := -Iinc $(DEBUGFLAGS)
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
 ARFLAGS := rcs
 
 # Source files
@@ -33,9 +32,11 @@ TARGET := $(BINDIR)/lib$(LIB_NAME).a
 
 all: $(TARGET)
 
-$(TARGET): $(C_OBJECTS) $(ASM_OBJECTS)
+$(TARGET): $(C_OBJECTS) $(ASM_OBJECTS) $(DATA_OBJECTS)
 	@echo !==== linking ====!
 	$(AR) $(ARFLAGS) $@ $^
+	ln -sf ../$(LIB_NAME)/bin/lib$(LIB_NAME).a ../bin/lib$(LIB_NAME).a
+	ln -sf ../$(LIB_NAME)/inc/$(LIB_NAME) ../inc/$(LIB_NAME)
 
 $(OBJDIR)/%.c.o: $(SRCDIR)/%.c
 	@echo !==== Compiling $^ ====!
