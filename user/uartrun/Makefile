@@ -16,7 +16,7 @@ DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
 CFLAGS := -ffreestanding -std=gnu99 -c -Iinc -I$(LIBARY_DIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) $(DEBUGFLAGS)
-LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS) -L$(LIBARY_DIR)/bin -lcommon
+LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS) -L$(LIBARY_DIR)/bin -lcommon -lsimple_entry
 
 # Source files
 C_SOURCES := $(shell find $(SRCDIR) -name '*.c')
