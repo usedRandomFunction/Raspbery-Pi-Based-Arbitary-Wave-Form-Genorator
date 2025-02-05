@@ -3,8 +3,8 @@
 
 int main();
 
-extern char __bss_start[]; // Linker will set this to point to the start of the program
-extern char __bss_end[]; // Linker will set this to point to the end of the program
+extern char __bss_start[];
+extern char __bss_end[];
 
 void _entry() __attribute__((section(".start")));
 
