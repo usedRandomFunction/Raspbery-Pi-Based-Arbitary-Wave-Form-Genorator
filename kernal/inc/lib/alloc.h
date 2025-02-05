@@ -2,7 +2,6 @@
 #define ALLOC_H
 
 
-
 #ifdef __GNUC__
 #define alloca(x) __builtin_alloca((x))
 #else
@@ -23,19 +22,5 @@ void* malloc(size_t size);
 // Frees the given allocation
 // @param p A pointer to the allocation to free
 void free(void* p);
-
-// Frees the given allocation
-// @param p A pointer to the allocation to free
-// @note This is to be only used to returns from aligned_alloc_noncachable
-void free_noncachable_memory(void* p);
-
-// Creates a new allocation on the heap
-// @param alignment The required alignment in bytes
-// @param size The size of the allocation in bytes
-// @return The pointer to the allocation
-// @note Return is guaranteed to be in noncachable memory
-void* aligned_alloc_noncachable(size_t alignment, size_t size);
-
-
 
 #endif
