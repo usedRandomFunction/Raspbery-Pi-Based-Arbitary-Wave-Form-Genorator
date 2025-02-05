@@ -290,7 +290,7 @@ void* aligned_alloc(size_t alignment, size_t size)
     {
         if (((alignment & (alignment - 1)) != 0))
         {
-            printf("\nUnable to allocat memory, only alight ments of a power of two");
+            printf("\nUnable to allocate memory, only alight ments of a power of two");
             return NULL;
         }
 
