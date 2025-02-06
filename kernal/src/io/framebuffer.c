@@ -244,7 +244,7 @@ void set_framebuffer_pixel(uint32_t x, uint32_t y, display_color color)
 
 void set_display_pixel(uint32_t x, uint32_t y, display_color color, int buffer)
 {
-    if (buffer < 0 || buffer >= s_number_of_framebuffers || x >= display_width || x >= display_height)
+    if (buffer < 0 || buffer >= s_number_of_framebuffers || x >= display_width || y >= display_height)
         return;
 
     // Buffer 0 is used to fix issue #24, but it is not exposed in the API
