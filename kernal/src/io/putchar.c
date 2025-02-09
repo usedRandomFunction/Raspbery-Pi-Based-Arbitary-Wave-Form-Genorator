@@ -27,25 +27,26 @@ int putchar(int ch)
 
         if (console_output_y > CONSOLE_MAX_HEIGHT)  
         {
-            uint32_t copy_area_start = CONSOLE_MAX_HEIGHT * 1 / 3; 
-            copy_area_start /= current_font->height;
-            copy_area_start *= current_font->height; // Round to lowwest part of line
+            uint32_t copy_area_start_y = CONSOLE_MAX_HEIGHT * 1 / 3; 
 
-            uint32_t last_line_bottom = console_output_y;
-            last_line_bottom /= current_font->height;
-            last_line_bottom *= current_font->height;
+            if (copy_area_start_y % current_font->height)   // Round up
+                copy_area_start_y += current_font->height - (copy_area_start_y % current_font->height);
 
-            uint32_t new_last_line_bottom = last_line_bottom - copy_area_start;
+            uint32_t bottom_of_last_line = console_output_y;// + current_font->height;
+            uint32_t copy_area_size_y = bottom_of_last_line - copy_area_start_y;
 
-            display_screen_copy(0, copy_area_start,                         // Copy area Start x, y
-                get_display_width(), last_line_bottom - copy_area_start,    // Copy area size x, y
-                0, 0, 0);                                                   // Paste area Start x, y and buffer ID
+            uint32_t new_bottom_of_last_line = copy_area_size_y;//bottom_of_last_line - copy_area_start_y;
 
-            display_fill_rect(0, new_last_line_bottom,                      // x0, y0
-                get_display_width() - 1, get_display_height() - 1,          // x1, y1
-                FRAMEBUFFER_RGB(0, 0, 0), 0);                               // color and buffer
+            display_screen_copy(0, copy_area_start_y,           // Copy start X,Y
+                get_display_width() - 1, copy_area_size_y,      // Copy size X,Y
+                0, 0, 0);                                       // Paste start X,Y and buffer ID
 
-            console_output_y = new_last_line_bottom;
+
+            display_fill_rect(0, new_bottom_of_last_line,           // x0, y0
+                get_display_width() - 1, get_display_height() - 1,  // x1 y1
+                FRAMEBUFFER_RGB(0, 0, 0), 0);
+
+            console_output_y = new_bottom_of_last_line;// - current_font->height;
         }
     }
 

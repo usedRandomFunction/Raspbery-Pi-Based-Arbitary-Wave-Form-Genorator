@@ -285,7 +285,7 @@ void display_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y,
         copy_area_size_x = display_width - copy_area_start_x - 1;
 
     if (copy_area_size_y + copy_area_start_y >= display_height)
-        copy_area_size_y = display_width - copy_area_start_y - 1;
+        copy_area_size_y = display_height - copy_area_start_y - 1;
 
     framebuffer_screen_copy(copy_area_start_x, copy_area_start_y + buffer_offset,
         copy_area_size_x, copy_area_size_y,
@@ -293,7 +293,7 @@ void display_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y,
 
     if (buffer == (s_active_framebuffer + 1) && is_running_in_qemu)   // Copy to buffer zero as well if selected buffer is active, issue #24
     {
-        framebuffer_screen_copy(copy_area_start_x, copy_area_start_y + buffer_offset,
+        framebuffer_screen_copy(copy_area_start_x, copy_area_start_y,
         copy_area_size_x, copy_area_size_y,
         paste_area_start_x, paste_area_start_y);
     }
