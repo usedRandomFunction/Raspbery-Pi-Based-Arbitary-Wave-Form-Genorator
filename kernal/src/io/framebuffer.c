@@ -301,6 +301,9 @@ void display_screen_copy(uint32_t copy_area_start_x, uint32_t copy_area_start_y,
 
 void framebuffer_fill_rect(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, display_color color)
 {
+    if ((color & 0xFF000000) == 0xFF000000) // Skip Empty rects
+        return;
+
     for (int y = y0 ; y <= y1; y++)
     {
         for (int x = x0 ; x <= x1; x++)
