@@ -31,7 +31,7 @@ void pc_screen_font_darw_ex(const char* str, uint32_t* x, uint32_t* y, uint32_t 
 
     int bytesperline = (font->width+7)/8;
     bool special_characters_enabled = are_special_characters_enabled;
-    bool should_draw_pixels = ((background & 0xFF000000) == 0xFF000000) && ((foreground & 0xFF000000) == 0xFF000000);
+    bool should_draw_pixels = ((background & 0xFF000000) != 0xFF000000) || ((foreground & 0xFF000000) != 0xFF000000);
     // If both forground and backgroud are fully transparent, then we shouldn't call set_display_pixel to save time
 
     for ( ; *str != '\0' ; str++)
