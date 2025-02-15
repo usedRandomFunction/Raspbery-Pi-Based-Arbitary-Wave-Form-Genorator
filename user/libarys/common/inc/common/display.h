@@ -67,6 +67,21 @@ void display_draw_string(const char* str, uint32_t* x, uint32_t* y, uint32_t x_m
     bool are_special_characters_enabled, pc_screen_font_header* font, display_color foreground, 
     display_color background, int buffer);
 
+// Returns the x,y coordinates that define the bottom right of
+// a bounding box to fit the last text drawn by display_draw_string.
+// @param x The X coordinate
+// @param y The Y coordinate
+void display_get_text_bounds_bottom_right(uint32_t* x, uint32_t* y);
+
+// Calcuates the size of given text in pixels using the given font.
+// The function also allows for a max of a any line to be given.
+// @param str A pointer to a null termnated string
+// @param x To be set to the width in px
+// @param y To be set to the height in px
+// @param max_width, the max allowed width of a line in px
+// @param font Font to be used, if none are given current_font is used;
+void display_get_text_size_px(const char* str, uint32_t* x, uint32_t* y, uint32_t max_width, pc_screen_font_header* font);
+
 // Get the width in pixels of the display
 // @returns display height in pixels
 uint32_t get_display_height();

@@ -104,6 +104,8 @@ struct dirrectory_entry
 | 5 | get_display_height | void | uint32_t  | Returns the height of the display in pixels
 | 6 | active_frame_buffer | int buffer | int | Gets / set the active frame buffer, if `-1` is given no action will be taken.<br>`-2` is the printf / stdout buffer, user programs cant edit it dirrectly.<br>`0` up to `nbuffers - 1` is available to set to and these buffers are editable.<br><br>The return value is simply the active output buffer at the end of the operation.
 | 7 | request_frame_buffers | int nbuffers | int | Gets / set the number of frmae buffers allocated to the user program.<br>Like other functions if `-1` is given no action will be taken, and the current<br>value will be returned.<br><br>Return the number of frame buffers available to the user program at the <br>end of the operation.
+| 8 | display_get_text_bounds_bottom_right | uint32_t* x, uint32_t* y | void | Returns the x,y coordinates that define the bottom right of a bounding box to fit<br> the last text drawn by display_draw_string.
+| 9 | display_get_text_size_px | const char* str, uint32_t* x,<br> uint32_t* y, uint32_t max_width,<br> pc_screen_font_header* font | void | Calcuates the size of given text in pixels using the given font.<br>The function also allows for a max of a any line to be given.
 
 #### Note about frame buffers
 

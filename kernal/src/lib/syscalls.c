@@ -383,6 +383,28 @@ int system_call_request_frame_buffers(int nbuffers)
     return new_number_of_buffers - 1;
 }
 
+void system_call_display_get_text_size_px(const char* str, uint32_t* x, uint32_t* y, uint32_t max_width, pc_screen_font_header* font)
+{
+     if (is_kernal_memory(str))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", str, "display_get_text_size_px",
+        "str");
+
+    if (is_kernal_memory(x))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", x, "display_get_text_size_px",
+        "x");
+
+    if (is_kernal_memory(y))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", y, "display_get_text_size_px",
+        "y");
+
+    if (is_kernal_memory(font))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", font, "display_get_text_size_px",
+        "font");
+
+
+    pc_screen_font_get_text_size_px(str, x, y, max_width, font);
+}
+
 const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap,
     system_call_switch_to};
 const void* const os_syscall_baisc_io[] = {printf_user_memory_only, putchar, uart_putc, uart_getc, uart_poll};
@@ -392,7 +414,8 @@ const void* const os_syscall_file_io[] = {system_call_open, system_call_close, s
     system_call_dirclose};
 const void* const os_syscall_display_controll[] = {system_call_set_display_pixel, system_call_display_fill_rect,
     system_call_copy_to_display, system_call_display_draw_string, get_display_width, get_display_height,
-    system_call_active_framebuffer, system_call_request_frame_buffers};
+    system_call_active_framebuffer, system_call_request_frame_buffers, pc_screen_font_get_text_bounds_bottom_right,
+    system_call_display_get_text_size_px};
 
 const void* const os_syscall_runtime_config_edits[] = {system_call_undefined_handler, set_display_overscan};
 

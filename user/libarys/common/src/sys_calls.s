@@ -48,6 +48,8 @@ syscall get_display_width, 4, #3
 syscall get_display_height, 5, #3
 syscall active_framebuffer, 6, #3
 syscall request_frame_buffers, 7, #3
+syscall display_get_text_bounds_bottom_right, 8, #3
+syscall display_get_text_size_px, 9, #3
 
 // Runtime config
 
