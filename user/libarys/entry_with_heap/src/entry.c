@@ -64,7 +64,7 @@ void free(void* p)
 {
     if (p == NULL)
     {
-        printf("Attempted to free NULL pointer\nCaller: 0x%x", __builtin_return_address(0));
+        printf("Attempted to free NULL pointer\nCaller: 0x%x\n", __builtin_return_address(0));
         exit(-10001);
     }
 
@@ -75,7 +75,7 @@ void* malloc(size_t size)
 {
     if (size == 0)
     {
-        printf("Attempted to allocate zero bytes\nCaller: 0x%x", __builtin_return_address(0));
+        printf("Attempted to allocate zero bytes\nCaller: 0x%x\n", __builtin_return_address(0));
         exit(-10001);
     }
 
@@ -86,7 +86,7 @@ void* aligned_alloc(size_t alignment, size_t size)
 {
     if (size == 0)
     {
-        printf("Attempted to allocate zero bytes\nCaller: 0x%x", __builtin_return_address(0));
+        printf("Attempted to allocate zero bytes\nCaller: 0x%x\n", __builtin_return_address(0));
         exit(-10001);
     }
 
@@ -94,7 +94,7 @@ void* aligned_alloc(size_t alignment, size_t size)
     {
         if (((alignment & (alignment - 1)) != 0))
         {
-            printf("\nUnable to allocate memory, only alight ments of a power of two");
+            printf("\nUnable to allocate memory, only alight ments of a power of two\n");
             return NULL;
         }
 
