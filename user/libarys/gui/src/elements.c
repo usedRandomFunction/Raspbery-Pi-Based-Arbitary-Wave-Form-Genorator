@@ -215,6 +215,32 @@ void size_textbox_element(gui_element* element, int padding)
     data->offset.x = padding;
 }
 
+void center_text_element(gui_element* element, bool horizontal, bool vertical)
+{
+    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+
+    if (data == NULL || data->str == NULL)
+    {
+        printf("[Error] Failed to size textbox element, no data struct or text\n");
+        return;
+    }
+
+
+    uint32_t size_x = 0;         // Since this function uses text size, we need to calcuate it here
+    uint32_t size_y = 0;
+    display_get_text_size_px(data->str, &size_x, &size_y, UINT32_MAX, NULL);
+
+    if (horizontal)
+    {
+        element->position.x -= size_x / 2;
+    }
+
+    if (vertical)
+    {
+        element->position.x += size_y / 2;
+    }
+}
+
 gui_element* create_frame_element(dynamic_array* buffer)
 {
     gui_element* element = create_element(buffer);

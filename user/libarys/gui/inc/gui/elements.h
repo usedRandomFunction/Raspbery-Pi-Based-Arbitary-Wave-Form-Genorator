@@ -4,6 +4,7 @@
 #include "dynamic_array/dynamic_array.h"
 #include "common/display.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -155,6 +156,12 @@ void initialize_textbox_element(gui_element* element);
 // @param element textbox to size
 // @param padding Padding in pixels
 void size_textbox_element(gui_element* element, int padding);
+
+// Moves the given text / textbox element so its center is at the current possition
+// @param element text / textbox to possition
+// @param horizontal If true the element will be centered horizontally, If false x will not be changed
+// @param vertical Uf true the element will be centered vertical, If false y will not be changed
+void center_text_element(gui_element* element, bool horizontal, bool vertical);
 
 // Allocates and initializes a frame element,
 // storing a pointer in buffer
