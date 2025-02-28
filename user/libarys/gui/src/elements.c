@@ -119,6 +119,7 @@ gui_element* create_element(dynamic_array* buffer)
 
     memclr(element, sizeof(gui_element));
 
+    initialize_dynamic_array(sizeof(gui_element*), 0, &element->sub_elements);
     insert_dynamic_array(&element, buffer->number_of_entrys, buffer);
 
     return element;
