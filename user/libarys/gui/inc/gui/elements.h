@@ -163,6 +163,10 @@ void size_textbox_element(gui_element* element, int padding);
 // @param vertical Uf true the element will be centered vertical, If false y will not be changed
 void center_text_element(gui_element* element, bool horizontal, bool vertical);
 
+// Aligns the given text to the right
+// @param element text / textbox to possition
+void right_allign_text_element(gui_element* element);
+
 // Allocates and initializes a frame element,
 // storing a pointer in buffer
 // @param buffer Buffer to add the pointer to the element to
