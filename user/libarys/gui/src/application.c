@@ -132,23 +132,19 @@ void gui_application_set_navigation_selection(gui_application* application, stru
         gui_event_queue_push(&application->event_queue, event);
     }
 
-    gui_vec2 offset; // Used for redrawing
-    memclr(&offset, sizeof(gui_vec2));
 
     if (application->current_navigation_selection)
     {
         application->current_navigation_selection->flags &= ~GUI_ELEMENT_FLAGS_FOCUSED;
 
-        if (application->current_navigation_selection->draw)
-            application->current_navigation_selection->draw(application->current_navigation_selection, offset, application->target_buffer);
+        draw_element(application->current_navigation_selection, application->target_buffer);
     }
 
     if (selection)
     {
         selection->flags |= GUI_ELEMENT_FLAGS_FOCUSED;
 
-        if (selection->draw)
-            selection->draw(selection, offset, application->target_buffer);
+        draw_element(selection, application->target_buffer);
     }
 
     application->current_navigation_selection = selection;

@@ -6,6 +6,22 @@
 #include "common/alloc.h"
 
 
+void draw_element(gui_element* element, int target_buffer)
+{
+    gui_vec2 offset;
+    memclr(&offset, sizeof(gui_vec2));
+
+    gui_element* parent = element;
+
+    //Bassicly itterate of the parents of the element
+    while ((parent = parent->parent))
+    {
+        offset.x += parent->position.x;
+        offset.y += parent->position.y;
+    }
+
+    draw_element_recursive(element, offset, target_buffer);
+}
 
 void draw_element_recursive(gui_element* element, gui_vec2 offset, int target_buffer)
 {
@@ -331,8 +347,8 @@ void gui_standard_element_frame_draw_function(gui_element* element, gui_vec2 off
         element->position.x + size_x + offset.x, element->position.y + size_y + offset.y,
         border_width, color->border, target_buffer);
 
-    display_fill_rect(element->position.x + border_width, element->position.y + border_width,
-        element->position.x + size_x - (2 * border_width), element->position.y + size_y - (2 * border_width),
+    display_fill_rect(element->position.x + border_width + offset.x, element->position.y + border_width + offset.y,
+        element->position.x + size_x - (2 * border_width) + offset.x, element->position.y + size_y - (2 * border_width) + offset.y,
         color->background, target_buffer);
 }
 

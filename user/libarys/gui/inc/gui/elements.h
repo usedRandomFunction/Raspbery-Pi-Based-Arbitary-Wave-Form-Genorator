@@ -43,6 +43,7 @@ typedef void (*DRAW_FUNCTION_POINTER)(struct gui_element*, gui_vec2, int);
 
 struct gui_element
 {
+
     gui_vec2 position;
     gui_vec2 size;
     int border_width_focused;
@@ -62,6 +63,7 @@ struct gui_element
 
     void* data;                         // Pointer to extra data (If required)
 
+    struct gui_element* parent;                
     DRAW_FUNCTION_POINTER draw;         // Draws the element
 };
 
@@ -69,6 +71,12 @@ struct gui_element
 typedef struct gui_element gui_element;
 
 
+// Draws the given element (Ignoring the hidden flag), and all sub elements (using hidden flag)
+// This function is basicly a wrapper around draw_element_recursive, but it uses the parent(s)
+// Find the offset for you
+// @param element Element to draw
+// @param target_buffer Target frame buffer
+void draw_element(gui_element* element, int target_buffer);
 
 // Takes the given element, and draws it (ignoring hidden flag), then draws all sub elements (using hidden flag)
 // @param element Element to draw
