@@ -16,7 +16,7 @@ DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc $(DEBUGFLAGS)
 CFLAGS := -ffreestanding -std=gnu99 -c -Iinc -I$(LIBARY_DIR)/inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) $(DEBUGFLAGS)
-LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS) -L$(LIBARY_DIR)/bin -lsimple_entry -lcommon
+LDFLAGS := -T $(SRCDIR)/linker.ld $(OPATMANISER_SETTING) -nostdlib $(DEBUGFLAGS) -L$(LIBARY_DIR)/bin -lgui -ldynamic_array -lentry_with_heap -lcentral_block_memory_allocator -lcommon
 
 # Source files
 C_SOURCES := $(shell find $(SRCDIR) -name '*.c')
@@ -60,6 +60,12 @@ run_halt_emmulator:
 	x-terminal-emulator -e 'cd ../../kernal; make run_halt_serial_over_tcp_display'&
 	sleep 0.5	# This isn't the best, should try something better
 	python3 ../../uart_interface.py tcp:localhost:4444 --config_file "../../uart_interface_config.json" --exec "rua ./" 
+
+clean_gui_lib:
+	cd ../libarys/gui; make clean
+
+gui_lib:
+	cd ../libarys/gui; make all
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(TARGET)

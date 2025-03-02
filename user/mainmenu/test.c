@@ -7,9 +7,7 @@
 #include "gui/application.h"
 #include "gui/elements.h"
 
-#ifndef MAX_PROGRAMS
 #define MAX_PROGRAMS 128
-#endif
 
 char program_names[MAX_PROGRAMS][32]; // Buffer to save the names of apps in
 int number_of_programs_found;
@@ -30,15 +28,6 @@ void create_gui();
 // Prints the name of the given slection
 // @param id the index of the program in the program_names array
 void print_new_selection(int id);
-
-// Checks if the scroll_container needs to be moved, based of the selected element
-// @param new_selection gui_event_nav_focus_changed::new_selection
-// @return True if scrolling is required, false if not
-bool is_scrolling_required(gui_element* new_selection);
-
-// Moves the scroll container, based of the selected element
-// @param new_selection gui_event_nav_focus_changed::new_selection
-void handle_scrolling(gui_element* new_selection);
 
 // handler for nav_focuse_changed event
 // @param event The event to handle
@@ -66,6 +55,9 @@ int main()
     
     while (number_of_programs_found < MAX_PROGRAMS && dirread(dir, &dir_entry) > 0)
     {
+        // program_names[number_of_programs_found][0] = (char)(0x30 + number_of_programs_found);
+        // program_names[number_of_programs_found++][1] = '\0';
+
         if (strcmp(dir_entry.extention, "CFG") != 0)
             continue;       // Skip all entrys that arn't apps
 
@@ -124,7 +116,6 @@ void create_gui()
     bottom_header->flags |= GUI_ELEMENT_FLAGS_DISABLED;
     scroll_window_min_height = bottom_header->position.y + 1;
 
-    // Create the spot to show the file path of the app that is selected
     strcpy_s("No selection", 256, target_application_path);
     file_path_indicator = create_text_element(target_application_path, &app.ui_elements);
     size_textbox_element(file_path_indicator, 3);       // We need size.y to possition it veritcally
@@ -132,8 +123,8 @@ void create_gui()
     file_path_indicator->position.x = width - 3;
     right_allign_text_element(file_path_indicator);
     file_path_indicator->size.x = 0;
-    file_path_indicator->color_disabled.forground = bottom_header->color_disabled.background;   // We cant get the color from the text
-                                                                                                // as it is transparent by default
+    file_path_indicator->flags |= GUI_ELEMENT_FLAGS_DISABLED;
+
     gui_element* first_element = NULL;
     gui_element* last_element = page_header; // By putting the header here we can use possition element functions for everything
 
@@ -141,10 +132,10 @@ void create_gui()
     {
         gui_element* current_element = create_textbox_element(program_names[i], 3, &scroll_container->sub_elements);
         possition_element_vertically(current_element, 5, last_element);
-        current_element->parent = scroll_container;
-        current_element->id = i;
+
 
         center_text_element(last_element, true, false);
+        current_element->id = i;
         current_element->nav.top = last_element;
         last_element->nav.bottom = current_element;
 
@@ -173,27 +164,6 @@ void print_new_selection(int id)
     printf("\rSelected: %s", program_names[id]);
 }
 
-bool is_scrolling_required(gui_element* new_selection)
-{
-    uint32_t global_y_possiton = new_selection->position.y + scroll_container->position.y;
-
-    if (global_y_possiton < scroll_window_max_height)   // Y is 0 on the top so maxium y value is maxium height
-        return true;
-
-    if ((global_y_possiton + new_selection->size.y) > scroll_window_min_height)
-        return true;
-
-    return false;
-}
-
-// Moves the scroll container, based of the selected element
-// @param new_selection gui_event_nav_focus_changed::new_selection
-void handle_scrolling(gui_element* new_selection)
-{
-    uint32_t new_scroll_possiotn = scroll_window_max_height - new_selection->position.y;
-    scroll_container->position.y = new_scroll_possiotn;
-    redraw_gui_application(&app);
-}
 
 void on_nav_focus_changed(gui_event* event)
 {
@@ -201,16 +171,6 @@ void on_nav_focus_changed(gui_event* event)
     
     if (!data || !data->new_selection)
         return;
-
-    bool scrolling_is_required = is_scrolling_required(data->new_selection);
-
-
-    if (!scrolling_is_required)
-    {
-        // First we blank the current text
-        file_path_indicator->flags |= GUI_ELEMENT_FLAGS_DISABLED;   // Color is set up using the dissabled color, so we just toggle
-        draw_element(file_path_indicator, app.target_buffer);
-    }
 
     int id = data->new_selection->id;
 
@@ -224,14 +184,10 @@ void on_nav_focus_changed(gui_event* event)
     file_path_indicator->position.x = get_display_width() - 3;
     right_allign_text_element(file_path_indicator);
 
-    // Now redraw
-    if (!scrolling_is_required)
-    {
-        file_path_indicator->flags &= ~GUI_ELEMENT_FLAGS_DISABLED;
-        draw_element(file_path_indicator, app.target_buffer);
-    }
-    else
-        handle_scrolling(data->new_selection);
+    gui_vec2 offset;
+    memclr(&offset, sizeof(offset));
+
+    draw_element_recursive(file_path_indicator, offset, app.target_buffer);
 }
 
 void on_nav_select(gui_event* event)

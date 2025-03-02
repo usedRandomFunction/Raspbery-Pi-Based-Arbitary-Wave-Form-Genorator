@@ -3,7 +3,7 @@ ENTRY(_entry)
 SECTIONS
 {
     . = 0x40000000;
-
+    
     .text : 
     { 
         *(.start)
@@ -13,16 +13,22 @@ SECTIONS
     . = ALIGN(4096);
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     
-    /* Since this is a monolithic read only app it is not possible to have a data section */
-    /* . = ALIGN(4096); */
-    /* .data : { *(.data .data.* .gnu.linkonce.d*) } */
-
     . = ALIGN(0x40000000);  /* BSS must be 4 GiB alligned so it can be its own section in memory */
-    .bss (NOLOAD) : {
+    .bss (NOLOAD) : {      
         __bss_start = .;
         *(.bss .bss.*)
         *(COMMON)
         __bss_end = .;
     }
+
+    . = ALIGN(0x40000000);  /* Heap must be 4 GiB alligned so it can be its own section in memory */
+    .heap (NOLOAD) : {
+        __heap_start = .;
+        . = . + 128K;       /* Note: this defines the minimum size of the heap vmemmap, may provide a bigger biffer */
+                            /* in that case, _entry will allow the heap to use the extra space */
+        __heap_end = .;
+    }
+
     /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+
 }
