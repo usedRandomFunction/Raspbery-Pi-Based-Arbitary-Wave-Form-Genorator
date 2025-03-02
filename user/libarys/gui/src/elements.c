@@ -174,7 +174,6 @@ void initialize_frame_element(gui_element* element)
     element->draw = gui_standard_element_frame_draw_function;
 }
 
-
 void initialize_textbox_element(gui_element* element)
 {
     initialize_standered_element_values(element);
@@ -329,7 +328,7 @@ void gui_standard_element_frame_draw_function(gui_element* element, gui_vec2 off
     int size_y = element->size.y - 1;
     
     draw_outline(element->position.x + offset.x, element->position.y + offset.y,
-        element->position.x + size_x, element->position.y + size_y,
+        element->position.x + size_x + offset.x, element->position.y + size_y + offset.y,
         border_width, color->border, target_buffer);
 
     display_fill_rect(element->position.x + border_width, element->position.y + border_width,
