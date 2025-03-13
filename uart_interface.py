@@ -33,7 +33,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.8"
+full_name = "AWG uart interface V 0.8.1"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
@@ -760,9 +760,8 @@ def command_clear():
 
     redraw_subwindows()
 
-def command_key(argument):
-    command_split = argument.split(' ', 1)
-    state_stirng = command_split[0]
+def command_key(arguments):
+    state_stirng = arguments[0]
     state = b'\xFF'
 
     if state_stirng == "off":
@@ -776,7 +775,7 @@ def command_key(argument):
     else:
         raise ValueError(f"Unkown state: {state_stirng}")
     
-    send_key_press_uart_message_from_string(command_split[1], state)
+    send_key_press_uart_message_from_string(','.join(arguments).replace(",,","r"), state)
 
 def handle_chunk_boundarys(file, data, bytes_sent, chunk_size, wait_is_required):
     if chunk_size == 0:
@@ -1156,7 +1155,7 @@ def handle_console_command():
         elif command == "clear":
             command_clear()
         elif command == "key":
-            command_key(arguments[0])
+            command_key(arguments)
         elif command in ["kreload", "kernal_reload"]:
             command_kenral_reload(arguments[0])
         elif command in ["rua", "run_user_app"]:
