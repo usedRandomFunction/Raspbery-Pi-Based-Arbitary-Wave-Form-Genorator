@@ -158,14 +158,14 @@ static void s_print_arm_exception_details(unsigned long type) // TODO maby print
     }
     // dump registers
     asm volatile ( "mrs %0, esr_el1" : "=r"(reg));
-    printf(":\n  ESR_EL1 %x", reg);
+    printf(":\n  ESR_EL1 0x%x", reg);
 
     asm volatile ( "mrs %0, elr_el1" : "=r"(reg));
-    printf(" ELR_EL1 (Instruction address) %x", reg);
+    printf(" ELR_EL1 (Instruction address) 0x%x", reg);
 
     asm volatile ( "mrs %0, spsr_el1" : "=r"(reg));
-    printf("\n SPSR_EL1 %x", reg);
+    printf("\n SPSR_EL1 0x%x", reg);
 
     asm volatile ( "mrs %0, far_el1" : "=r"(reg));
-    printf(" FAR_EL1 (Falt address) %x\n", reg);
+    printf(" FAR_EL1 (Falt address) 0x%x\n", reg);
 }
