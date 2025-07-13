@@ -140,7 +140,7 @@ gui_element* possition_element_horizontally(gui_element* element, int padding, g
 // !==== Now begining the standard elements ====! 
 
 
-struct gui_element_standard_element_text_box_data
+struct gui_element_standard_element_text_box_data // TODO rename so its just gui_standard_element_text_box_data
 {
     gui_vec2 offset; // The offset from the top left, where display_draw_string is called
 
@@ -156,14 +156,21 @@ typedef struct gui_element_standard_element_text_box_data gui_element_standard_e
 // @param element Element to set up
 void initialize_frame_element(gui_element* element);
 
-// Sets up the given element to be a text
+// Sets up the given element to be a textbox
 // @param element Element to set up
 void initialize_textbox_element(gui_element* element);
 
-// Sizes the given text box so edge of the background is `padding` px away from the text
+// Sizes the given textbox so the edge of the background is `padding` px away from the text
 // @param element textbox to size
-// @param padding Padding in pixels
+// @param padding Padding in pixelis
 void size_textbox_element(gui_element* element, int padding);
+
+// Sizes the given textbox so the edge of the background is `padding` px away when n 
+// characters of text are drawn
+// @param element textbox to size
+// @param number of characters to size for
+// @param padding Padding in pixelis
+void size_textbox_element_for_n_characters(gui_element *element, int n, int padding);
 
 // Moves the given text / textbox element so its center is at the current possition
 // @param element text / textbox to possition
@@ -206,14 +213,21 @@ void gui_standard_element_frame_draw_function(gui_element* element, gui_vec2 off
 // @param element Element to draw
 // @param offset The cumulative offset of the parent(s) of the element
 // @param target_buffer Frame buffer to draw to
-void gui_standard_element_frame_textbox_function(gui_element* element, gui_vec2 offset, int target_buffer);
+void gui_standard_element_textbox_draw_function(gui_element* element, gui_vec2 offset, int target_buffer);
 
 enum
 {
-    GUI_ELEMENT_FLAGS_NONE = 0,                 /* Does nothing. */
-    GUI_ELEMENT_FLAGS_FOCUSED = (1 << 0),       /* Set by nav controlls, if set the element is focused*/
-    GUI_ELEMENT_FLAGS_HIDDEN = (1 << 1),        /* If set the element will not be drawn. */
-    GUI_ELEMENT_FLAGS_DISABLED = (1 << 2),      /* If set the element can not be focused / selected.*/
+    GUI_ELEMENT_FLAGS_NONE = 0,                         /* Does nothing. */
+    GUI_ELEMENT_FLAGS_FOCUSED = (1 << 0),               /* Set by nav controlls, if set the element is focused*/
+    GUI_ELEMENT_FLAGS_HIDDEN = (1 << 1),                /* If set the element will not be drawn. */
+    GUI_ELEMENT_FLAGS_DISABLED = (1 << 2),              /* If set the element can not be focused / selected.*/
+    GUI_ELEMENT_FLAGS_CAN_CAPTURE_INPUT = (1 << 3),     /* If set the element can begin to capture inputs when enter*/
+                                                        /* is pressed while it is focused and navigation mode is*/
+                                                        /* enabled. This operation will disabled navigation mode.*/
+                                                        /* The input is captured in gui_application_defult_event_handler, */
+                                                        /* The input is captured in gui_application_defult_event_handler, */
+                                                        /* So a user can still block it if required. */
+                                                        /* The element's data must be of type gui_complex_element_data. */
 };
 
 #endif

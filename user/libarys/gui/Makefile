@@ -16,7 +16,7 @@ OPATMANISER_SETTING = -O2
 DEBUGFLAGS := -g
 
 ASMFLAGS := -Iinc/$(LIB_NAME) $(DEBUGFLAGS)
-CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc/$(LIB_NAME) -I../inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS)
+CFLAGS := -ffreestanding -nostartfiles  -std=gnu99 -c -Iinc/$(LIB_NAME) -I../inc $(OPATMANISER_SETTING) -Wall -Werror $(C_DEFINITIONS) $(DEBUGFLAGS)
 ARFLAGS := rcs
 
 # Source files

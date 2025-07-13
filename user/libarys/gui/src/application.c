@@ -1,5 +1,6 @@
 #include "gui/application.h"
 #include "gui/elements.h"
+#include "gui/elements/complex.h"
 
 #include "common/basic_io.h"
 #include "common/memory.h"
@@ -46,7 +47,7 @@ void free_application(gui_application* application)
     if (!application)
         return;
 
-    free(&application->event_queue);
+    free_gui_event_queue(&application->event_queue);
 }
 
 gui_event* gui_application_get_next_event(gui_application* application)
@@ -91,9 +92,41 @@ void gui_application_defult_event_handler(gui_application* application, gui_even
         redraw_gui_application(application);
         break;
     case GUI_EVENT_TYPE_KEY_DOWN:
+    {
         if (application->navigation_enabled)
             s_handle_navigation_inputs(application, (keypad_state*)event->event_data);
+
+        if (!application->current_input_capture)
+            break;
+
+        gui_complex_element_data* data = application->current_input_capture->data;
+
+        if (data && data->on_captured_key_down)
+            data->on_captured_key_down(application->current_input_capture, event, application);
+
         break;
+    }
+    case GUI_EVENT_TYPE_KEY_UP: // This probilit should be its own funciton
+    {
+        if (!application->current_input_capture)
+            break;
+
+        gui_complex_element_data* data = application->current_input_capture->data;
+
+        if (data && data->on_captured_key_up)
+            data->on_captured_key_up(application->current_input_capture, event, application);
+
+        break;
+    }
+    case GUI_EVENT_TYPE_NAV_SELECT:
+    {
+        gui_element* element = (gui_element*)event->event_data;
+
+        if (element && element->flags & GUI_ELEMENT_FLAGS_CAN_CAPTURE_INPUT)
+            gui_application_set_input_capture(application, (gui_element*)event->event_data);
+
+        break;
+    }
     default:
         break;
     }
@@ -115,7 +148,7 @@ void gui_application_set_navigation_selection(gui_application* application, stru
         if (event)
             free(event);
         
-        printf("[Error] Failed to create event for nav focus changed: malloc failed\n");
+        printf("[Error] Failed to create event for nav focus changed: malloc failed.\n");
     }
     else
     {
@@ -149,6 +182,69 @@ void gui_application_set_navigation_selection(gui_application* application, stru
 
     application->current_navigation_selection = selection;
 }
+
+
+void gui_application_set_input_capture(gui_application* application, struct gui_element* capture)
+{
+    if (!application)
+        return;
+
+    // First create event for the end of the current capture (If it exists)
+    // We also call its on end function
+    if (application->current_input_capture)
+    {
+        gui_event* event = malloc(sizeof(gui_event));
+
+        if (!event)
+        {
+            printf("[Error] Failed to create event for INPUT_CAPTURE_END: malloc failed.\n");
+        }
+        else 
+        {
+            memclr(event, sizeof(gui_event));
+            event->event_data = application->current_input_capture;
+            event->event_type = GUI_EVENT_TYPE_INPUT_CAPTURE_END;
+
+            gui_event_queue_push(&application->event_queue, event);
+        }
+
+        gui_complex_element_data* data = application->current_input_capture->data;
+
+        if (data && data->on_capture_end)
+            data->on_capture_end(application->current_input_capture, NULL, application);
+    }
+
+    // Now a event for the new capture (If it exists)
+    // And we call its beign function
+    if (capture)
+    {
+        gui_event* event = malloc(sizeof(gui_event));
+
+        if (!event)
+        {
+            printf("[Error] Failed to create event for INPUT_CAPTURE_BEGIN: malloc failed.\n");
+        }
+        else 
+        {
+            memclr(event, sizeof(gui_event));
+            event->event_data = capture;
+            event->event_type = GUI_EVENT_TYPE_INPUT_CAPTURE_BEGIN;
+
+            gui_event_queue_push(&application->event_queue, event);
+        }
+
+        gui_complex_element_data* data = capture->data;
+
+        if (data && data->on_capture_begin)
+            data->on_capture_begin(application->current_input_capture, NULL, application);
+    }
+
+
+    application->current_input_capture = capture;
+}
+
+
+
 
 static void s_add_keypad_events(gui_application* application)
 {

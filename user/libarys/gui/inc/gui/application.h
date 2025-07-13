@@ -1,6 +1,7 @@
 #ifndef LIBGUI_APPLICATION_H
 #define LIBGUI_APPLICATION_H
 
+#include "elements.h"
 #include "gui/events.h"
 
 #include "dynamic_array/dynamic_array.h"
@@ -11,13 +12,18 @@
 // stores all infomation about the application in a common format
 struct gui_application
 {
-    gui_event_queue event_queue;    // Self explanitory
-    dynamic_array ui_elements;      // Stores the UI elements, active or not (gui_element* array)
-     keypad_state keypad;           // Used internally to keep track of what keys are depressed
-    int target_buffer;              // What frame buffer should it write to
+    gui_event_queue event_queue;                        // Self explanitory
+    dynamic_array ui_elements;                          // Stores the UI elements, active or not (gui_element* array)
+     keypad_state keypad;                               // Used internally to keep track of what keys are depressed
+    int target_buffer;                                  // What frame buffer should it write to
 
     struct gui_element* current_navigation_selection;   // Stores a pointer to the current navigation selection
     bool navigation_enabled;                            // If true navigation is enabled
+              
+    struct gui_element* current_input_capture;          // Stores a pointer to a complex gui elements which will capture input
+                                                        // This is handled in gui_application_defult_event_handler, so users can block it.
+                                                        // If this is NULL nothing will occur. It is still recomended to use the set input 
+                                                        // capture function for this purpose.
 };
 
 typedef struct gui_application gui_application;
@@ -49,8 +55,18 @@ void gui_application_defult_event_handler(gui_application* application, gui_even
 
 // Sets the navigation selection, and sends a NAV_FOCUS_CHANGED event
 // also handles setting / resting the focused flag, and redrawing
-// @param The application to change the focus of
+// @param application The application to change the focus of
 // @param selection The new selection to use
 void gui_application_set_navigation_selection(gui_application* application, struct gui_element* selection);
+
+// Sets the applications input capture. This is which (if any)
+// element will have a function be ran for all key down / up events.
+// This function will also create INPUT_CAPTURE_BEGIN and END events.
+// @param application The application to change the input capture of.
+// @param capture The element to capture as
+// @note The element's data must be of type gui_complex_element_data.
+// @note if NULL is passed the function will not atempt to capture with NULL,
+//       but will simply remove the old capture 
+void gui_application_set_input_capture(gui_application* application, struct gui_element* capture);
 
 #endif

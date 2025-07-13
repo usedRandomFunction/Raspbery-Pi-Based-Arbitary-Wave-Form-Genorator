@@ -1,9 +1,13 @@
 #include "gui/elements.h"
+
 #include "gui/drawing_functions.h"
 
 #include "common/basic_io.h"
 #include "common/memory.h"
 #include "common/alloc.h"
+
+
+
 
 
 void draw_element(gui_element* element, int target_buffer)
@@ -193,7 +197,7 @@ void initialize_frame_element(gui_element* element)
 void initialize_textbox_element(gui_element* element)
 {
     initialize_standered_element_values(element);
-    element->draw = gui_standard_element_frame_textbox_function;
+    element->draw = gui_standard_element_textbox_draw_function;
 
 
     void* data = malloc(sizeof(gui_element_standard_element_text_box_data));
@@ -219,7 +223,6 @@ void size_textbox_element(gui_element* element, int padding)
         return;
     }
 
-
     uint32_t x = 0;
     uint32_t y = 0;
     
@@ -229,6 +232,33 @@ void size_textbox_element(gui_element* element, int padding)
     element->size.x = x + 2 * padding;
     data->offset.y = padding;
     data->offset.x = padding;
+}
+
+void size_textbox_element_for_n_characters(gui_element *element, int n, int padding)
+{
+    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+
+    if (data == NULL)
+    {
+        printf("[Error] Failed to size textbox element, no data struct\n");
+        return;
+    }
+
+    uint32_t x = 0;
+    uint32_t y = 0;
+
+    const char* current_string_ptr = data->str;
+    data->str = "X"; // Just needs to be a singal charecter string
+    
+    // Get the size of it, i mean we use monospace fonts
+    display_get_text_size_px(data->str, &x, &y, UINT32_MAX, NULL);
+    
+    // And use that size to create the required padding
+    element->size.y = y + 2 * padding - 2;
+    element->size.x = x * n + 2 * padding;
+    data->offset.y = padding;
+    data->offset.x = padding;
+    data->str = current_string_ptr;
 }
 
 void center_text_element(gui_element* element, bool horizontal, bool vertical)
@@ -352,7 +382,7 @@ void gui_standard_element_frame_draw_function(gui_element* element, gui_vec2 off
         color->background, target_buffer);
 }
 
-void gui_standard_element_frame_textbox_function(gui_element* element, gui_vec2 offset, int target_buffer)
+void gui_standard_element_textbox_draw_function(gui_element* element, gui_vec2 offset, int target_buffer)
 {
     // First draw the background
     gui_standard_element_frame_draw_function(element, offset, target_buffer);
