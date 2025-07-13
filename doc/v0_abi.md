@@ -33,11 +33,12 @@ If any they should be [listed here](./project_specific_syscalls.md)
 
 | w8 Value | Name | Arguements | Return | Description |
 |----------|------|------------|--------|-------------|
-| 0 | printf | const char* str, ... | void | Simple printf function, prints to UART and screen
+| 0 | printf | const char* str, ... | unsigned int | Simple printf function, prints to UART and screen, returns number of bytes written
 | 1 | putchar | char c | int | Puts a charector on to the UART and screen, returns EOF on failed
 | 2 | uart_putc | char c | void | Puts a charector onto the UART
 | 3 | uart_getc | void | char | Gets a charector from the UART and will wait for one to be avalible
 | 4 | uart_poll | void | int | Same as uart_getc but doesn't wait, and will return 0XFFFF, if nothing is available
+| 5 | sprintf_s | void | char *dst, size_t size_of_Buffer, const char* fmt, ... | int | sprintf function, printf but for strings, returns number of bytes written
 
 ## #0x02 - File IO
 

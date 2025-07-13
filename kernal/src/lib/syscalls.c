@@ -407,7 +407,7 @@ void system_call_display_get_text_size_px(const char* str, uint32_t* x, uint32_t
 
 const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap,
     system_call_switch_to};
-const void* const os_syscall_baisc_io[] = {printf_user_memory_only, putchar, uart_putc, uart_getc, uart_poll};
+const void* const os_syscall_baisc_io[] = {printf_user_mode, putchar, uart_putc, uart_getc, uart_poll, sprintf_s_user_mode};
 const void* const os_syscall_file_io[] = {system_call_open, system_call_close, system_call_get_file_size, system_call_read, 
     system_call_write, system_call_lseek, system_call_truncate, system_call_ftruncate, system_call_remove,   
     system_call_fremove, system_call_rename, system_call_path_exists, system_call_diropen, system_call_dirread,

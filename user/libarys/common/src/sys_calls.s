@@ -20,6 +20,7 @@ syscall putchar, 1, #1
 syscall uart_putc, 2, #1
 syscall uart_getc, 3, #1
 syscall uart_poll, 4, #1
+syscall sprintf_s, 5, #1
 
 // File IO
 syscall open, 0, #2

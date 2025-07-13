@@ -32,21 +32,27 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define buffer_size_check if (size_of_Buffer-- == 0) { *dst = 0; return dst-orig; }
+#define buffer_size_check if (size_of_buffer-- == 0) { *dst = 0; return dst-orig; }
 
 /**
  * minimal sprintf implementation
  */
-unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __builtin_va_list args)
+unsigned int vsprintf_s_protected(char *dst, size_t size_of_buffer, bool can_access_kernal_memory, const char* fmt, __builtin_va_list args)
 {
     long int arg;
-    int len, sign, i;
+    int len, sign, i = 0;
     char *p, *orig=dst, tmpstr[19];
 
     // failsafes
     if(dst==(void*)0 || fmt==(void*)0  || !is_valid_memory(fmt)  || !is_valid_memory(dst)) {
         return 0;
     }
+
+    if (!can_access_kernal_memory && is_kernal_memory(fmt))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", fmt, "sprintf_s", "fmt");
+
+    if (!can_access_kernal_memory && is_kernal_memory(dst))
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", dst, "sprintf_s", "dst");
 
     // main loop
     arg = 0;
@@ -135,7 +141,14 @@ unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __bui
 s_copystring:     if(p == (void*) 0  || !is_valid_memory(p)) {
                     p="(null)";
                 }
+
+                int is_copying_from_tempstr = p == &tmpstr[i];
+
+
                 while(*p) {
+                    if (!can_access_kernal_memory && is_kernal_memory(p) && !is_copying_from_tempstr)
+                        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", p, "sprintf_s", "[...]");
+                    
                     buffer_size_check;
                     *dst++ = *p++;
                 }
@@ -149,6 +162,11 @@ s_put:      buffer_size_check;
     *dst=0;
     // number of bytes written
     return dst-orig;
+}
+
+unsigned int vsprintf_s(char *dst, size_t size_of_buffer, const char* fmt, __builtin_va_list args)
+{
+    return vsprintf_s_protected(dst, size_of_buffer, true, fmt, args);
 }
 
 /**
@@ -167,7 +185,7 @@ unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory,
     }
 
     if (!can_access_kernal_memory && is_kernal_memory(fmt))
-        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", fmt, "printf");
+        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", fmt, "printf", "dst");
 
 
 
@@ -260,10 +278,12 @@ copystring:     if(p == (void*) 0 || !is_valid_memory(p)) {
                     p="(null)";
                 }
 
-                if (!can_access_kernal_memory && is_kernal_memory(p) && (p != &tmpstr[i]))
-                    generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s\n", p, "printf");
+                int is_copying_from_tempstr = p == &tmpstr[i];
+
 
                 while(*p) {
+                    if (!can_access_kernal_memory && is_kernal_memory(p) && !is_copying_from_tempstr)
+                        generic_user_exception("User attempted to access kernal memory address: 0x%x, when calling %s (var = %s)\n", p, "printf", "[...]");
                     bytes_written++;
                     if (putchar(*p++) == EOF)
                         return bytes_written;
@@ -315,9 +335,16 @@ unsigned int printf(const char* fmt, ...)
     return vprintf(fmt, args);
 }
 
-unsigned int printf_user_memory_only(const char* fmt, ...)
+unsigned int printf_user_mode(const char* fmt, ...)
 {
     __builtin_va_list args;
     __builtin_va_start(args, fmt);
     return vprintf_memory_safe(fmt, false, args);
+}
+
+unsigned int sprintf_s_user_mode(char *dst, size_t size_of_buffer, const char* fmt, ...)
+{
+    __builtin_va_list args;
+    __builtin_va_start(args, fmt);
+    return vsprintf_s_protected(dst, size_of_buffer, false, fmt, args);
 }

@@ -32,7 +32,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-unsigned int printf_user_memory_only(const char* fmt, ...);
+// Only allowed to access user memory from these functions
+unsigned int printf_user_mode(const char* fmt, ...);
+unsigned int sprintf_s_user_mode(char *dst, size_t size_of_buffer, const char* fmt, ...);
 
 unsigned int printf(const char* fmt, ...);
 unsigned int vprintf(const char* fmt, __builtin_va_list args);
@@ -42,7 +44,7 @@ unsigned int vprintf_memory_safe(const char* fmt, bool can_access_kernal_memory,
 unsigned int sprintf(char *dst, const char* fmt, ...);
 unsigned int vsprintf(char *dst, const char* fmt, __builtin_va_list args);
 
-unsigned int sprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, ...);
-unsigned int vsprintf_s(char *dst, size_t size_of_Buffer, const char* fmt, __builtin_va_list args);
+unsigned int sprintf_s(char *dst, size_t size_of_buffer, const char* fmt, ...);
+unsigned int vsprintf_s(char *dst, size_t size_of_buffer, const char* fmt, __builtin_va_list args);
 
 #endif
