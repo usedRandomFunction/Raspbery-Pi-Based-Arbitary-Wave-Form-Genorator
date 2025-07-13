@@ -140,7 +140,7 @@ gui_element* possition_element_horizontally(gui_element* element, int padding, g
 // !==== Now begining the standard elements ====! 
 
 
-struct gui_element_standard_element_text_box_data // TODO rename so its just gui_standard_element_text_box_data
+struct gui_standard_element_text_box_data // TODO rename so its just gui_standard_element_text_box_data
 {
     gui_vec2 offset; // The offset from the top left, where display_draw_string is called
 
@@ -148,7 +148,7 @@ struct gui_element_standard_element_text_box_data // TODO rename so its just gui
 };
 
 // Stores a pointer to the text and the offset
-typedef struct gui_element_standard_element_text_box_data gui_element_standard_element_text_box_data;
+typedef struct gui_standard_element_text_box_data gui_standard_element_text_box_data;
 
 
 // Sets up the given element to be a "Frame"

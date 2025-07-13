@@ -33,7 +33,7 @@ int initialize_integer_input_element(gui_element* element, int padding, int size
     }
 
     memclr(data, sizeof(gui_complex_element_integer_input_data));
-    gui_element_standard_element_text_box_data* text_data = &data->text_data;
+    gui_standard_element_text_box_data* text_data = &data->text_data;
     element->data = text_data;
     size_textbox_element_for_n_characters(element, size_x_char, padding);
     

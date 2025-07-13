@@ -200,7 +200,7 @@ void initialize_textbox_element(gui_element* element)
     element->draw = gui_standard_element_textbox_draw_function;
 
 
-    void* data = malloc(sizeof(gui_element_standard_element_text_box_data));
+    void* data = malloc(sizeof(gui_standard_element_text_box_data));
 
     if (data == NULL)
     {
@@ -208,14 +208,14 @@ void initialize_textbox_element(gui_element* element)
         return;
     }
 
-    memclr(data, sizeof(gui_element_standard_element_text_box_data));
+    memclr(data, sizeof(gui_standard_element_text_box_data));
 
     element->data = data;
 }
 
 void size_textbox_element(gui_element* element, int padding)
 {
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (data == NULL || data->str == NULL)
     {
@@ -236,7 +236,7 @@ void size_textbox_element(gui_element* element, int padding)
 
 void size_textbox_element_for_n_characters(gui_element *element, int n, int padding)
 {
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (data == NULL)
     {
@@ -263,7 +263,7 @@ void size_textbox_element_for_n_characters(gui_element *element, int n, int padd
 
 void center_text_element(gui_element* element, bool horizontal, bool vertical)
 {
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (data == NULL || data->str == NULL)
     {
@@ -289,7 +289,7 @@ void center_text_element(gui_element* element, bool horizontal, bool vertical)
 
 void right_allign_text_element(gui_element* element)
 {
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (data == NULL || data->str == NULL)
     {
@@ -326,7 +326,7 @@ gui_element* create_text_element(const char* text, dynamic_array* buffer)
 
     initialize_textbox_element(element);
 
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (!data)
         return NULL;
@@ -349,7 +349,7 @@ gui_element* create_textbox_element(const char* text, int padding, dynamic_array
 
     initialize_textbox_element(element);
 
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (!data)
         return NULL;
@@ -390,7 +390,7 @@ void gui_standard_element_textbox_draw_function(gui_element* element, gui_vec2 o
     // Now text
     gui_element_colors* color = get_element_colors(element);
 
-    gui_element_standard_element_text_box_data* data = (gui_element_standard_element_text_box_data*)element->data;
+    gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
     if (data == NULL || data->str == NULL)
         return;

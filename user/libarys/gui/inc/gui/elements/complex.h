@@ -41,7 +41,7 @@ struct gui_complex_element_integer_input_data
     int64_t defult;
     int64_t value;
 
-    gui_element_standard_element_text_box_data text_data;
+    gui_standard_element_text_box_data text_data;
 };
 typedef struct gui_complex_element_integer_input_data gui_complex_element_integer_input_data;
 
