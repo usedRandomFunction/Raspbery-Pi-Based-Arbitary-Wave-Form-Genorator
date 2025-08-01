@@ -1,0 +1,4 @@
+-nostdlib
+
+-D AARCH64
+-I../inc
