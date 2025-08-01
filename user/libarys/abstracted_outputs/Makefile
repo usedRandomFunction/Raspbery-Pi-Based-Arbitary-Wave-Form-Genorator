@@ -35,8 +35,11 @@ all: $(TARGET)
 $(TARGET): $(C_OBJECTS) $(ASM_OBJECTS)
 	@echo !==== linking ====!
 	$(AR) $(ARFLAGS) $@ $^
-	ln -sf ../$(LIB_NAME)/bin/lib$(LIB_NAME).a ../bin/lib$(LIB_NAME).a
-	ln -sf ../$(LIB_NAME)/inc/$(LIB_NAME) ../inc/$(LIB_NAME)
+	
+	@# Yes it is ugly, but it works so no touchy
+
+	ln -sf $(CURDIR)/bin/lib$(LIB_NAME).a $(CURDIR)/../bin/lib$(LIB_NAME).a
+	ln -sfn ../$(LIB_NAME)/inc/$(LIB_NAME) $(CURDIR)/../inc/$(LIB_NAME)
 
 $(OBJDIR)/%.c.o: $(SRCDIR)/%.c
 	@echo !==== Compiling $^ ====!
