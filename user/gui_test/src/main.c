@@ -1,5 +1,5 @@
 #include "gui/application.h"
-#include "gui/elements.h"
+#include "gui/elements/standard.h"
 #include "gui/elements/complex.h"
 
 #include "common/basic_io.h"

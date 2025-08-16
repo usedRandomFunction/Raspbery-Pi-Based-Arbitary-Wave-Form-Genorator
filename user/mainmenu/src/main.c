@@ -4,8 +4,8 @@
 #include "common/string.h"
 #include "common/memory.h"
 
+#include "gui/elements/standard.h"
 #include "gui/application.h"
-#include "gui/elements.h"
 
 #ifndef MAX_PROGRAMS
 #define MAX_PROGRAMS 128

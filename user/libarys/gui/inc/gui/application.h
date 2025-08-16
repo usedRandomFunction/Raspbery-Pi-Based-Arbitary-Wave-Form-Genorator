@@ -1,7 +1,7 @@
 #ifndef LIBGUI_APPLICATION_H
 #define LIBGUI_APPLICATION_H
 
-#include "elements.h"
+#include "gui/elements.h"
 #include "gui/events.h"
 
 #include "dynamic_array/dynamic_array.h"
@@ -14,7 +14,7 @@ struct gui_application
 {
     gui_event_queue event_queue;                        // Self explanitory
     dynamic_array ui_elements;                          // Stores the UI elements, active or not (gui_element* array)
-     keypad_state keypad;                               // Used internally to keep track of what keys are depressed
+    keypad_state keypad;                               // Used internally to keep track of what keys are depressed
     int target_buffer;                                  // What frame buffer should it write to
 
     struct gui_element* current_navigation_selection;   // Stores a pointer to the current navigation selection

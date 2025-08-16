@@ -1,8 +1,8 @@
-#ifndef LIBGUI_ELEMENTS_COMPLEX
-#define LIBGUI_ELEMENTS_COMPLEX
+#ifndef LIBGUI_ELEMENTS_COMPLEX_H
+#define LIBGUI_ELEMENTS_COMPLEX_H
 
+#include "gui/elements/standard.h"
 #include "gui/application.h"
-#include "gui/elements.h"
 #include "gui/events.h"
 
 
