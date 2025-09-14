@@ -103,8 +103,7 @@ static fat_directory_entry* s_make_root_entry();
 // @param directory_lba_offset The offset (in sizeof(fat_directory_entry) bytes)
 // @param dirrectory_cluster A 512 * sectors_per_cluster buffer to store the dirrectory into
 // @return pointer to directory_entry structer or NULL if file does not exist
-static fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, bool can_create_new_entrys, 
-    uint32_t* fat_buffer, fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset);
+static fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, bool can_create_new_entrys, fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset);
 
 // Used by s_find_file_recursive to get the correctly formated file name, also detects if we still are in a dirrectory
 // @param path Path of the file
@@ -947,7 +946,7 @@ int32_t s_format_file_name_8_3_standered(const char* path, char* name_buffer)
 }
 
 fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_dirrectory_cluster_number, bool can_create_new_entrys,
-    uint32_t* fat_buffer, fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset)
+    fat_directory_entry* dirrectory_cluster, uint32_t* directory_lba, uint32_t* directory_lba_offset)
 {
     // char name_buffer[12]; // dont delete these debug lines (even if commented out), bc then you will need them
     char name_buffer[11];
@@ -1021,7 +1020,7 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
         free(matching_dirrectory);
 
         return s_find_file_recursive(path + name_offset, next_dirrectory_cluster, can_create_new_entrys, 
-            fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
+            dirrectory_cluster, directory_lba, directory_lba_offset);
     }
 
     if (matching_dirrectory->attributes == FAT_DIRECTORY_ATTRIBUTES_LFN)
@@ -1056,7 +1055,7 @@ fat_directory_entry* s_find_file_recursive(const char* path, uint32_t current_di
         (matching_dirrectory->first_cluster_number_lowwer_16_bits);
 
     return s_find_file_recursive(path + name_offset, next_dirrectory_cluster, can_create_new_entrys, 
-        fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
+        dirrectory_cluster, directory_lba, directory_lba_offset);
 }
 
 fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new_entrys, uint32_t* directory_lba, uint32_t* directory_lba_offset)
@@ -1070,7 +1069,7 @@ fat_directory_entry* s_find_file_from_path(const char* path, bool can_create_new
         return NULL;
 
     fat_directory_entry* entry = s_find_file_recursive(path, root_file_system->root_cluster, can_create_new_entrys, 
-        fat_buffer, dirrectory_cluster, directory_lba, directory_lba_offset);
+        dirrectory_cluster, directory_lba, directory_lba_offset);
 
     free(dirrectory_cluster);
 
