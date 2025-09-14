@@ -414,7 +414,6 @@ size_t read(int fd, void* buf, size_t n)
             printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
             if (file_temporay_buffer != NULL)
                 free(file_temporay_buffer);
-            free (fat_buffer);
 
             return -1;
         }
@@ -430,7 +429,6 @@ size_t read(int fd, void* buf, size_t n)
                 printf("Erorr: Failed to read SD!\n");
                 if (file_temporay_buffer != NULL)
                     free(file_temporay_buffer);
-                free (fat_buffer);
 
                 return -1;
             }
@@ -1414,7 +1412,6 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
         {
             printf("Erorr: Missmach between file size on dirrecotry entry and disk!\n");
             free(tempoary_buffer);
-            free(fat_buffer);
 
             return -1;
         }
@@ -1432,7 +1429,6 @@ size_t s_write_internal(file_discriptor_metadata* file, const void* buf, size_t 
             {
                 printf("Erorr: Failed to write to SD!\n");
                 free(tempoary_buffer);
-                free(fat_buffer);
 
                 return -1;
             }
