@@ -76,7 +76,7 @@ void free_gui_event_queue(gui_event_queue* queue)
     delete_dynamic_array(&queue->buffer);
 }
 
-void gui_event_queue_push(gui_event_queue* queue, gui_event* event)
+void gui_event_queue_push(gui_event_queue* queue, gui_event* event)  // TODO This might be a memory leak. Need to test it
 {
     // First get the write index
 

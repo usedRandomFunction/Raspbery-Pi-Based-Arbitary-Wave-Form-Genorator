@@ -1,6 +1,7 @@
 #include "gui/application.h"
 #include "gui/elements/standard.h"
 #include "gui/elements/complex.h"
+#include "gui/timers.h"
 
 #include "common/basic_io.h"
 #include "common/display.h"
@@ -16,13 +17,14 @@ void event_handler(gui_event* event);
 int main()
 {
     initialize_gui_application(&app);
+    gui_timer_queue_create_future_timer(&app.timer_queue, 1000 * 1000, 0);
 
     gui_element* current_element = create_frame_element(&app.ui_elements);
     current_element->size.x = get_display_width() - 1;
     current_element->size.y = get_display_height() - 1;
     current_element->flags |= GUI_ELEMENT_FLAGS_DISABLED;
 
-    current_element = create_integer_input_element(0, -10, 10, 2, 3, &app.ui_elements);
+    current_element = create_integer_input_element(0, -10, 10, 3, 3, &app.ui_elements);
     current_element->position.y = 100;
     current_element->position.x = 100;
 
@@ -47,6 +49,10 @@ void event_handler(gui_event* event)
 {
     switch (event->event_type)
     {
+    case GUI_EVENT_TYPE_TIMER_TRIGGERED:
+        printf("Timer triggered!\n");
+        gui_timer_queue_create_future_timer(&app.timer_queue, 1000 * 1000, 0);
+        break;
     default:
         break;
     }

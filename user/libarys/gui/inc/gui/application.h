@@ -3,6 +3,7 @@
 
 #include "gui/elements.h"
 #include "gui/events.h"
+#include "gui/timers.h"
 
 #include "dynamic_array/dynamic_array.h"
 #include "common/keypad.h"
@@ -13,14 +14,15 @@
 struct gui_application
 {
     gui_event_queue event_queue;                        // Self explanitory
+    gui_timer_queue timer_queue;                        // Self explanitory, agian
     dynamic_array ui_elements;                          // Stores the UI elements, active or not (gui_element* array)
-    keypad_state keypad;                               // Used internally to keep track of what keys are depressed
+    keypad_state keypad;                                // Used internally to keep track of what keys are depressed
     int target_buffer;                                  // What frame buffer should it write to
 
-    struct gui_element* current_navigation_selection;   // Stores a pointer to the current navigation selection
+    gui_element* current_navigation_selection;          // Stores a pointer to the current navigation selection
     bool navigation_enabled;                            // If true navigation is enabled
               
-    struct gui_element* current_input_capture;          // Stores a pointer to a complex gui elements which will capture input
+    gui_element* current_input_capture;                 // Stores a pointer to a complex gui elements which will capture input
                                                         // This is handled in gui_application_defult_event_handler, so users can block it.
                                                         // If this is NULL nothing will occur. It is still recomended to use the set input 
                                                         // capture function for this purpose.
@@ -57,7 +59,7 @@ void gui_application_defult_event_handler(gui_application* application, gui_even
 // also handles setting / resting the focused flag, and redrawing
 // @param application The application to change the focus of
 // @param selection The new selection to use
-void gui_application_set_navigation_selection(gui_application* application, struct gui_element* selection);
+void gui_application_set_navigation_selection(gui_application* application, gui_element* selection);
 
 // Sets the applications input capture. This is which (if any)
 // element will have a function be ran for all key down / up events.
@@ -67,6 +69,6 @@ void gui_application_set_navigation_selection(gui_application* application, stru
 // @note The element's data must be of type gui_complex_element_data.
 // @note if NULL is passed the function will not atempt to capture with NULL,
 //       but will simply remove the old capture 
-void gui_application_set_input_capture(gui_application* application, struct gui_element* capture);
+void gui_application_set_input_capture(gui_application* application, gui_element* capture);
 
 #endif

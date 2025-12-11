@@ -21,11 +21,16 @@ static void s_add_keypad_events_from_state(gui_application* application, keypad_
 // @param input Keypad input (from KEY_DOWN event)
 static void s_handle_navigation_inputs(gui_application* application, keypad_state* input);
 
+// Creates an event for timers if needed
+// @param application Application to add events to
+static void s_add_timer_events(gui_application* application);
+
 void initialize_gui_application(gui_application* application)
 {
     memclr(application, sizeof(gui_application));
 
     initialize_gui_event_queue(&application->event_queue);
+    initialize_gui_timer_queue(&application->timer_queue);
     initialize_dynamic_array(sizeof(gui_element*), 0, &application->ui_elements);
 
 
@@ -57,6 +62,7 @@ gui_event* gui_application_get_next_event(gui_application* application)
     do 
     {
         s_add_keypad_events(application);
+        s_add_timer_events(application);
     }
     while (!(event = gui_event_queue_next(&application->event_queue)));
 
@@ -266,7 +272,7 @@ static void s_add_keypad_events(gui_application* application)
 static void s_add_keypad_events_from_state(gui_application* application, keypad_state state, int type)
 {
     if (!state)     
-    return;                 // No buttons in state? do nothing
+        return;                 // No buttons in state? do nothing
     
     // Loop over every button
     for (keypad_state i = 1; i != 0; i <<= 1)
@@ -349,4 +355,12 @@ static void s_handle_navigation_inputs(gui_application* application, keypad_stat
         return;     // Dont change selection if the destination is dissabled, unless the current location is also disabled
 
     gui_application_set_navigation_selection(application, new_selection);
+}
+
+static void s_add_timer_events(gui_application* application) 
+{
+    gui_event* event = gui_timer_check_for_timer_events(&application->timer_queue);
+
+    if (event)
+        gui_event_queue_push(&application->event_queue, event);
 }

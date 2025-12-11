@@ -52,8 +52,8 @@ el2_entry:
 
     // Initialize the SCTLR_EL1 register before entering EL1.
     msr     sctlr_el1, xzr
+
     // Determine the EL1 Execution state.
-    
     mrs     x0, hcr_el2
     orr     x0, x0, #(1<<31) // RW=1 EL1 Execution state is AArch64.
     msr     hcr_el2, x0
@@ -64,6 +64,11 @@ el2_entry:
     eret
 
 el1_entry:
+    // Enable EL0 access to timer registers
+    mrs     x0, cntkctl_el1
+    orr     x0, x0, #0b11   // EL0PCTEN: EL0 can read CNTPCT_EL0, CNTFRQ_EL0 & CNTVCT_EL0
+    msr     cntkctl_el1, x0
+
     msr     daifclr, 0xf
     adrp	x0, __bss_start
     add     x0, x0, :lo12:__bss_start

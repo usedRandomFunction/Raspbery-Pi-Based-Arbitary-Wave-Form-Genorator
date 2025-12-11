@@ -7,7 +7,7 @@
 struct gui_event
 {
     int event_type;
-    int event_metadata; // Stores data about the event, struct not the event its self e.g can you delete event_data or not 
+    int event_metadata;     // Stores data about the event, struct not the event its self e.g can you delete event_data or not 
     void* event_data; 
 };
 
@@ -15,11 +15,11 @@ typedef struct gui_event gui_event;
 
 // Stores a first in first out queue, for the events
 // this queue is heap allocated, and will grow if needed
-// @todo Since the buffer can grow, it should probibly be able to shrink
+// TODO Since the buffer can grow, it should probibly be able to shrink
 struct gui_event_queue
 {
-    dynamic_array buffer;
-    int write_index;
+    dynamic_array buffer;   // Why is dynamic_array being used here? It looks like the insert or resize function is never used just use malloc and free at that point?
+    int write_index;        // TODO check if the above is required. Also more comments might be needed in the functions
     int read_index;
 };
 
@@ -38,7 +38,7 @@ void initialize_gui_event_queue(gui_event_queue* queue);
 // @param queue Queue to resize
 // @param number_of_entrys New size
 // @note The function will do nothing if resizing will delete entrys
-void resize_gui_event_queue(gui_event_queue* queue, int number_of_entrys);
+void resize_gui_event_queue(gui_event_queue* queue, int number_of_entrys); // TODO why not just go to minimum size?
 
 // Frees the buffer, and all events the buffer points to
 // @param queue Queue to free
@@ -68,6 +68,7 @@ enum
     GUI_EVENT_TYPE_INPUT_CAPTURE_BEGIN      = 6,    /* Event triggered when a element begins to capture input. Event data is pointer to capturing element */
     GUI_EVENT_TYPE_INPUT_CAPTURE_END        = 7,    /* Event triggered when a element stops capturing input. Event data is pointer to element no longer capturing */
     GUI_EVENT_TYPE_INPUT_FEILD_INT_CHANGED  = 8,    /* Event triggered when a "gui_complex_element_integer_input"'s feild updates. Event data is pointer to element */
+    GUI_EVENT_TYPE_TIMER_TRIGGERED          = 9,    /* Event triggered when a timer expires. Event data is pointer to gui_timer struct */ 
 };
 
 enum

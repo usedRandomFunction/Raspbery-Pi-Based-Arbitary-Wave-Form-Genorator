@@ -82,6 +82,7 @@ void draw_element(gui_element* element, int target_buffer);
 // @param element Element to draw
 // @param offset The cumulative offset of the parent(s) of the element
 // @param target_buffer Target frame buffer
+// @warning This function is intented for internal use, but is exposed to allow for greater useablity
 void draw_element_recursive(gui_element* element, gui_vec2 offset, int target_buffer);
 
 // Uses GUI_ELEMENT_FLAGS to determine the correct color
@@ -115,7 +116,7 @@ void remove_and_free_element_recursive(gui_element* element, dynamic_array* buff
 // @param element Element to initialize
 void initialize_standered_element_values(gui_element* element);
 
-// Allocates and zeros memory for a event, 
+// Allocates and zeros memory for a element, 
 // and stores it at the end of the given buffer
 // @param buffer Buffer to add the pointer to the element to
 // @return Pointer to the created element or NULL if failed
