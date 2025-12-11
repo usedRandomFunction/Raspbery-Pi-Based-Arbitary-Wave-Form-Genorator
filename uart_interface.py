@@ -33,11 +33,12 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.8.2"
+full_name = "AWG uart interface V 0.9.0"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
 uart_output_log_scroll_x = 0
+uart_auto_scroll = True
 
 uart_input_hiddle_bytes_counter = -1 # Used while sending files as to not just delete the entrie log
 uart_input_max_lines = 0
@@ -165,7 +166,9 @@ def create_windows():
     draw_console_window()
     
 def uart_output_window_handle_input(input):
-    global uart_output_log_scroll_y, uart_output_log_scroll_x
+    global uart_output_log_scroll_y, uart_output_log_scroll_x, uart_auto_scroll
+
+    scroll_input_has_occured = True
 
     if input == curses.KEY_UP:
         uart_output_log_scroll_y = max(uart_output_log_scroll_y - 1, 0)
@@ -180,6 +183,11 @@ def uart_output_window_handle_input(input):
     elif input == curses.KEY_RIGHT:
         uart_output_log_scroll_x = uart_output_log_scroll_x + 1
         draw_uart_output_window()
+    else:
+        scroll_input_has_occured = False
+
+    if scroll_input_has_occured:
+        uart_auto_scroll = False
 
 def draw_uart_output_window():
     cursor_y, cursor_x = stdscr.getyx() # Dont move the cursor
@@ -480,6 +488,7 @@ def uart_input_handle_magic_words(last_recived_char):
         magic_word_uart_ready_recived = False
     
 def handle_uart_input():
+    global uart_output_log_scroll_y
     data = connection.read()
 
     if data == None or data == "":
@@ -494,6 +503,9 @@ def handle_uart_input():
 
     for i in range(1, len(lines), 1):
         uart_output_log.append(lines[i])
+
+    if uart_auto_scroll:
+        uart_output_log_scroll_y = max(len(uart_output_log) - 5, 0)
 
     if not dont_update_output_window:
         draw_uart_output_window()
@@ -613,6 +625,12 @@ Note for the next four commands:
   :list_directory), Used with 
   uartupld to list a directory. Args:
   1. Dirrectory path
+- stop auto scrolling (
+  :stop_autoscroll) Does as the name 
+  says
+- start auto scrolling (
+  :start_autoscroll) Does as the 
+  name says
 """[1:]]
 
 def draw_help_page(page_number, window):
@@ -1134,6 +1152,7 @@ def command_list_directory(path):
 def handle_console_command():
     global dont_update_output_window
     global console_error_text
+    global uart_auto_scroll
 
     console_error_text = console_error_text.lower()
     command_split = console_text_input.split(' ', 1)
@@ -1172,6 +1191,10 @@ def handle_console_command():
             command_list_directory(arguments[0])
         elif command in ["h", "help"]:
             show_help_window()
+        elif command in ["stop_autoscroll"]:
+            uart_auto_scroll = False
+        elif command in ["start_autoscroll"]:
+            uart_auto_scroll = True
         else:
             console_error_text = f"Unkown command \"{command}\""
             return
