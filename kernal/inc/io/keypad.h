@@ -47,6 +47,9 @@ void  keypad_poll_from_timer();
 // Forces the PRG_EXIT interupt to run
 void tigger_prg_exit();
 
+// Function will block exicution untill keypad state changes
+void halt_and_wait_from_user_input();
+
 enum
 {
     KEYPAD_STATE_BUTTON_7           = (1 << (0 + 0 * 8)),

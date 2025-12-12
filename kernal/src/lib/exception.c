@@ -2,6 +2,7 @@
 
 #include "lib/user_program.h"
 #include "io/putchar.h"
+#include "io/keypad.h"
 #include "io/printf.h"
 
 extern void* user_program_x30;
@@ -59,7 +60,11 @@ void generic_user_exception(const char* fmt, ...)
     for (int i = 0; i < 70; i++)
         putchar('=');
 
-    printf("!\n\n\n");
+    printf("!\n");
+    on_user_program_exiting();          // Resets keypad and display. Needed incase appillcation has turned these off.
+    asm volatile("msr DAIFClr, #2");    // Enable IRQs
+    halt_and_wait_from_user_input();
+    printf("\n\n");
 
     terminate_current_user_program();
 }
@@ -78,10 +83,13 @@ void user_arm_exception_handler(unsigned long type)
     printf("Terminating current user program!\n\n");
 
     putchar('!');
-        for (int i = 0; i < 53; i++)
-            putchar('=');
-        printf("!\n\n\n");
-
+    for (int i = 0; i < 53; i++)
+        putchar('=');
+    printf("!\n");
+    on_user_program_exiting();          // Resets keypad and display. Needed incase appillcation has turned these off.
+    asm volatile("msr DAIFClr, #2");    // Enable IRQs
+    halt_and_wait_from_user_input();
+    printf("\n\n");
     terminate_current_user_program();
 }
 

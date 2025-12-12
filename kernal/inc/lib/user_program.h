@@ -35,6 +35,9 @@ extern char* use_program_requested_switch;
 // to where it would if the user called exit()
 void terminate_current_user_program();
 
+// Resets file screen and input resources 
+void on_user_program_exiting();
+
 // Tells if there is a active user program
 // @return True if there is a active user program
 bool is_user_program_active();

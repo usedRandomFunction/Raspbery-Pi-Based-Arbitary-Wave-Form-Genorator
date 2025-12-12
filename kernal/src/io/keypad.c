@@ -373,3 +373,14 @@ void tigger_prg_exit()
     }
     prg_exit_handler();
 }
+
+void halt_and_wait_from_user_input()
+{
+    keypad_state first_state = get_keypad_state();
+    printf("Press any key to continue...\n");
+
+    while (get_keypad_state() == first_state) 
+    {
+        asm volatile ("wfi");               // Sleep untill next input
+    }
+}
