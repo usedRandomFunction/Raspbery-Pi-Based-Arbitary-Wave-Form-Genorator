@@ -1,3 +1,5 @@
+#!/bin/python3
+
 from curses import wrapper
 import curses.ascii
 import textwrap
@@ -33,7 +35,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.9.0"
+full_name = "AWG uart interface V 0.9.1"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
