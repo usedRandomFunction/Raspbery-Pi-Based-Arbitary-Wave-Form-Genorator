@@ -74,7 +74,7 @@ void gui_timer_queue_push(gui_timer_queue* queue, gui_timer* timer)
     }
     
     // Copy elements
-    for (int i = 0; i < queue->number_of_elements; queue->number_of_elements++)
+    for (int i = 0; i < queue->number_of_elements; i++)
     {
         gui_timer* current_timer = *source_buffer++;                // Get the current element and itterate the pointer 
 
