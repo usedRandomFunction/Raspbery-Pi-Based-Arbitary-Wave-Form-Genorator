@@ -23,9 +23,10 @@ typedef void (*COMPLEX_ELEMENT_EVENT_HANDLER)(gui_element*, gui_event*, gui_appl
 //       aborted.
 struct gui_complex_element_data
 {
-    COMPLEX_ELEMENT_EVENT_HANDLER on_captured_key_down;      // Runs for every key down event while input is captrued by element
-    COMPLEX_ELEMENT_EVENT_HANDLER on_captured_key_up;        // Runs for every key up event while input is captrued by element
+    COMPLEX_ELEMENT_EVENT_HANDLER on_captured_key_down;     // Runs for every key down event while input is captrued by element
+    COMPLEX_ELEMENT_EVENT_HANDLER on_captured_key_up;       // Runs for every key up event while input is captrued by element
     COMPLEX_ELEMENT_EVENT_HANDLER on_capture_begin;         // Runs when the element begins to capture input events
+    COMPLEX_ELEMENT_EVENT_HANDLER on_cursor_toggle;         // Runs when the cursor's state is toggled. (Runs every 500 ms, only when captured)
     COMPLEX_ELEMENT_EVENT_HANDLER on_capture_end;           // Runs when the element stops captruing input events
 
     void* data;                                               /* extra data (If required)*/
@@ -69,6 +70,12 @@ gui_element* create_integer_input_element(int64_t defult_value, int64_t minimum,
 // @param event Event to handle
 // @param app The application which the event belongs to
 void gui_complex_element_integer_input_on_captured_key_down(gui_element* element, gui_event* event, gui_application* app);
+
+// Toggles cursor_visible... and redraws 
+// @param element Element to toggle the cursor on
+// @param event Set to NULL; unused.
+// @param app Pointer to application that cursor event is comething from.
+void gui_complex_element_integer_input_on_cursor_toggle(gui_element* element, gui_event* event, gui_application* app);
 
 // Ensures that values are with in allowed ranges, and will reset them if not.
 // @param element Element to handle deselection of

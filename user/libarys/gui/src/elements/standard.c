@@ -211,7 +211,7 @@ void gui_standard_element_textbox_draw_function(gui_element* element, gui_vec2 o
 
     gui_standard_element_text_box_data* data = (gui_standard_element_text_box_data*)element->data;
 
-    if (data == NULL || data->str == NULL)
+    if (data == NULL)
         return;
 
     uint32_t x = element->position.x + data->offset.x + offset.x;
@@ -219,6 +219,14 @@ void gui_standard_element_textbox_draw_function(gui_element* element, gui_vec2 o
 
     uint32_t width_with_padding = element->size.x - (2 * data->offset.x) + 2;
     uint32_t x_max =  (width_with_padding > element->size.x) ? UINT32_MAX : (width_with_padding + x);
+    
+    if (data->str != NULL)
+        display_draw_string(data->str, &x, &y, x, x_max, true, NULL, color->forground, color->background, target_buffer);
+    
+    // Now cursor (If needed and posible)
+    
+    if (!data->cursor_visible || x >= x_max) 
+        return;
 
-    display_draw_string(data->str, &x, &y, x, x_max, true, NULL, color->forground, color->background, target_buffer);
+    display_draw_string(" ", &x, &y, x, x_max, true, NULL, color->background, color->forground, target_buffer);
 }

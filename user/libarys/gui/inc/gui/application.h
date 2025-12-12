@@ -26,6 +26,8 @@ struct gui_application
                                                         // This is handled in gui_application_defult_event_handler, so users can block it.
                                                         // If this is NULL nothing will occur. It is still recomended to use the set input 
                                                         // capture function for this purpose.
+    gui_element* last_input_capture;                    // Stores the last input capture. It is used to detect a loop condition where 
+                                                        // it imeditly captures the same elemetn agian. It is zero after that is done
 };
 
 typedef struct gui_application gui_application;

@@ -2,6 +2,8 @@
 #include "gui/elements.h"
 #include "gui/elements/complex.h"
 
+#include "gui/internal_timers.h"
+
 #include "common/basic_io.h"
 #include "common/memory.h"
 #include "common/alloc.h"
@@ -16,6 +18,10 @@ static void s_add_keypad_events(gui_application* application);
 // @param type GUI_EVENT_TYPE enum
 static void s_add_keypad_events_from_state(gui_application* application, keypad_state state, int type);
 
+// Handles internal timers such as the cursor timer 
+// @param Application to handle as
+// @param timer The gui_timer to handle
+static void s_handle_internal_gui_timers(gui_application* application, gui_timer* timer);
 // Handles UI navigation (8, 2, 4, 6 as arrows and enter)
 // @param Application to handle as
 // @param input Keypad input (from KEY_DOWN event)
@@ -128,11 +134,16 @@ void gui_application_defult_event_handler(gui_application* application, gui_even
     {
         gui_element* element = (gui_element*)event->event_data;
 
-        if (element && element->flags & GUI_ELEMENT_FLAGS_CAN_CAPTURE_INPUT)
+        if (element && element->flags & GUI_ELEMENT_FLAGS_CAN_CAPTURE_INPUT && element != application->last_input_capture)
             gui_application_set_input_capture(application, (gui_element*)event->event_data);
+        
+        application->last_input_capture = NULL;
 
         break;
     }
+    case GUI_EVENT_TYPE_TIMER_TRIGGERED:
+        s_handle_internal_gui_timers(application, (gui_timer*)event->event_data);
+        break;
     default:
         break;
     }
@@ -241,11 +252,20 @@ void gui_application_set_input_capture(gui_application* application, struct gui_
 
         gui_complex_element_data* data = capture->data;
 
-        if (data && data->on_capture_begin)
-            data->on_capture_begin(application->current_input_capture, NULL, application);
+        if (data)
+        {
+            if (data->on_capture_begin)
+                data->on_capture_begin(application->current_input_capture, NULL, application);
+            
+            if (data->on_cursor_toggle)
+                gui_timer_queue_create_future_timer(&application->timer_queue, 
+                                                    GUI_INTERNAL_TIMER_ID_CURSOR_DELAY, 
+                                                    GUI_INTERNAL_TIMER_ID_CURSOR);
+        }
+
     }
 
-
+    application->last_input_capture = application->current_input_capture;
     application->current_input_capture = capture;
 }
 
@@ -305,9 +325,40 @@ static void s_add_keypad_events_from_state(gui_application* application, keypad_
     }
 }
 
+static void s_handle_internal_gui_timers(gui_application* application, gui_timer* timer)
+{
+    if (!application || !timer) // Missing data? do nothing
+        return;
+
+    switch (timer->id) 
+    {
+    case GUI_INTERNAL_TIMER_ID_CURSOR:
+    {
+        gui_element* active_capture = application->current_input_capture;
+
+        if (!active_capture)
+            break;
+
+        gui_complex_element_data* data = active_capture->data;
+
+        if (!data || !data->on_cursor_toggle) // Only do something if the function can handle it
+            break;
+        
+        data->on_cursor_toggle(active_capture, NULL, application);
+        gui_timer_queue_create_future_timer(&application->timer_queue, 
+                                            GUI_INTERNAL_TIMER_ID_CURSOR_DELAY, 
+                                            GUI_INTERNAL_TIMER_ID_CURSOR);
+
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 static void s_handle_navigation_inputs(gui_application* application, keypad_state* input)
 {
-    if (!application->navigation_enabled)
+    if (!application || !application->navigation_enabled)
         return;
 
     gui_element* current_selection = application->current_navigation_selection;

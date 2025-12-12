@@ -1,0 +1,14 @@
+#ifndef LIBGUI_INTERNAL_TIMERS_H
+#define LIBGUI_INTERNAL_TIMERS_H
+
+// Timers 0x2000 to 0x1000 are reserved
+
+#define GUI_INTERNAL_TIMER_ID_CURSOR_DELAY (500 * 1000) // 500 ms
+
+enum
+{
+    GUI_INTERNAL_TIMER_ID_CURSOR = 0x1000,
+};
+
+
+#endif

@@ -2,6 +2,7 @@
 #include "common/basic_io.h"
 #include "common/memory.h"
 #include "common/alloc.h"
+#include <stdbool.h>
 
 
 int initialize_integer_input_element(gui_element* element, int padding, int size_x_char)
@@ -20,8 +21,8 @@ int initialize_integer_input_element(gui_element* element, int padding, int size
 
     memclr(complex_data, sizeof(gui_complex_element_data));
     complex_data->on_captured_key_down = gui_complex_element_integer_input_on_captured_key_down;
+    complex_data->on_cursor_toggle = gui_complex_element_integer_input_on_cursor_toggle;
     complex_data->on_capture_end = gui_complex_element_integer_input_on_capture_end;
-    complex_data->on_capture_begin = NULL;
 
     gui_complex_element_integer_input_data* data = malloc(sizeof(gui_complex_element_integer_input_data));
 
@@ -136,6 +137,25 @@ void gui_complex_element_integer_input_on_captured_key_down(gui_element* element
     draw_element(element, app->target_buffer);
 }
 
+
+void gui_complex_element_integer_input_on_cursor_toggle(gui_element* element, gui_event* event, gui_application* app)
+{
+    if (!element || !app || !element->data)
+        return;
+
+    gui_complex_element_data* base_data = (gui_complex_element_data*)element->data;
+        
+    if (!base_data->data) // Stop any weird errors
+        return;
+
+    gui_complex_element_integer_input_data* data = (gui_complex_element_integer_input_data*)base_data->data;
+
+    data->text_data.cursor_visible = !data->text_data.cursor_visible;
+
+    draw_element(element, app->target_buffer);
+}
+
+
 void gui_complex_element_integer_input_on_capture_end(gui_element* element, gui_event* event, gui_application* app)
 {
     if (!element || !app || !element->data)
@@ -155,6 +175,7 @@ void gui_complex_element_integer_input_on_capture_end(gui_element* element, gui_
     else if (data->recently_cleared)
         data->value = data->defult;
 
+    data->text_data.cursor_visible = false;
     data->recently_cleared = false;
 
     draw_element(element, app->target_buffer);

@@ -17,7 +17,6 @@ void event_handler(gui_event* event);
 int main()
 {
     initialize_gui_application(&app);
-    gui_timer_queue_create_future_timer(&app.timer_queue, 1000 * 1000, 0);
 
     gui_element* current_element = create_frame_element(&app.ui_elements);
     current_element->size.x = get_display_width() - 1;
@@ -49,10 +48,6 @@ void event_handler(gui_event* event)
 {
     switch (event->event_type)
     {
-    case GUI_EVENT_TYPE_TIMER_TRIGGERED:
-        printf("Timer triggered!\n");
-        gui_timer_queue_create_future_timer(&app.timer_queue, 1000 * 1000, 0);
-        break;
     default:
         break;
     }
