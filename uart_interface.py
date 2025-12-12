@@ -35,7 +35,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.9.1"
+full_name = "AWG uart interface V 0.9.2"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
@@ -507,7 +507,9 @@ def handle_uart_input():
         uart_output_log.append(lines[i])
 
     if uart_auto_scroll:
-        uart_output_log_scroll_y = max(len(uart_output_log) - 5, 0)
+        lines, width = uart_output_log_window.getmaxyx()
+
+        uart_output_log_scroll_y = max(len(uart_output_log) - lines + 5, 0)
 
     if not dont_update_output_window:
         draw_uart_output_window()
