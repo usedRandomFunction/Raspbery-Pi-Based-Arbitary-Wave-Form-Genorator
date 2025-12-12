@@ -189,11 +189,11 @@ void gui_standard_element_frame_draw_function(gui_element* element, gui_vec2 off
 
     gui_element_colors* color = get_element_colors(element);
 
-    int size_x = element->size.x - 1;
-    int size_y = element->size.y - 1;
+    int size_x = element->size.x;
+    int size_y = element->size.y;
     
     draw_outline(element->position.x + offset.x, element->position.y + offset.y,
-        element->position.x + size_x + offset.x, element->position.y + size_y + offset.y,
+        element->position.x + size_x + offset.x - 1, element->position.y + size_y + offset.y - 1,
         border_width, color->border, target_buffer);
 
     display_fill_rect(element->position.x + border_width + offset.x, element->position.y + border_width + offset.y,
