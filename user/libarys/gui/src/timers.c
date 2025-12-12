@@ -152,7 +152,7 @@ gui_event* gui_timer_check_for_timer_events(gui_timer_queue* queue)
     if (next_timer->end_count > current_time)   // Timer not triggered, no event 
         return  NULL;
 
-    if (next_timer->start_count > current_time) // Timer value has looped around. Dont trigger yet.
+    if (next_timer->start_count > next_timer->end_count && next_timer->start_count > current_time) // Timer value has looped around. Dont trigger yet.
         return  NULL;
 
     gui_event* event = malloc(sizeof(gui_event));
