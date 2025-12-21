@@ -41,6 +41,9 @@ void resize_gui_timer_queue(gui_timer_queue* queue, int new_size)
 
 void free_gui_timer_queue(gui_timer_queue* queue)
 {
+    if (!queue)
+        return;
+
     for (int i = 0; i < queue->buffer_size; i++)
     {
         if (queue->buffer[i])

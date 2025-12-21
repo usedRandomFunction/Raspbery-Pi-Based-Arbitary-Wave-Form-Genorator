@@ -1,8 +1,12 @@
 #include "gui/events.h"
 
+#include "common/basic_io.h"
 #include "common/memory.h"
 #include "common/alloc.h"
-#include "common/math.h"
+
+#ifndef GUI_EVENT_QUEUE_DEFAULT_SIZE // THis is in entries -- TODO document this
+#define GUI_EVENT_QUEUE_DEFAULT_SIZE 10
+#endif
 
 void free_gui_event(gui_event* event)
 {
@@ -17,9 +21,19 @@ void free_gui_event(gui_event* event)
 
 void initialize_gui_event_queue(gui_event_queue* queue)
 {
-    initialize_dynamic_array(sizeof(gui_event*), 0, &queue->buffer);
-    queue->write_index = -1;
-    queue->read_index = -1;
+    memclr(queue, sizeof(gui_event_queue));
+
+    queue->buffer = malloc(sizeof(gui_event*) * GUI_EVENT_QUEUE_DEFAULT_SIZE);
+
+    if (!queue->buffer)
+    {
+        printf("[Error]: Unable to allocate memory for gui_event_queue! Failed to initialize.");
+        return;
+    }
+
+    memclr(queue->buffer, sizeof(gui_event*) * GUI_EVENT_QUEUE_DEFAULT_SIZE);
+    queue->buffer_size = GUI_EVENT_QUEUE_DEFAULT_SIZE;
+    queue->write_index = 1;
 }
 
 void resize_gui_event_queue(gui_event_queue* queue, int number_of_entrys)
@@ -31,37 +45,40 @@ void resize_gui_event_queue(gui_event_queue* queue, int number_of_entrys)
         current_size *= -1;
 
     if (number_of_entrys <= current_size)
+        number_of_entrys = current_size;
+
+    // Prepair the new buffer
+    gui_event** new_buffer = (gui_event**)malloc(number_of_entrys * sizeof(gui_event*));
+
+    if (!new_buffer)
+    {
+        printf("[Error]: Unable to allocate memory for gui_event_queue! Failed to resize\n");
         return;
+    }
 
-    // Now preapre a buffer
-    dynamic_array tempary_buffer_header;
-    initialize_dynamic_array(sizeof(gui_event*), number_of_entrys, &tempary_buffer_header);
-    memclr(tempary_buffer_header.ptr, sizeof(gui_event*) * number_of_entrys);
-
-    // And cast it
-    gui_event** tempary_buffer = (gui_event**)tempary_buffer_header.ptr;
-    gui_event** currnet_buffer = (gui_event**)queue->buffer.ptr;
-
+    memclr(new_buffer, sizeof(gui_event*) * number_of_entrys);
     // Now copy the data, and move it so it starts at index 0
 
-    int i = 0;
-    for ( ; i < current_size; i++)
+    for (int i = 0; i < current_size; i++)
     {
         queue->read_index++;
 
-        if (queue->read_index >= queue->buffer.number_of_entrys)
+        if (queue->read_index >= queue->buffer_size)
             queue->read_index = 0;
-
-        tempary_buffer[i] = currnet_buffer[queue->read_index];
+        
+        new_buffer[i] = queue->buffer[queue->read_index];
     }
 
     // Set the read / write indexs
-    queue->write_index = current_size - 2;
-    queue->read_index = -1;
+    queue->buffer_size = number_of_entrys;
+    queue->write_index = current_size;
+    queue->read_index = 0;
 
     // Now swap the buffers, 
-    delete_dynamic_array(&queue->buffer);
-    memcpy(&queue->buffer, &tempary_buffer_header, sizeof(dynamic_array));
+    if (queue->buffer)
+        free(queue->buffer);
+    
+    queue->buffer = new_buffer;
 }
 
 void free_gui_event_queue(gui_event_queue* queue)
@@ -69,55 +86,49 @@ void free_gui_event_queue(gui_event_queue* queue)
     if (!queue)
         return;
 
-    gui_event** buffer = (gui_event**)queue->buffer.ptr;
-    for (int i = 0; i < queue->buffer.number_of_entrys; i++)
-        free_gui_event(buffer[i]);
-
-    delete_dynamic_array(&queue->buffer);
+    for (int i = 0; i < queue->buffer_size; i++)
+        free_gui_event(queue->buffer[i]);
+    
+    if (queue->buffer)
+        free(queue->buffer);
 }
 
 void gui_event_queue_push(gui_event_queue* queue, gui_event* event)  // TODO This might be a memory leak. Need to test it
 {
-    // First get the write index
+    queue->buffer[queue->write_index] = event;
 
-    if (queue->write_index == queue->read_index)    // If we will overwrite allocate more space
-    {
-        resize_gui_event_queue(queue, queue->buffer.number_of_entrys + 1);
-    } 
-    
+    // Get the next write index
     queue->write_index++;
-
-    if (queue->write_index >= queue->buffer.number_of_entrys)
-    {
-        if (queue->read_index == -1) // I.e we are going to overwrite a event
-            resize_gui_event_queue(queue, queue->buffer.number_of_entrys + 1);
-
-        queue->write_index = 0;
-    }
     
-    gui_event** buffer = (gui_event**)queue->buffer.ptr;
-    buffer[queue->write_index] = event;
+    // Loop back
+    if (queue->write_index >= queue->buffer_size)
+        queue->write_index = 0;
+    
+    // Buffer full - resize.
+    if (queue->write_index == queue->read_index)
+    {
+        queue->write_index = queue->buffer_size;
+        resize_gui_event_queue(queue, queue->buffer_size + 1);
+    }
+
 }
 
 gui_event* gui_event_queue_next(gui_event_queue* queue)
 {
-    if (queue->write_index == queue->read_index)    // Buffer is empty return nothing
+    if (queue->write_index - 1 == queue->read_index || 
+        (queue->read_index == queue->buffer_size - 1 && queue->write_index == 0))    // Buffer only has one item (the one to remove) dont return anything
         return NULL;
 
-    gui_event** buffer = (gui_event**)queue->buffer.ptr;
-
     // First free last event
-    if (queue->read_index >= 0)
-    {
-        free_gui_event(buffer[queue->read_index]);
-        buffer[queue->read_index] = NULL;
-    }
+    free_gui_event(queue->buffer[queue->read_index]);
+    queue->buffer[queue->read_index] = NULL;
 
     // Get next index
     queue->read_index++;
-
-    if (queue->read_index >= queue->buffer.number_of_entrys)
+    
+    // Loop back
+    if (queue->read_index >= queue->buffer_size)
         queue->read_index = 0;
 
-    return buffer[queue->read_index];
+    return queue->buffer[queue->read_index];
 }

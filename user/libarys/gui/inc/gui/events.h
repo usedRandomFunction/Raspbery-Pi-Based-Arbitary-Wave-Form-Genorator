@@ -18,8 +18,9 @@ typedef struct gui_event gui_event;
 // TODO Since the buffer can grow, it should probibly be able to shrink
 struct gui_event_queue
 {
-    dynamic_array buffer;   // Why is dynamic_array being used here? It looks like the insert or resize function is never used just use malloc and free at that point?
-    int write_index;        // TODO check if the above is required. Also more comments might be needed in the functions
+    gui_event** buffer;
+    int buffer_size;
+    int write_index; 
     int read_index;
 };
 
@@ -37,8 +38,8 @@ void initialize_gui_event_queue(gui_event_queue* queue);
 // Resizes the queue to store `number_of_entrys`
 // @param queue Queue to resize
 // @param number_of_entrys New size
-// @note The function will do nothing if resizing will delete entrys
-void resize_gui_event_queue(gui_event_queue* queue, int number_of_entrys); // TODO why not just go to minimum size?
+// @note If resizing will delete entires the new size will be the minimum size to store all entires 
+void resize_gui_event_queue(gui_event_queue* queue, int number_of_entrys); 
 
 // Frees the buffer, and all events the buffer points to
 // @param queue Queue to free
