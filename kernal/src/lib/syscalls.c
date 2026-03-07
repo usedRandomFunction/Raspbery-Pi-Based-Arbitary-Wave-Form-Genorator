@@ -13,6 +13,31 @@
 
 extern void system_call_exit(int i);
 
+char system_call_uart_getc()
+{
+    // We need to unmask interupts or PRG_EXIT wont fire properly
+    // This can make a werid hang situation.
+
+    size_t spsr_el1;
+    asm volatile ( "mrs %0, spsr_el1" : "=r"(spsr_el1));
+
+    // Werid things may happen if the a user handker runs here since it may delete the return addr?
+    // Would be fixed by a proper user state struct
+    if (is_using_defult_prg_exit_handler())
+        spsr_el1 &= (~(1<<7));
+
+    asm volatile ( "msr spsr_el1, %0" : : "r"(spsr_el1));
+
+    char c = uart_getc();
+
+    // And put it back as it was
+
+    spsr_el1 |= 1<<7;
+    asm volatile ( "msr spsr_el1, %0" : : "r"(spsr_el1));
+
+    return c;
+}
+
 int system_call_uart_putc(char c)
 {
     uart_putc(c);
@@ -407,7 +432,7 @@ void system_call_display_get_text_size_px(const char* str, uint32_t* x, uint32_t
 
 const void* const os_syscall_program_managment[] = {system_call_set_abi_version, system_call_exit, system_call_vmemmap,
     system_call_switch_to};
-const void* const os_syscall_baisc_io[] = {printf_user_mode, putchar, uart_putc, uart_getc, uart_poll, sprintf_s_user_mode};
+const void* const os_syscall_baisc_io[] = {printf_user_mode, putchar, system_call_uart_putc, system_call_uart_getc, uart_poll, sprintf_s_user_mode};
 const void* const os_syscall_file_io[] = {system_call_open, system_call_close, system_call_get_file_size, system_call_read, 
     system_call_write, system_call_lseek, system_call_truncate, system_call_ftruncate, system_call_remove,   
     system_call_fremove, system_call_rename, system_call_path_exists, system_call_diropen, system_call_dirread,

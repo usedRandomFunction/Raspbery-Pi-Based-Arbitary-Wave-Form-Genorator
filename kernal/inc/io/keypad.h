@@ -1,6 +1,7 @@
 #ifndef KEYPAD_H
 #define KEYPAD_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef void (*PRG_EXIT_HANDLER)(void);
@@ -24,6 +25,10 @@ int uart_keypad_emmulation(int state);
 // @param handler a pointer to a void (void) function to use as the handler
 // @note is handler is NULL this will switch to the defult handler (void defult_prg_exit_handler()))
 void capture_prg_exit(PRG_EXIT_HANDLER handler);
+
+// Checks if the handler if defult
+// @return true if s_prg_exit_handler == defult_prg_exit_handler else false
+bool is_using_defult_prg_exit_handler();
 
 // Gets the current state of the keypad
 // @return The current state of the keypad as a keypad_state struct

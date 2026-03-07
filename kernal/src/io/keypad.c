@@ -20,7 +20,7 @@ static uint64_t s_prg_exit_last_triggered;
 static bool s_uart_emmulation_enabled;
 static int s_physical_keypad_delay;
 
-static PRG_EXIT_HANDLER prg_exit_handler = &defult_prg_exit_handler;
+static PRG_EXIT_HANDLER s_prg_exit_handler = &defult_prg_exit_handler;
 
 static void s_tigger_prg_exit_from_gpio(int pin);
 
@@ -115,12 +115,17 @@ void capture_prg_exit(PRG_EXIT_HANDLER handler)
 {
     if (handler == NULL)
     {
-        prg_exit_handler = &defult_prg_exit_handler;
+        s_prg_exit_handler = &defult_prg_exit_handler;
 
         return;
     }
 
-    prg_exit_handler = handler;
+    s_prg_exit_handler = handler;
+}
+
+bool is_using_defult_prg_exit_handler()
+{
+    return s_prg_exit_handler == &defult_prg_exit_handler;
 }
 
 keypad_state get_keypad_state()
@@ -143,6 +148,9 @@ keypad_state get_keypad_state()
 
 void keypad_uart_interupt_handler()
 {
+    if (s_uart_emmulation_enabled == false)    // Werid error is happening going to check this
+        return;
+
     disable_uart_receive_interupt();
 
     int number_of_keys = (int)uart_getc();
@@ -369,11 +377,11 @@ void tigger_prg_exit()
     {
         printf("Waiting on interupt end before running prg_exit handler\n");
 
-        event_handler_add_interupt_end(prg_exit_handler);
+        event_handler_add_interupt_end(s_prg_exit_handler);
 
         return;
     }
-    prg_exit_handler();
+    s_prg_exit_handler();
 }
 
 void halt_and_wait_from_user_input()
