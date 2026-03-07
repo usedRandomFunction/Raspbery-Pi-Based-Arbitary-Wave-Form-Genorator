@@ -15,6 +15,8 @@ bool uart_keypad_emmulation_default_state;
 uint32_t spi_clock_frequency;
 int prg_exit_debounce_time;
 int hardware_controll_register_latch_delay;
+int keypad_input_post_latch_delay;
+int keypad_input_pre_latch_delay;
 int keypad_input_latch_delay;
 
 bool is_running_in_qemu = false;
@@ -48,7 +50,10 @@ bool load_kernal_configuration()
     spi_clock_frequency = get_u64_from_config_file_entry_with_defult_by_name(&config, "SPI_CLOCK_FREQUENCY", 30000000);
     prg_exit_debounce_time = get_u64_from_config_file_entry_with_defult_by_name(&config, "PRG_EXIT_DEBOUNCE_TIME", 200);
     hardware_controll_register_latch_delay = get_u64_from_config_file_entry_with_defult_by_name(&config, "HARDWARE_CONTROLL_REGISTER_LATCH_DELAY", 1000);
+    keypad_input_post_latch_delay = get_u64_from_config_file_entry_with_defult_by_name(&config, "KEYPAD_INPUT_POST_LATCH_DELAY", 1000);
+    keypad_input_pre_latch_delay = get_u64_from_config_file_entry_with_defult_by_name(&config, "KEYPAD_INPUT_PRE_LATCH_DELAY", 1000);
     keypad_input_latch_delay = get_u64_from_config_file_entry_with_defult_by_name(&config, "KEYPAD_INPUT_LATCH_DELAY", 1000);
+
     is_running_in_qemu = get_u64_from_config_file_entry_with_defult_by_name(&config, "IS_RUNNING_IN_QEMU", 0) != 0;
 
     allways_shirnk_frame_buffer_if_possible = get_u64_from_config_file_entry_with_defult_by_name(&config, "ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE", ALLWAYS_SHIRNK_FRAME_BUFFER_IF_POSSIBLE) > 0;

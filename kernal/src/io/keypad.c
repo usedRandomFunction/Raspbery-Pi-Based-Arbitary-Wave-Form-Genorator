@@ -5,6 +5,7 @@
 #include "lib/interrupts.h"
 #include "lib/timing.h"
 #include "lib/events.h"
+#include "io/printf.h"
 #include "io/uart.h"
 #include "io/gpio.h"
 
@@ -25,7 +26,6 @@ static void s_tigger_prg_exit_from_gpio(int pin);
 
 #define keypad_input_latch_pin 6
 
-#include "io/printf.h"
 
 void initialize_keypad()
 {
@@ -299,10 +299,12 @@ void  keypad_poll()
     {
         const uint8_t new_target_row = row < 3 ? row + 1 : 0;
         *hardware_controll_register_keypad_controll_byte = 1 << (new_target_row + 1);   // Get the next row ready
-
+        
+        wait_cycles(keypad_input_pre_latch_delay);
         gpio_clear(keypad_input_latch_pin);                                             // Save the current state of the keypad
         wait_cycles(keypad_input_latch_delay);
         gpio_set(keypad_input_latch_pin);
+        wait_cycles(keypad_input_post_latch_delay);
 
         hardware_controll_register_write_read(recive_buffer);                           // Read current / set the next row.
 
