@@ -236,7 +236,11 @@ void handle_uart_list_dir_packet()
 
     while (dirread(dir, &dir_entry) > 0)
     {
-        printf("    %s.%s: %d bytes\n", dir_entry.name, dir_entry.extention, dir_entry.size);
+        printf("    %s%c%s: %d bytes %s\n", dir_entry.name, 
+                                            (dir_entry.extention[0] == ' ' || 
+                                            dir_entry.extention[0] == '\0') ? ' ' : '.',
+                                            dir_entry.extention, dir_entry.size, 
+                                            dir_entry.size == 0 ? "[dir]" : "[file]");
     }
 
     dirclose(dir);

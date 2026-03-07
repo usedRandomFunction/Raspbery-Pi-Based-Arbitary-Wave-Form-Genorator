@@ -827,8 +827,8 @@ int dirread(int dd, dirrectory_entry* entry)
         if (dir_entry->attributes == FAT_DIRECTORY_ATTRIBUTES_LFN) 
             continue;                           // Skip LFN for now
 
-        if (memcmp(dir_entry->file_name, "..          " + 1, 11) == 0 ||
-            memcmp(dir_entry->file_name, "..          ", 11) == 0)
+        if (memcmp(dir_entry->file_name, ".         ", 11) == 0 ||
+            memcmp(dir_entry->file_name, "..        ", 11) == 0)
             continue;                           // Skip . and .. entrys
 
         memclr(entry, sizeof(dirrectory_entry));
