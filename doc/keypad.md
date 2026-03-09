@@ -112,3 +112,9 @@ In non-numeric input some numbers double as the arrow keys
 | 6 | Right arrow|
 | 4 | Left arrow |
 | 2 | Down arrow |
+
+During start up PRG_EXIT has a special meaning. If help early in the startup the kernal will<br>
+enter a loading mode. This loads a diffrent kernal by uploading it to ram. This helps testing<br>
+since they do not need to be written to the SD card before they are tested.<br>
+<br>
+Note by the time this check is done the porgam is allready in EL1. This does not emmulate a start up from zero.
