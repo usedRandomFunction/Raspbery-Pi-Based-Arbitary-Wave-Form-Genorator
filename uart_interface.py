@@ -6,11 +6,16 @@ import textwrap
 import argparse
 import curses
 import socket
-import serial
 import select
 import time
 import json
 import os
+
+try:
+    import serial
+except:
+    print("Failed to import serial. Attempting to run anyway")
+    pass
 
 dont_save_edit_command_history = False
 dont_update_output_window = False
@@ -35,7 +40,7 @@ magic_word_uart_ready_recive_offset = 0
 magic_word_uart_ready_recived = False
 magic_word_uart_ready = "UARTRDY\n"
 
-full_name = "AWG uart interface V 0.9.2"
+full_name = "AWG uart interface V 0.9.3"
 
 uart_output_log = [""]
 uart_output_log_scroll_y = 0
@@ -600,7 +605,7 @@ Currently thre are 11 commands:
   1. Run uartrun on the AWG
   2. Call :rua ${PATH TO DIR}
 """[1:], """
-- save logs (:save \ :save_logs)
+- save logs (:save \\ :save_logs)
   used to save the output log to a
   file. Filepath is first argument
 
@@ -608,24 +613,24 @@ Note for the next four commands:
   File paths on the AWG are limmited
   to 255 characters, by uartupld.
 
-- file upload (:fupld \ 
+- file upload (:fupld \\ 
   :file_upload) Used with uartupld,
   to upload a file. Arguments:
   1. File path on client (this sys)
   2. Destionation path on AWG,
 
-- file move (:fmove \ :file_move).
+- file move (:fmove \\ :file_move).
   Used with uartupld to move a file.
   Aguments:
   1. Old path (On AWG)
   2. New path (On AWG)
 
-- file remove (:fremove \ 
+- file remove (:fremove \\ 
   file_remove), Used with uartupld
   to Delete a file Aguments:
   1. File path (On AWG)
 """[1:], """
-- list directory (:ls \ :list_dir \\
+- list directory (:ls \\ :list_dir \\
   :list_directory), Used with 
   uartupld to list a directory. Args:
   1. Dirrectory path
@@ -1457,4 +1462,7 @@ def entry():
         exit_wrapper("Keyboard interupt", -1)
 
 if __name__ == "__main__":
-    entry()
+    try:
+        entry()
+    except SystemExit:
+        pass
