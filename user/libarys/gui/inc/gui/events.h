@@ -60,16 +60,17 @@ gui_event* gui_event_queue_next(gui_event_queue* queue);
 
 enum
 {
-    GUI_EVENT_TYPE_IGNORE                   = 0,    /* Event does nothing, ignore*/
-    GUI_EVENT_TYPE_KEY_DOWN                 = 1,    /* Event triggerd for each button, which has started to be pressed. Event data is pointer to keypad_state */
-    GUI_EVENT_TYPE_KEY_UP                   = 2,    /* Event triggerd for each button, which has stopped being pressed. Event data is pointer to keypad_state */
-    GUI_EVENT_TYPE_REDRAW                   = 3,    /* If added to the queue redraw_gui_application is called by gui_application_defult_event_handler. No event data*/
-    GUI_EVENT_TYPE_NAV_FOCUS_CHANGED        = 4,    /* Event triggered when the nav focus changes. Event data is pointer to gui_event_nav_focus_changed struct*/
-    GUI_EVENT_TYPE_NAV_SELECT               = 5,    /* Event triggered when enter is pressed and navigation is enabled. Event data is pointer to selected element */
-    GUI_EVENT_TYPE_INPUT_CAPTURE_BEGIN      = 6,    /* Event triggered when a element begins to capture input. Event data is pointer to capturing element */
-    GUI_EVENT_TYPE_INPUT_CAPTURE_END        = 7,    /* Event triggered when a element stops capturing input. Event data is pointer to element no longer capturing */
-    GUI_EVENT_TYPE_INPUT_FEILD_INT_CHANGED  = 8,    /* Event triggered when a "gui_complex_element_integer_input"'s feild updates. Event data is pointer to element */
-    GUI_EVENT_TYPE_TIMER_TRIGGERED          = 9,    /* Event triggered when a timer expires. Event data is pointer to gui_timer struct */ 
+    GUI_EVENT_TYPE_IGNORE                       = 0,    /* Event does nothing, ignore*/
+    GUI_EVENT_TYPE_KEY_DOWN                     = 1,    /* Event triggerd for each button, which has started to be pressed. Event data is pointer to keypad_state */
+    GUI_EVENT_TYPE_KEY_UP                       = 2,    /* Event triggerd for each button, which has stopped being pressed. Event data is pointer to keypad_state */
+    GUI_EVENT_TYPE_REDRAW                       = 3,    /* If added to the queue redraw_gui_application is called by gui_application_defult_event_handler. No event data*/
+    GUI_EVENT_TYPE_NAV_FOCUS_CHANGED            = 4,    /* Event triggered when the nav focus changes. Event data is pointer to gui_event_nav_focus_changed struct*/
+    GUI_EVENT_TYPE_NAV_SELECT                   = 5,    /* Event triggered when enter is pressed and navigation is enabled. Event data is pointer to selected element */
+    GUI_EVENT_TYPE_INPUT_CAPTURE_BEGIN          = 6,    /* Event triggered when a element begins to capture input. Event data is pointer to capturing element */
+    GUI_EVENT_TYPE_INPUT_CAPTURE_END            = 7,    /* Event triggered when a element stops capturing input. Event data is pointer to element no longer capturing */
+    GUI_EVENT_TYPE_INPUT_FEILD_INT_CHANGED      = 8,    /* Event triggered when a "gui_complex_element_integer_input"'s feild updates. Event data is pointer to element */
+    GUI_EVENT_TYPE_TIMER_TRIGGERED              = 9,    /* Event triggered when a timer expires. Event data is pointer to gui_timer struct */
+    GUI_EVENT_TYPE_INPUT_FEILD_FLOAT_CHANGED    = 10,   /* Event triggered when a "gui_complex_element_float_input"'s feild updates. Event data is pointer to element */
 };
 
 enum

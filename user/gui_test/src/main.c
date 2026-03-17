@@ -23,9 +23,24 @@ int main()
     current_element->size.y = get_display_height() - 1;
     current_element->flags |= GUI_ELEMENT_FLAGS_DISABLED;
 
+
+    current_element = create_float_input_element(false, true, 
+                                                 0, 0, "0", 1,
+                                                 10, 2, "10", 1,
+                                                 1, -2, "1", 1,
+                                                 "Hz", 3, 10, &app.ui_elements); 
+    current_element->position.x = 100;
+    current_element->position.y = 200;
+    gui_element* last_element = current_element;
+
     current_element = create_integer_input_element(0, -10, 10, 3, 3, &app.ui_elements);
     current_element->position.y = 100;
     current_element->position.x = 100;
+
+    current_element->nav.bottom = last_element;
+    current_element->nav.top = last_element;
+    last_element->nav.bottom = current_element;
+    last_element->nav.top = current_element;
 
     active_framebuffer(0);
 
