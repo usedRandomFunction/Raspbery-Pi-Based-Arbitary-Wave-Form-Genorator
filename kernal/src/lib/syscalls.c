@@ -19,20 +19,20 @@ char system_call_uart_getc()
     // This can make a werid hang situation.
 
     size_t spsr_el1;
+    size_t temporay_spsr_el1;
     asm volatile ( "mrs %0, spsr_el1" : "=r"(spsr_el1));
 
     // Werid things may happen if the a user handker runs here since it may delete the return addr?
     // Would be fixed by a proper user state struct
+    temporay_spsr_el1 = spsr_el1;
     if (is_using_defult_prg_exit_handler())
-        spsr_el1 &= (~(1<<7));
+        temporay_spsr_el1 &= (~(1<<7));
 
-    asm volatile ( "msr spsr_el1, %0" : : "r"(spsr_el1));
+    asm volatile ( "msr spsr_el1, %0" : : "r"(temporay_spsr_el1));
 
     char c = uart_getc();
 
     // And put it back as it was
-
-    spsr_el1 |= 1<<7;
     asm volatile ( "msr spsr_el1, %0" : : "r"(spsr_el1));
 
     return c;
