@@ -358,7 +358,11 @@ static void s_handle_internal_gui_timers(gui_application* application, gui_timer
 
 static void s_handle_navigation_inputs(gui_application* application, keypad_state* input)
 {
-    if (!application || !application->navigation_enabled)
+    // Ensure that
+    // 1. application exits 
+    // 2. navigation_enabled is enabled 
+    // 3. there are no active input captures
+    if (!application || !application->navigation_enabled || application->current_input_capture)
         return;
 
     gui_element* current_selection = application->current_navigation_selection;
