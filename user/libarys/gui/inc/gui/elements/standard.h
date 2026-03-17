@@ -7,6 +7,7 @@ struct gui_standard_element_text_box_data
 {
     bool cursor_visible;    // If the text has space left in the box the forground color will be placed on char wide if tree
     gui_vec2 offset;        // The offset from the top left, where display_draw_string is called
+    gui_vec2 cursor_offest; // The offset from the end of the text to place the cursor at
     const char* str;        // Text to draw
 };
 

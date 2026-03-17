@@ -227,6 +227,9 @@ void gui_standard_element_textbox_draw_function(gui_element* element, gui_vec2 o
     
     if (!data->cursor_visible || x >= x_max) 
         return;
+    
+    x += data->cursor_offest.x;
+    y += data->cursor_offest.y;
 
     display_draw_string(" ", &x, &y, x, x_max, true, NULL, color->background, color->forground, target_buffer);
 }

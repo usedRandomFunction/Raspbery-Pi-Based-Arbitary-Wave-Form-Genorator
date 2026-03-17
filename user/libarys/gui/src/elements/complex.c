@@ -1,11 +1,12 @@
 #include "gui/elements/complex.h"
 #include "common/basic_io.h"
+#include "common/display.h"
 #include "common/memory.h"
-#include "common/alloc.h"
 #include "common/string.h"
+#include "common/alloc.h"
 #include <stdbool.h>
 
-static const char* s_scientific_notation[] = {"*10^-6 ", "*10^-3 ", "*10^0", "*10^+3 ", "*10^+6 "};
+static const char* s_scientific_notation[] = {"*10^-6", "*10^-3", "*10^+0", "*10^+3", "*10^+6"};
 static const char* s_matrix_prefixes[] = {"u", "m", " ", "k", "M"};
 static const float s_magnitudes[] = {1e-6, 1e-3, 1, 1e3, 1e6}; 
 
@@ -331,6 +332,19 @@ gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_m
     data->true_default = data->default_coefficent * s_magnitudes[data->magntiude_at_default + 2];
     data->output = data->true_default;
     data->unit = unit;
+    
+    bool will_show_main_prefix = allow_magnitude_change || (data->magntiude_at_default != 0);
+    int n_chars = will_show_main_prefix ? show_magnitude_as_sci ? 7 : 2 : 0;
+
+    if (unit)
+        n_chars += strlen(unit);
+
+    uint32_t y_size = 0;
+    uint32_t x_size = 0;
+
+    display_get_text_size_px("X", &x_size, &y_size, 1000, NULL);    // Get size of char
+
+    data->text_data.cursor_offest.x -= x_size * n_chars;
 
     return element;
 }
@@ -555,10 +569,10 @@ void gui_complex_element_float_input_draw_function(gui_element* element, gui_vec
 
     gui_complex_element_float_input_data* data = (gui_complex_element_float_input_data*)base_data->data;
 
-    char text_buffer[32 + 9];
+    char text_buffer[32 + 10];
 
-    memclr(text_buffer, 32 + 9);
-    strcpy_s(data->current_str, 32 + 8, text_buffer + 1);
+    memclr(text_buffer, 32 + 10);
+    strcpy_s(data->current_str, 32 + 10, text_buffer + 1);
     text_buffer[0] = data->current_coefficent >= 0 ? '+' : '-';
     
     // Only show suffix if needed 
@@ -567,12 +581,13 @@ void gui_complex_element_float_input_draw_function(gui_element* element, gui_vec
     {
 
         const char** suffix_array = data->show_magnitude_as_sci ? s_scientific_notation : s_matrix_prefixes;
-        strcat_s(text_buffer, 32 + 8, suffix_array[data->current_magnitude + 2]); 
+        strcat_s(text_buffer, 32 + 10, " ");       // Padding so it looks nice 
+        strcat_s(text_buffer, 32 + 10, suffix_array[data->current_magnitude + 2]); 
     }
     
     // Draw unit
     if (data->unit)
-        strcat_s(text_buffer, 32 + 8, data->unit);
+        strcat_s(text_buffer, 32 + 10, data->unit);
 
     data->text_data.str = text_buffer;
 
