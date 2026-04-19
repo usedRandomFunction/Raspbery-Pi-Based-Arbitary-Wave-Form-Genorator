@@ -61,6 +61,47 @@ double floor(double x)
     return __builtin_floor(x);
 }
 
+double ceil(double x)
+{
+    return __builtin_floor(x);
+}
+
+double round(double x)
+{
+    return __builtin_round(x);
+}
+
+double abs(double x)
+{
+    return x >= 0 ? x : -x;
+}
+
+
+double log10(double x)
+{
+    return ln(x) / M_Nat_log_10;
+}
+
+// Realtivly simple apporximation of ln, 
+// https://stackoverflow.com/questions/9799041/efficient-implementation-of-natural-logarithm-ln-and-exponentiation
+double ln(double y)
+{
+    int log2 = 0;
+    double divisor, x, result;
+    
+    int bits = (int)y;
+    while (bits >>= 1) { log2++; } // Gets the number of bits before the MSB
+    //log2 = __builtin_ctz((int)y); // See: https://stackoverflow.com/a/4970859/6630230
+
+    divisor = (double)(1 << log2);
+    x = y / divisor;    // normalized value between [1.0, 2.0]
+
+    result = -1.7417939 + (2.8212026 + (-1.4699568 + (0.44717955 - 0.056570851 * x) * x) * x) * x;
+    result += ((float)log2) * 0.69314718; // ln(2) = 0.69314718
+
+    return result;
+}
+
 // Ok i couldn't find a license for this one but it came form
 // https://gist.github.com/giangnguyen2412/bcab883b5a53b437b980d7be9745beaf
 // 'compare_float', 'cos' and 'sin'

@@ -42,4 +42,13 @@ char* strchr(const char* str, int ch);
 // @return Pointer to last occurrenc or NULL
 char* strrchr(const char* str, int ch);
 
+// Converts the given float to a stirng
+// @param in The float to convert 
+// @param dst The buffer to write the string to
+// @param precision The number of decimals to show, negitive numbers will attempt 
+//        to auto calcalate such that it fills the dst buffer.
+// @param dest_size the size of the destination buffer
+char* ftoa_s(double in, char* dst, int precision, size_t dest_size);
+
+// https://github.com/antongus/stm32tpl/blob/master/ftoa.c
 #endif

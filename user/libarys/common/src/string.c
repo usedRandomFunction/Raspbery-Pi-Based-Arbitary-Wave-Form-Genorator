@@ -1,4 +1,5 @@
 #include "common/string.h"
+#include "common/math.h"
 
 size_t strlen(const char *str)
 {
@@ -66,4 +67,69 @@ char* strrchr(const char* str, int ch)
             return *(char**)(&ptr);
 
     return NULL;
+}
+
+char* ftoa_s(double in, char* dst, int precision, size_t dest_size)
+{
+   if (dest_size <= 1)
+        return NULL;        // IDk what else to do in this case
+    dest_size--;            // This inculdes the null terminatior 
+    
+    if (in < 0)
+    {
+        if (dest_size > 1)
+        {
+            *dst++ = '-';
+            dest_size--;
+        }
+
+        in = -in;
+    }
+
+    int intiger_digits = (int)ceil(log10(in)) + 1;
+
+    if (precision < 0)
+        precision = dest_size - 1;  
+    
+    if (intiger_digits > dest_size)
+    {
+        *dst++ = 'X';
+        *dst = '\0';
+        return dst;
+    }
+
+    if (precision > (dest_size - intiger_digits))
+        precision = dest_size - intiger_digits;
+
+    double magnitude = pow(10, intiger_digits - 1); 
+    
+    while (intiger_digits--) 
+    {
+        int digit = (int)floor(fmod(in / magnitude, 10));
+        magnitude /= 10;
+        //in /= 10;
+
+        *dst++ = (char)(0x30 + digit);
+    }
+
+    if (precision > 0)
+    {
+        in = fmod(in, 1) * 10;
+        
+        *dst++ = '.';
+
+        while (precision--)
+        {
+            double ones = floor(in);
+            int digit = (int)ones;
+
+            *dst++ = (char)(digit + 0x30);
+
+            in -= ones;
+            in *= 10;
+        }
+    }
+
+    *dst = '\0';
+    return dst;
 }

@@ -4,6 +4,8 @@
 #define M_PI 3.14159265358979323846
 #define M_PI_2 (M_PI / 2.0)
 #define M_PI_M_2 (M_PI * 2.0)
+#define M_Nat_log_10 2.3025850929940456840
+#define M_E 2.71828182845904523536
 
 #define max(a, b) (a > b ? a : b)
 #define min(a, b) (a < b ? a : b)
@@ -14,6 +16,7 @@
 
 // Returns a^b
 // @note b Must be a hole number
+// TODO implement a system to handle deicmal powers
 double pow(double a, double b);
 
 // Calcautes base to the power of exp
@@ -34,8 +37,23 @@ double fmod(double a, double b);
 // Returns the absolute value of x
 double fabs(double x);
 
-// Rounds x down to the nearest hole number
+// Rounds x down to the nearest integer number
 double floor(double x);
+
+// Rounds x up to the nearest integer
+double ceil(double x);
+
+// Rounds x to the nearest integer
+double round(double x);
+
+// Returns |x|
+double abs(double x);
+
+// Returns log10 (x)
+double log10(double x);
+
+// Returns ln (x) [log e (x)
+double ln(double x);
 
 // Taylor series cosine function for floating point numbers
 // @param x Angle in radians
