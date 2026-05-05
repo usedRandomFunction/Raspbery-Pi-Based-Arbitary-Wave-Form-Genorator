@@ -134,10 +134,8 @@ void gui_application_defult_event_handler(gui_application* application, gui_even
     {
         gui_element* element = (gui_element*)event->event_data;
 
-        if (element && element->flags & GUI_ELEMENT_FLAGS_CAN_CAPTURE_INPUT && element != application->last_input_capture)
+        if (element && element->flags & GUI_ELEMENT_FLAGS_CAN_CAPTURE_INPUT)
             gui_application_set_input_capture(application, (gui_element*)event->event_data);
-        
-        application->last_input_capture = NULL;
 
         break;
     }
