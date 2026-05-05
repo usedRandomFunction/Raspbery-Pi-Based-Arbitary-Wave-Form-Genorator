@@ -103,7 +103,7 @@ char* ftoa_s(double in, char* dst, int precision, size_t dest_size)
 
     double magnitude = pow(10, intiger_digits - 1); 
     
-    while (intiger_digits--) 
+    do
     {
         int digit = (int)floor(fmod(in / magnitude, 10));
         magnitude /= 10;
@@ -111,6 +111,7 @@ char* ftoa_s(double in, char* dst, int precision, size_t dest_size)
 
         *dst++ = (char)(0x30 + digit);
     }
+    while (intiger_digits--); 
 
     if (precision > 0)
     {

@@ -46,6 +46,11 @@ double ceil(double x);
 // Rounds x to the nearest integer
 double round(double x);
 
+// Rounds x to N deicmal places.
+// @param x number to round 
+// @param mag deicmal to round to. 0 Rounds to 1, +1 rounds to 10, +2 to 100, -1 to 0.1 etc
+double round_to(double x, int mag);
+
 // Returns |x|
 double abs(double x);
 

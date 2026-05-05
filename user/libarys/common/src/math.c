@@ -71,6 +71,13 @@ double round(double x)
     return __builtin_round(x);
 }
 
+double round_to(double x, int mag)
+{
+    double multiplier = pow(10, mag);
+
+    return multiplier * round(x / multiplier);
+}
+
 double abs(double x)
 {
     return x >= 0 ? x : -x;
