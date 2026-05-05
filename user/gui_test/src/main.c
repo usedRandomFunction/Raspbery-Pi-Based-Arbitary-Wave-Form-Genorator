@@ -5,7 +5,7 @@
 
 #include "common/basic_io.h"
 #include "common/display.h"
-
+#include <stdbool.h>
 
 gui_application app;
 
@@ -22,13 +22,15 @@ int main()
     current_element->size.x = get_display_width() - 1;
     current_element->size.y = get_display_height() - 1;
     current_element->flags |= GUI_ELEMENT_FLAGS_DISABLED;
+    
+    current_element = create_float_input_element_simple(false, true, 1.62e-6, 7.8e3, 
+                                            10, 2, "Test", 3, 16, &app.ui_elements);
 
-
-    current_element = create_float_input_element(false, true, 
-                                                 0, 0, "0", 1,
-                                                 10, 2, "10", 1,
-                                                 1, -2, "1", 1,
-                                                 "Hz", 3, 10, &app.ui_elements); 
+    //current_element = create_float_input_element(false, true, 
+    //                                             0, 0, "0", 1,
+    //                                             10, 2, "10", 1,
+    //                                             1, -2, "1", 1,
+    //                                             "Hz", 3, 10, &app.ui_elements); 
     current_element->position.x = 100;
     current_element->position.y = 200;
     gui_element* last_element = current_element;

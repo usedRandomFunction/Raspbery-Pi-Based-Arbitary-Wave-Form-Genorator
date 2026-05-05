@@ -52,6 +52,9 @@ $(OBJDIR)/%.s.o: $(SRCDIR)/%.s
 	@mkdir -p $(dir $@)
 	$(CC) $(ASMFLAGS) -c -o $@ $<
 
+link_folder:
+	ln -sfn ../$(LIB_NAME)/inc/$(LIB_NAME) $(CURDIR)/../inc/$(LIB_NAME)
+
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(TARGET)
 

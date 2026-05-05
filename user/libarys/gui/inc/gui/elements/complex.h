@@ -141,8 +141,23 @@ void gui_complex_element_integer_input_draw_function(gui_element* element, gui_v
 // @return 0 on success, and non-zero on error
 int initialize_float_input_element(gui_element* element, int padding, int size_x_char); 
 
-// Allocates and initializes a float_input element,
-// with no background color, storing a pointer in buffer
+// Allocates and initializes a float_input element, storing a pointer in the given buffer
+// @param show_magnitude_as_sci If False the A B C buttons will not change the magnitude of the input
+// @param allow_magnitude_change If False shows magnitude as SI prefix, else 10^{N}
+// @param minimum The minimum value for the input
+// @param maximum The maximum value for the input
+// @param default_value The default value for the input 
+// @param decimals The number of decimal places to show on the min/max/default for proper operation use 0-5
+// @param unit The unit / final suffix for the string. NULL means dont display
+// @param padding Padding around text in pixels
+// @param size_x_char The size of the element in characters
+// @param buffer Buffer to add the pointer to the element to
+// @return Pointer to the created element or NULL if failed
+gui_element* create_float_input_element_simple(bool show_magnitude_as_sci, bool allow_magnitude_change,
+                                        float minimum, float maximum, float default_value, int decimals,
+                                        const char* unit, int padding, int size_x_char, dynamic_array* buffer);
+
+// Allocates and initializes a float_input element, storing a pointer in buffer
 // @param show_magnitude_as_sci If False the A B C buttons will not change the magnitude of the input
 // @param allow_magnitude_change If False shows magnitude as SI prefix, else 10^{N}
 // @param default_coefficent The default value to be used on start up or if the clr then enter is pressed
@@ -171,6 +186,22 @@ gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_m
                                         float minimum_coefficent, uint8_t minimum_magnitide, const char* minimum_string,
                                         float decimal_multiplyer_at_minimum,
                                         const char* unit, int padding, int size_x_char, dynamic_array* buffer);
+
+// Sets the allowed input range.
+// @param element The float input element to set the min/max on.
+// @param min The minimum of the allowed range.
+// @param max THe maximum of the allowed range.
+// @param decimals The number of decimal places to be used. To ensure proper functioning use a value between 0 and 5.
+// @note If the value needs to be changed to be within the new min/max this function will do that 
+//                  but it is unable to redraw it the element.
+void gui_complex_element_float_input_set_min_max(gui_element* element, float min, float max, int decimals);
+
+// Sets the default value 
+// @param element The float input element to set the default on.
+// @param default_value The new value to be used.
+// @param decimals The number of decimal places to use. To ensure proper function use a number between 0 and 5
+// @note If the current value if the old default this will change it to the new default. However it is unable to redraw.
+void gui_complex_element_float_input_set_default(gui_element* element, float default_value, int decimal);
 
 // Handles user input for "float_input" elements
 // @param element Element to handle input for

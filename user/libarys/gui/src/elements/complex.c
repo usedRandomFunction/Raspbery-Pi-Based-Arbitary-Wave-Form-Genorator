@@ -4,6 +4,7 @@
 #include "common/memory.h"
 #include "common/string.h"
 #include "common/alloc.h"
+#include "common/math.h"
 #include <stdbool.h>
 
 static const char* s_scientific_notation[] = {"*10^-6", "*10^-3", "*10^+0", "*10^+3", "*10^+6"};
@@ -275,6 +276,57 @@ int initialize_float_input_element(gui_element* element, int padding, int size_x
     return 0;
 }
 
+gui_element* create_float_input_element_simple(bool show_magnitude_as_sci, bool allow_magnitude_change,
+                                        float minimum, float maximum, float default_value, int decimals,
+                                        const char* unit, int padding, int size_x_char, dynamic_array* buffer)
+{
+    gui_element* element = create_element(buffer);
+
+    if (!element)
+        return NULL;
+
+    
+    // Handle initialization errors
+    if (initialize_float_input_element(element, padding, size_x_char))
+    {
+        free(element);
+
+        return NULL;
+    }
+
+    gui_complex_element_data* complex_data = element->data;
+    gui_complex_element_float_input_data* data = complex_data->data;
+
+    data->show_magnitude_as_sci = show_magnitude_as_sci;
+    data->allow_magnitude_change = allow_magnitude_change;
+
+    gui_complex_element_float_input_set_min_max(element, minimum, maximum, decimals);
+    gui_complex_element_float_input_set_default(element, default_value, decimals);
+
+
+    data->current_coefficent = data->default_coefficent;
+    data->current_magnitude = data->magntiude_at_default;
+    strcpy_s(data->default_str, 32, data->current_str);
+    data->current_input_len = strlen(data->current_str);
+    data->output = data->true_default;
+
+    data->unit = unit;
+    
+    bool will_show_main_prefix = allow_magnitude_change || (data->magntiude_at_default != 0);
+    int n_chars = will_show_main_prefix ? show_magnitude_as_sci ? 7 : 2 : 0;
+
+    if (unit)
+        n_chars += strlen(unit);
+
+    uint32_t y_size = 0;
+    uint32_t x_size = 0;
+
+    display_get_text_size_px("X", &x_size, &y_size, 1000, NULL);    // Get size of char
+
+    data->text_data.cursor_offest.x -= x_size * n_chars;
+
+    return element;
+}
 
 gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_magnitude_change,
                                         float default_coefficent, uint8_t default_magnitude, const char* default_string,
@@ -349,8 +401,136 @@ gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_m
     return element;
 }
 
+void gui_complex_element_float_input_set_min_max(gui_element* element, float min, float max, int decimals)
+{
+    if (!element)
+        return;         // Sanity Check, i dont think this will ever run.
+
+    gui_complex_element_data* base_data = (gui_complex_element_data*)element->data;
+        
+    if (!base_data->data) // Stop any weird errors
+        return;
+
+    gui_complex_element_float_input_data* data = (gui_complex_element_float_input_data*)base_data->data;
+
+    char* max_string_buffer = malloc(16);
+
+    if (max_string_buffer == NULL)
+    {
+        printf("Failed to set float input min/max: failed to allocat buffer for max str");
+        return;
+    }
+
+    char* min_string_buffer = malloc(16);
+
+    if (min_string_buffer == NULL)
+    {
+        printf("Failed to set float input min/max: failed to allocat buffer for min str");
+        free(max_string_buffer);
+        return;
+    }
+
+    int magnitude_max = 3 * round((ceil(log10(max)) / 3));
+    max /= pow(10, magnitude_max);
+
+    int magnitude_min = 3 * round((ceil(log10(min)) / 3));
+    min /= pow(10, magnitude_min);
+
+    max = round_to(max, -decimals);
+    min = round_to(min, -decimals);
+
+    ftoa_s(abs(max), max_string_buffer, decimals, 16);
+    ftoa_s(abs(min), min_string_buffer, decimals, 16);
+
+    double decimal_multiplyer = decimals == 0 ? 1 : (pow(10, -decimals) / 0.1);
+    
+    data->decimal_multiplyer_at_maximum = decimal_multiplyer;
+    data->magntiude_at_maximum = magnitude_max / 3;
+    data->maximum_coefficent = max;
+    data->true_maximum = max * pow(10, magnitude_max);
+    data->maximum_str = max_string_buffer;
+
+    if (data->output > data->true_maximum)
+    {
+        data->decimal_multiplyer = decimal_multiplyer;
+        data->current_magnitude = magnitude_max / 3;
+        data->current_coefficent = max;
+        data->output = data->true_maximum;
+
+        strcpy_s(max_string_buffer, 32, data->current_str);
+        data->current_input_len = strlen(data->current_str);
+    }
+
+
+    data->magntiude_at_minimum = magnitude_min / 3;
+    data->minimum_coefficent = min;
+    data->true_minimum = min * pow(10, magnitude_min);
+    data->minimum_str = min_string_buffer;
+
+    if (data->output > data->true_minimum)
+    {
+        data->decimal_multiplyer = decimal_multiplyer;
+        data->current_magnitude = magnitude_min / 3;
+        data->current_coefficent = min;
+        data->output = data->true_minimum;
+
+        strcpy_s(min_string_buffer, 32, data->current_str);
+        data->current_input_len = strlen(data->current_str);
+    }
+}
+
+void gui_complex_element_float_input_set_default(gui_element* element, float default_value, int decimals)
+{
+    
+    if (!element || decimals < 0)
+        return;         // Sanity Check, i dont think this will ever run.
+
+    gui_complex_element_data* base_data = (gui_complex_element_data*)element->data;
+
+    if (!base_data->data) // Stop any weird errors
+        return;
+
+    gui_complex_element_float_input_data* data = (gui_complex_element_float_input_data*)base_data->data;
+
+    char* default_string_buffer = malloc(16);
+
+    if (default_string_buffer == NULL)
+    {
+       printf("Failed to set float input default: failed to allocat buffer for default str");
+       return;
+    }
+
+    int magnitude = 3 * round((ceil(log10(default_value)) / 3));
+    default_value /= pow(10, magnitude);
+
+    default_value = round_to(default_value, -decimals);
+
+    ftoa_s(abs(default_value), default_string_buffer, decimals, 16);
+
+    double old_defult = data->true_default;
+    
+    data->decimal_multiplyer_at_defult = decimals == 0 ? 1 : (pow(10, -decimals) / 0.1);
+    data->magntiude_at_default = magnitude / 3;
+    data->default_coefficent = default_value;
+    data->true_default = default_value * pow(10, magnitude);
+    data->default_str = default_string_buffer;
+
+    if (data->output == old_defult)
+    {
+        data->decimal_multiplyer = data->decimal_multiplyer_at_defult;
+        data->current_magnitude = magnitude / 3;
+        data->current_coefficent = default_value;
+        data->output = data->true_default;
+
+        strcpy_s(default_string_buffer, 32, data->current_str);
+        data->current_input_len = strlen(data->current_str);
+    }
+
+}
+
+
 void gui_complex_element_float_input_on_captured_key_down(gui_element* element, gui_event* event, gui_application* app)
-{       // UNFINSIHED
+{
     if (!element || !event || !app || event->event_type != GUI_EVENT_TYPE_KEY_DOWN || !event->event_data)
         return;         // Sanity Check, i dont think this will ever run.
 
@@ -417,7 +597,8 @@ void gui_complex_element_float_input_on_captured_key_down(gui_element* element, 
         data->decimal_multiplyer = 1;
         data->current_coefficent = 0;
         data->current_input_len = 0;
-        data->current_str[0] = '\0';
+        memset(data->current_str, 32, '\0');
+
         break;
     case KEYPAD_STATE_BUTTON_0:
     case KEYPAD_STATE_BUTTON_1:
