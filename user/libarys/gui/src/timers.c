@@ -56,7 +56,7 @@ void gui_timer_queue_push(gui_timer_queue* queue, gui_timer* timer)
     gui_timer** working_buffer = queue->buffer;
     gui_timer** source_buffer = queue->buffer + queue->read_index;
     
-    // Allocate nwe buffer if needed
+    // Allocate new buffer if needed
     if (queue->number_of_elements + 1 > queue->buffer_size)
     {
         int     new_size            = queue->number_of_elements + 1;
