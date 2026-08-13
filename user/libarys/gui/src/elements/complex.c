@@ -235,7 +235,8 @@ void gui_complex_element_integer_input_draw_function(gui_element* element, gui_v
 
 
 
-int initialize_float_input_element(gui_element* element, int padding, int size_x_char)
+int initialize_float_input_element(gui_element* element, int padding, int size_x_char,
+        bool show_magnitude_as_sci, bool allow_magnitude_change, const char* unit)
 {
     initialize_standered_element_values(element);
     element->draw = gui_complex_element_float_input_draw_function;
@@ -273,43 +274,9 @@ int initialize_float_input_element(gui_element* element, int padding, int size_x
     element->data = complex_data;
     complex_data->data = data;
 
-    return 0;
-}
-
-gui_element* create_float_input_element_simple(bool show_magnitude_as_sci, bool allow_magnitude_change,
-                                        float minimum, float maximum, float default_value, int decimals,
-                                        const char* unit, int padding, int size_x_char, dynamic_array* buffer)
-{
-    gui_element* element = create_element(buffer);
-
-    if (!element)
-        return NULL;
-
-    
-    // Handle initialization errors
-    if (initialize_float_input_element(element, padding, size_x_char))
-    {
-        free(element);
-
-        return NULL;
-    }
-
-    gui_complex_element_data* complex_data = element->data;
-    gui_complex_element_float_input_data* data = complex_data->data;
-
     data->show_magnitude_as_sci = show_magnitude_as_sci;
     data->allow_magnitude_change = allow_magnitude_change;
-
-    gui_complex_element_float_input_set_min_max(element, minimum, maximum, decimals);
-    gui_complex_element_float_input_set_default(element, default_value, decimals);
-
-
-    data->current_coefficent = data->default_coefficent;
-    data->current_magnitude = data->magntiude_at_default;
-    strcpy_s(data->default_str, 32, data->current_str);
-    data->current_input_len = strlen(data->current_str);
-    data->output = data->true_default;
-
+    
     data->unit = unit;
     
     bool will_show_main_prefix = allow_magnitude_change || (data->magntiude_at_default != 0);
@@ -324,6 +291,41 @@ gui_element* create_float_input_element_simple(bool show_magnitude_as_sci, bool 
     display_get_text_size_px("X", &x_size, &y_size, 1000, NULL);    // Get size of char
 
     data->text_data.cursor_offest.x -= x_size * n_chars;
+
+    return 0;
+}
+
+gui_element* create_float_input_element_simple(bool show_magnitude_as_sci, bool allow_magnitude_change,
+                                        float minimum, float maximum, float default_value, int decimals,
+                                        const char* unit, int padding, int size_x_char, dynamic_array* buffer)
+{
+    gui_element* element = create_element(buffer);
+
+    if (!element)
+        return NULL;
+
+    
+    // Handle initialization errors
+    if (initialize_float_input_element(element, padding, size_x_char, 
+                show_magnitude_as_sci, allow_magnitude_change, unit))
+    {
+        free(element);
+
+        return NULL;
+    }
+
+    gui_complex_element_data* complex_data = element->data;
+    gui_complex_element_float_input_data* data = complex_data->data;
+
+    gui_complex_element_float_input_set_min_max(element, minimum, maximum, decimals);
+    gui_complex_element_float_input_set_default(element, default_value, decimals);
+
+
+    data->current_coefficent = data->default_coefficent;
+    data->current_magnitude = data->magntiude_at_default;
+    strcpy_s(data->default_str, 32, data->current_str);
+    data->current_input_len = strlen(data->current_str);
+    data->output = data->true_default;
 
     return element;
 }
@@ -344,7 +346,8 @@ gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_m
 
     
     // Handle initialization errors
-    if (initialize_float_input_element(element, padding, size_x_char))
+    if (initialize_float_input_element(element, padding, size_x_char, 
+                show_magnitude_as_sci, allow_magnitude_change, unit))
     {
         free(element);
 
@@ -353,9 +356,6 @@ gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_m
 
     gui_complex_element_data* complex_data = element->data;
     gui_complex_element_float_input_data* data = complex_data->data;
-
-    data->show_magnitude_as_sci = show_magnitude_as_sci;
-    data->allow_magnitude_change = allow_magnitude_change;
 
     data->magntiude_at_default = default_magnitude; 
     data->magntiude_at_maximum = maximum_magnitide;
@@ -384,19 +384,6 @@ gui_element* create_float_input_element(bool show_magnitude_as_sci, bool allow_m
     data->true_default = data->default_coefficent * s_magnitudes[data->magntiude_at_default + 2];
     data->output = data->true_default;
     data->unit = unit;
-    
-    bool will_show_main_prefix = allow_magnitude_change || (data->magntiude_at_default != 0);
-    int n_chars = will_show_main_prefix ? show_magnitude_as_sci ? 7 : 2 : 0;
-
-    if (unit)
-        n_chars += strlen(unit);
-
-    uint32_t y_size = 0;
-    uint32_t x_size = 0;
-
-    display_get_text_size_px("X", &x_size, &y_size, 1000, NULL);    // Get size of char
-
-    data->text_data.cursor_offest.x -= x_size * n_chars;
 
     return element;
 }

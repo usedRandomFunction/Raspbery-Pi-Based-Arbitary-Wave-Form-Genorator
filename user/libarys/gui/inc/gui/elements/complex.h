@@ -138,8 +138,12 @@ void gui_complex_element_integer_input_draw_function(gui_element* element, gui_v
 // @param element Element to set up
 // @param padding Padding around text in pixels
 // @param size_x_char The size of the element in characters
+// @param show_magnitude_as_sci If False the A B C buttons will not change the magnitude of the input
+// @param allow_magnitude_change If False shows magnitude as SI prefix, else 10^{N}
+// @param unit The unit / final suffix for the string. NULL means dont display
 // @return 0 on success, and non-zero on error
-int initialize_float_input_element(gui_element* element, int padding, int size_x_char); 
+int initialize_float_input_element(gui_element* element, int padding, int size_x_char,
+        bool show_magnitude_as_sci, bool allow_magnitude_change, const char* unit); 
 
 // Allocates and initializes a float_input element, storing a pointer in the given buffer
 // @param show_magnitude_as_sci If False the A B C buttons will not change the magnitude of the input
