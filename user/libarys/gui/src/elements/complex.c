@@ -264,7 +264,7 @@ int initialize_float_input_element(gui_element* element, int padding, int size_x
         return 2;
     }
 
-    memclr(data, sizeof(gui_complex_element_integer_input_data));
+    memclr(data, sizeof(gui_complex_element_float_input_data));
     gui_standard_element_text_box_data* text_data = &data->text_data;
     element->data = text_data;
     size_textbox_element_for_n_characters(element, size_x_char, padding);
@@ -417,10 +417,10 @@ void gui_complex_element_float_input_set_min_max(gui_element* element, float min
         return;
     }
 
-    int magnitude_max = 3 * round((ceil(log10(max)) / 3));
+    int magnitude_max = 3 * round((ceil(log10(abs(max))) / 3));
     max /= pow(10, magnitude_max);
 
-    int magnitude_min = 3 * round((ceil(log10(min)) / 3));
+    int magnitude_min = 3 * round((ceil(log10(abs(min))) / 3));
     min /= pow(10, magnitude_min);
 
     max = round_to(max, -decimals);
@@ -454,7 +454,7 @@ void gui_complex_element_float_input_set_min_max(gui_element* element, float min
     data->true_minimum = min * pow(10, magnitude_min);
     data->minimum_str = min_string_buffer;
 
-    if (data->output > data->true_minimum)
+    if (data->output < data->true_minimum)
     {
         data->decimal_multiplyer = decimal_multiplyer;
         data->current_magnitude = magnitude_min / 3;
@@ -487,7 +487,7 @@ void gui_complex_element_float_input_set_default(gui_element* element, float def
        return;
     }
 
-    int magnitude = 3 * round((ceil(log10(default_value)) / 3));
+    int magnitude = 3 * round((ceil(log10(abs(default_value))) / 3));
     default_value /= pow(10, magnitude);
 
     default_value = round_to(default_value, -decimals);
