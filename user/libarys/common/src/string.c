@@ -86,7 +86,7 @@ char* ftoa_s(double in, char* dst, int precision, size_t dest_size)
         in = -in;
     }
 
-    int intiger_digits = (int)ceil(log10(in)) + 1;
+    int intiger_digits = (int)ceil(max(log10(in), 0)) + 1;
 
     if (precision < 0)
         precision = dest_size - 1;  

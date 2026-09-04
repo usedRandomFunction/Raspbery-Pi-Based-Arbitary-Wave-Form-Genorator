@@ -2,15 +2,14 @@
 
 double pow(double a, double b)
 {
-    const double base = a;
-    a = 1;
-
     if (b == 0)
         return 1;
 
     if (b < 0)
         return 1 / pow(a, -b);
 
+    const double base = a;
+    a = 1;
 
     for ( ; b > 0; b--)
         a *= base;
